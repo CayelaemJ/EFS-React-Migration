@@ -40,6 +40,7 @@ import { publicEmailConfig, saveEmailConfig, testEmailConnection, createReportSc
 import type { ScheduleInput } from "./services/reportScheduler.js";
 import { runMLOpsAssessment, getMLOpsPortfolioAssessment, recordMLOpsFeedback, listMLOpsModels, registerMLOpsModel, promoteMLOpsModel, rollbackMLOpsModel, listMLOpsEvents } from "./services/mlopsService.js";
 import { getBrandLearningProfile, learnFromBrandUpload, recordBrandCorrection } from "./services/brandLearningService.js";
+import { seedSyntheticData } from "./services/syntheticData.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const PUBLIC_DIR = join(__dirname, "..", "..", "public");
@@ -1780,6 +1781,6 @@ setInterval(() => {
   if (!CONTACT_EMAIL) app.log.warn("CONTACT_EMAIL is not set: the contact form is disabled and legal pages show a placeholder contact.");
   app.log.info({ portalVersion: "0.10.0", publicDir: PUBLIC_DIR }, "starting empower-fin Dashboard Portal");
 app.listen({ port: PORT, host: "0.0.0.0" })
-  .then(async () => { await bootstrapAdmin(); await ensureSectionDefaults(); startSyncScheduler(app); startReportScheduler(app);
+  .then(async () => { await bootstrapAdmin(); await ensureSectionDefaults(); await seedSyntheticData(); startSyncScheduler(app); startReportScheduler(app);
 startDailyRefresh(); startAutomationScheduler(app); app.log.info(`empower-fin Dashboard Portal on :${PORT}`); })
   .catch((err) => { app.log.error(err); process.exit(1); });
