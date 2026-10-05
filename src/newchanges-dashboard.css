@@ -187,6 +187,7 @@ table tbody tr:hover { background: var(--ice-2, #f4f9fd); }
   #employer-view.view-leaving, #portfolio-view.view-leaving { animation: none !important; }
   .audience-switch .switch-pill { transition: none !important; }
 }
+}
 
 
 /* Consolidated from public/responsive-v1.css; canonical dashboard UI/responsive stylesheet. */
