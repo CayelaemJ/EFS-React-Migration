@@ -395,10 +395,9 @@ app.get("/dashboard", async (req, reply) => {
   const user = await currentUser(req);
   if (!user) return reply.redirect("/login");
   if (!canAccessModule(user, "dashboard")) return reply.redirect("/login");
-  // Keep the canonical dashboard route on the original production dashboard.
-  // The React frontend remains available separately at /react/dashboard while
-  // the original dashboard remains the visual source of truth for /dashboard.
-  return serveHtml(reply, "dashboard.html");
+  // The migration test uses the React dashboard as its canonical dashboard route.
+  // Keep /dashboard as the compatibility URL so login redirects land in React.
+  return reply.redirect("/react/dashboard");
 });
 app.get("/admin", async (req, reply) => {
   const user = await currentUser(req);
