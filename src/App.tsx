@@ -4,7 +4,6 @@ import { Button } from "./components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./components/ui/card";
 import { Progress } from "./components/ui/progress";
 import { Select } from "./components/ui/select";
-import { CartesianGrid, Line, LineChart as RechartsLineChart, ResponsiveContainer, Tooltip as RechartsTooltip, XAxis, YAxis } from "recharts";
 import MuiTooltip from "@mui/material/Tooltip";
 import "./enterprise.css";
 type Me = {
@@ -88,7 +87,17 @@ function LineChart({values,labels,previous=[],previousLabels=[],currentLabel="Se
   const path=(arr:Array<number|null>)=>arr.map((v,i)=>{const p=point(v,i);return p ? `${i ? "L" : "M"} ${p[0].toFixed(1)} ${p[1].toFixed(1)}` : null}).filter(Boolean).join(" ");
   const currentPath=path(a), priorPath=path(b);
   const labelsForChart=labels.length?labels:previousLabels;
+  const latest=current.at(-1);
+  const priorLatest=prior.at(-1);
+  const delta=latest!=null&&priorLatest!=null?latest-priorLatest:null;
+  const deltaPct=delta!=null&&priorLatest!==0?(delta/Math.abs(priorLatest))*100:null;
+  const latestPoint=latest==null?null:point(a.at(-1)??null,n-1);
+  const trendDirection=delta==null?"No prior comparison":delta>0?"Up vs prior":delta<0?"Down vs prior":"Flat vs prior";
   return <div className="comparison-chart">
+    <div className="chart-headline">
+      <div><span className="chart-kicker">Trend</span><strong>{latest!=null?prefix+number(latest):"Not available"}</strong></div>
+      <div className={`chart-change ${delta==null?"neutral":delta>0?"positive":"negative"}`}><span>{trendDirection}</span>{deltaPct!=null&&<b>{deltaPct>0?"+":""}{deltaPct.toFixed(1)}%</b>}</div>
+    </div>
     <div className="comparison-value-row">
       <div className="comparison-value-card previous"><span className="comparison-value-period">{previousLabel}</span><strong>{prior.length?prefix+number(prior[prior.length-1]):"Not available"}</strong></div>
       <div className="comparison-value-card current"><span className="comparison-value-period">{currentLabel}</span><strong>{current.length?prefix+number(current[current.length-1]):"Not available"}</strong></div>
@@ -99,8 +108,9 @@ function LineChart({values,labels,previous=[],previousLabels=[],currentLabel="Se
       <line x1={left} x2={w-right} y1={top+(h-top-bottom)/2} y2={top+(h-top-bottom)/2} stroke="var(--line-soft)" />
       {priorPath&&<path d={priorPath} fill="none" stroke="var(--grey-l)" strokeWidth="2" strokeDasharray="5 5" strokeLinecap="round" strokeLinejoin="round" />}
       {currentPath&&<path d={currentPath} fill="none" stroke="var(--chart-cashflow,var(--brand-accent))" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />}
-      {a.map((v,i)=>{const p=point(v,i);return p?<circle key={`c${i}`} cx={p[0]} cy={p[1]} r="4" fill="var(--chart-cashflow,var(--brand-accent))" />:null})}
+      {a.map((v,i)=>{const p=point(v,i);return p?<circle key={`c${i}`} cx={p[0]} cy={p[1]} r={i===a.length-1?5:3.5} fill="var(--chart-cashflow,var(--brand-accent))" />:null})}
       {b.map((v,i)=>{const p=point(v,i);return p?<circle key={`p${i}`} cx={p[0]} cy={p[1]} r="3" fill="var(--grey-l)" />:null})}
+      {latestPoint&&<text className="comparison-last-value" x={Math.min(latestPoint[0],w-right)} y={Math.max(top+10,latestPoint[1]-10)} textAnchor={latestPoint[0]>w-100?"end":"middle"} fontSize="11" fontWeight="800" fill="var(--brand-primary)">{prefix}{number(latest)}</text>}
       {labelsForChart.map((label,i)=>{const x=n===1?(w-left-right)/2+left:left+i/(Math.max(labelsForChart.length-1,1))*(w-left-right);return <text key={i} x={x} y={h-12} textAnchor={i===0?"start":i===labelsForChart.length-1?"end":"middle"} fontSize="10" fontWeight="800" fill={i===labelsForChart.length-1?"var(--brand-primary)":"var(--grey-l)"}>{label}</text>})}
     </svg>
   </div>;
@@ -136,6 +146,8 @@ function DashboardView({me}:{me:Me}) {
     "--brand-primary-deep": brandNavy,
     "--brand-navy": brandNavy,
     "--brand-accent": brandAccent,
+    "--brand-accent-soft": "color-mix(in srgb, " + brandAccent + " 10%, transparent)",
+    "--brand-soft": "color-mix(in srgb, " + brandPrimary + " 7%, transparent)",
     "--blue": brandAccent,
     "--blue-d": brandAccent,
     ...Object.fromEntries(Object.entries(chartPalette).map(([key,value]) => [`--chart-${key.replace(/^--chart-/,"")}`, value]))
@@ -183,7 +195,7 @@ function DashboardView({me}:{me:Me}) {
   return <main className="dashboard-shell" style={themeStyle}>
     <div className="topbar">
       <div className="topbar-inner">
-        <div className="logo"><img src="/static/logo.png" alt="empower-fin Dashboard Portal" /><span className="logo-text">{me.theme?.name||""}</span></div>
+        <div className="logo"><span className="logo-mark" aria-hidden="true">EF</span><span className="logo-text">{me.theme?.name||"empower-fin"}</span></div>
         <div className="topbar-divider" />
         <div className="audience-switch"><button className="on" type="button">Employer view</button><button type="button" disabled>Portfolio view</button></div>
         <div className="topbar-spacer" />
@@ -197,7 +209,7 @@ function DashboardView({me}:{me:Me}) {
     <div className="wrap">
       <header className="portal-header flex flex-col gap-4 border-b border-slate-200 pb-5 sm:flex-row sm:items-center sm:justify-between">
         <div><div className="head-eyebrow">Employer Insights · Financial Wellbeing Programme</div><h1 className="mt-1 font-display text-3xl font-bold tracking-tight text-[var(--brand-primary)] sm:text-4xl">Your workforce <span className="emp">{data.employer}</span></h1></div>
-        <div className="flex items-center gap-3 rounded-md border border-slate-200 bg-white px-3 py-2 shadow-sm"><div className="hidden h-8 w-8 items-center justify-center rounded-sm bg-[var(--brand-accent-soft)] text-[var(--brand-accent)] sm:flex"><span className="text-[10px] font-bold uppercase tracking-widest">User</span></div><div><p className="text-sm font-semibold text-slate-900">{me.name||me.email}</p><p className="text-[11px] text-slate-500">{role}</p></div></div>
+        <div className="brand-context" aria-label="Active brand theme"><div className="brand-context-copy"><span className="brand-context-kicker">Brand Engine</span><strong>{me.theme?.name||"empower-fin"}</strong><small>{me.theme?.tagline||"Tenant theme active"}</small></div><div className="brand-swatches" aria-hidden="true"><i style={{background:brandPrimary}}/><i style={{background:brandAccent}}/><i style={{background:brandNavy}}/></div><div className="brand-context-user"><span className="avatar">{(me.name||me.email||"U").slice(0,1).toUpperCase()}</span><span><b>{me.name||me.email}</b><small>{role}</small></span></div></div>
       </header>
 
       <section className="filters">
@@ -222,10 +234,24 @@ function DashboardView({me}:{me:Me}) {
           const narrative=Number.isFinite(score)
             ? `The workforce is currently at ${score}/100. ${Number.isFinite(saving)?money(saving)+" in monthly cashflow is being restored. ":""}${Number.isFinite(ewa)?money(ewa)+" was advanced through early wage access. ":""}${lead?.name?"The clearest opportunity is "+lead.name.toLowerCase()+".":""}`
             : "More governed data is required to produce a reliable executive view.";
+          const weakest=lead?.name||"No clear priority";
+          const cashText=Number.isFinite(saving)?money(saving):"Not available";
+          const ewaText=Number.isFinite(ewa)?money(ewa):"Not available";
+          const nextText=verdict==="Needs attention"?weakest:verdict==="Data incomplete"?"Review data quality":"Maintain momentum";
           return <div className="executive-story-grid">
             <div className="executive-story-label"><span>Executive insight</span><small>{data.filterContext?.label||"Programme to date"}</small></div>
             <div className="executive-score"><strong>{Number.isFinite(score)?score:"—"}</strong><span>/100</span><small>{deltaText}</small></div>
-            <div className="executive-narrative"><p>{narrative}</p><div className={`executive-verdict ${verdict==="Needs attention"?"attention":verdict==="Data incomplete"?"incomplete":""}`}>{verdict}</div></div>
+            <div className="executive-narrative">
+              <div className="executive-narrative-copy">
+                <p>{narrative}</p>
+                <div className="executive-detail-row">
+                  <div className="executive-detail"><span>Cashflow restored</span><strong>{cashText}</strong></div>
+                  <div className="executive-detail"><span>EWA advanced</span><strong>{ewaText}</strong></div>
+                  <div className="executive-detail"><span>Next focus</span><strong>{nextText}</strong></div>
+                </div>
+              </div>
+              <div className={`executive-verdict ${verdict==="Needs attention"?"attention":verdict==="Data incomplete"?"incomplete":""}`}>{verdict}</div>
+            </div>
           </div>;
         })()}
       </section>
@@ -283,7 +309,7 @@ function DashboardView({me}:{me:Me}) {
           {(data.valueStrip||[]).map(row=><div className="stat-cell" key={row.l}><div className="l">{row.l}</div><div className="v">{row.v}</div><div className="d">{row.d}</div></div>)}
         </div>
         <div className="grid g-12 section-gap">
-          <Card style={{gridColumn:"span 5"}}><CardHeader><SectionHeading title="Monthly cash freed up" description="Recurring savings unlocked, cumulative run-rate."/></CardHeader><CardContent><div className="portal-number mb-2 text-3xl font-bold text-[var(--brand-ink-strong)]">{money(currentSaving)}</div><LineChart values={trend} labels={trendLabels} previous={data.comparison?.previous?.savings??[]} previousLabels={data.comparison?.previous?.savingsLabels??[]} currentLabel={data.comparison?.current?.label||comparison?.current||"Selected period"} previousLabel={data.comparison?.previous?.label||comparison?.previous||"Previous period"}/></CardContent></Card>
+          <Card style={{gridColumn:"span 5"}} className="value-card"><CardHeader><SectionHeading title="Monthly cash freed up" description="Recurring savings unlocked, cumulative run-rate."/></CardHeader><CardContent><div className="metric-deck"><div className="metric-primary"><span>Current run-rate</span><strong>{money(currentSaving)}</strong><small>{savingDelta===0?"No prior comparison":(savingDelta>=0?"+":"")+money(savingDelta)+" vs prior"}</small></div><div className="metric-secondary"><span>Per employee</span><strong>{money(data.kpis?.monthlySaving?.perHead)}</strong><small>monthly saving</small></div></div><LineChart values={trend} labels={trendLabels} previous={data.comparison?.previous?.savings??[]} previousLabels={data.comparison?.previous?.savingsLabels??[]} currentLabel={data.comparison?.current?.label||comparison?.current||"Selected period"} previousLabel={data.comparison?.previous?.label||comparison?.previous||"Previous period"}/></CardContent></Card>
           <Card style={{gridColumn:"span 7"}}><CardHeader><SectionHeading title="Debt Pressure Profile" description="Where your people's arrears sit by intervention state, then by creditor."/></CardHeader><CardContent>
             <div className="grid gap-3 sm:grid-cols-3">
               {[["Active intervention",data.debtStates?.active],["Prescription challenged",data.debtStates?.challenged],["Self-guided",data.debtStates?.guided]].map(([label,row])=><div className="stat-cell" key={label as string}><div className="l">{label as string}</div><div className="v">{money((row as any)?.rand)}</div><div className="d">{number((row as any)?.employees)} employees</div></div>)}
@@ -298,7 +324,7 @@ function DashboardView({me}:{me:Me}) {
           <div><div className="head-eyebrow">On-demand pay</div><h1 style={{fontSize:27}}>Early Wage Access</h1><div className="head-sub">How many employees are drawing earned wages early, and how much.</div></div>
         </div>
         <div className="grid g-12 section-gap">
-          <Card style={{gridColumn:"span 12"}}><CardHeader><SectionHeading title="Total advanced per month" description="Finalised advances only · monthly run-rate."/></CardHeader><CardContent><div className="portal-number mb-2 text-3xl font-bold text-[var(--brand-ink-strong)]">{money(data.comparison?.current?.totalAdvancedRaw??data.ewa?.totalRaw)}</div><LineChart values={advancedTrend} labels={advancedLabels} previous={data.comparison?.previous?.ewa??[]} previousLabels={data.comparison?.previous?.ewaLabels??[]} currentLabel={data.comparison?.current?.label||comparison?.current||"Selected period"} previousLabel={data.comparison?.previous?.label||comparison?.previous||"Previous period"}/></CardContent></Card>
+          <Card style={{gridColumn:"span 12"}} className="ewa-card"><CardHeader><SectionHeading title="Total advanced per month" description="Finalised advances only · monthly run-rate."/></CardHeader><CardContent><div className="metric-deck ewa-metric-deck"><div className="metric-primary"><span>Current advance volume</span><strong>{money(data.comparison?.current?.totalAdvancedRaw??data.ewa?.totalRaw)}</strong><small>{data.ewa?.advances==null?"Not available":number(data.ewa.advances)+" advances in the period"}</small></div><div className="metric-secondary"><span>Employees using EWA</span><strong>{number(data.ewa?.clients)}</strong><small>{data.ewa?.avg||"Not available"} average advance</small></div><div className="metric-secondary"><span>Average per client</span><strong>{money(data.ewa?.perClient)}</strong><small>earned wage access</small></div></div><LineChart values={advancedTrend} labels={advancedLabels} previous={data.comparison?.previous?.ewa??[]} previousLabels={data.comparison?.previous?.ewaLabels??[]} currentLabel={data.comparison?.current?.label||comparison?.current||"Selected period"} previousLabel={data.comparison?.previous?.label||comparison?.previous||"Previous period"}/></CardContent></Card>
         </div>
       </section>
       <section className="mt-4 grid gap-4 lg:grid-cols-2">
