@@ -203,20 +203,14 @@ function DashboardView({me}:{me:Me}) {
   const maxIncome=Math.max(1,...(data.income??[]).map(x=>x.count));
 
   return <main className={darkMode?"dashboard-shell portal-dark":"dashboard-shell"} style={themeStyle}>
-    <div className="topbar">
-      <div className="topbar-inner">
-        <div className="logo"><span className="logo-mark" aria-hidden="true">EF</span><span className="logo-text">{me.theme?.name||"empower-fin"}</span></div>
-        <div className="topbar-divider" />
+    <div className="wrap">
+      <div className="dashboard-viewbar" aria-label="Dashboard view controls">
         <div className="audience-switch"><button className="on" type="button" onClick={()=>setShowPortfolio(false)}>Employer view</button>{me.employers&&me.employers.length>1&&<button type="button" onClick={()=>setShowPortfolio(true)}>Portfolio view</button>}</div>
-        <div className="topbar-spacer" />
         <div className="topbar-meta">
           <div className="data-fresh"><span className="dot" /><span>Live dashboard</span></div>
           <MuiTooltip title={darkMode ? "Switch to light mode" : "Switch to dark mode"} arrow><button type="button" className="portal-theme-quick" aria-label={darkMode?"Switch to light mode":"Switch to dark mode"} onClick={()=>setDarkMode(v=>!v)}>{darkMode?"☀":"☾"}</button></MuiTooltip>
-          <div className="nav-who"><span className="nav-emp">{me.name||me.email||"User"}</span><span className="avatar">{(me.name||me.email||"U").slice(0,1).toUpperCase()}</span></div>
         </div>
       </div>
-    </div>
-    <div className="wrap">
       <header className="portal-header flex flex-col gap-4 border-b border-slate-200 pb-5 sm:flex-row sm:items-center sm:justify-between">
         <div><div className="head-eyebrow">Employer Insights · Financial Wellbeing Programme</div><h1 className="mt-1 font-display text-3xl font-bold tracking-tight text-[var(--brand-primary)] sm:text-4xl">Your workforce <span className="emp">{data.employer}</span></h1></div>
         <div className="brand-context" aria-label="Active brand theme"><div className="brand-context-copy"><span className="brand-context-kicker">Brand Engine</span><strong>{me.theme?.name||"empower-fin"}</strong><small>{me.theme?.tagline||"Tenant theme active"}</small></div><div className="brand-swatches" aria-hidden="true"><i style={{background:brandPrimary}}/><i style={{background:brandAccent}}/><i style={{background:brandNavy}}/></div><div className="brand-context-user"><span className="avatar">{(me.name||me.email||"U").slice(0,1).toUpperCase()}</span><span><b>{me.name||me.email}</b><small>{role}</small></span></div></div>
