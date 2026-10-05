@@ -1,175 +1,42 @@
-import { useEffect, useMemo, useState, type CSSProperties } from "react";
+import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { Badge } from "./ui/badge";
 import { Button } from "./ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/card";
-import { Select } from "./ui/select";
 
-type UserRecord = {
-  id: string;
-  name?: string | null;
-  email?: string | null;
-  role?: string | null;
-  employer?: { id?: string; name?: string } | null;
-  employerName?: string | null;
-  active?: boolean;
-};
+type Employer={id:string;name:string};
+type User={id:string;name?:string|null;email?:string|null;role?:string|null;active?:boolean;hasPassword?:boolean;pendingSetup?:boolean;employers?:Employer[];partner?:{id:string;name:string}|null;revokedAt?:string|null;revokedReason?:string|null;revokedBy?:string|null};
+type Props={me:{name?:string;email?:string;role?:string;employers?:Employer[]};onDashboard:()=>void;onAdmin:()=>void};
+const labels:Record<string,string>={SUPERADMIN:"Super Admin",ADMIN:"Admin",EMPLOYER_MANAGER:"Employer Manager",PORTFOLIO_MANAGER:"Portfolio Manager",VIEWER:"Viewer"};
+const api=async<T,>(url:string,init:RequestInit={})=>{const r=await fetch(url,{credentials:"same-origin",cache:"no-store",...init});if(!r.ok)throw new Error((await r.json().catch(()=>({}))).error||"Request failed");return r.json() as Promise<T>};
 
-type UsersViewProps = {
-  me: { name?: string; email?: string; role?: string };
-  onDashboard: () => void;
-  onAdmin: () => void;
-};
+export function UsersView({me,onDashboard,onAdmin}:Props){
+ const superAdmin=me.role==="SUPERADMIN";
+ const roleOptions=superAdmin?["ADMIN","SUPERADMIN","EMPLOYER_MANAGER","PORTFOLIO_MANAGER","VIEWER"]:["EMPLOYER_MANAGER","PORTFOLIO_MANAGER","VIEWER"];
+ const [active,setActive]=useState<User[]>([]),[past,setPast]=useState<User[]>([]);
+ const [tab,setTab]=useState<"active"|"past"|"create">("active"),[query,setQuery]=useState("");
+ const [loading,setLoading]=useState(true),[error,setError]=useState(""),[notice,setNotice]=useState(""),[busy,setBusy]=useState("");
+ const [employers,setEmployers]=useState<Employer[]>(me.employers||[]);
+ const [editing,setEditing]=useState<User|null>(null);
+ const [form,setForm]=useState({name:"",role:"VIEWER",employerIds:[] as string[],active:true});
+ const [create,setCreate]=useState({name:"",email:"",role:"VIEWER",employerIds:[] as string[],sendSetupLink:true,tempPassword:""});
 
-const roleLabels: Record<string,string> = {
-  SUPERADMIN: "Super Admin",
-  ADMIN: "Admin",
-  EMPLOYER_MANAGER: "Employer Manager",
-  PORTFOLIO_MANAGER: "Portfolio Manager",
-  VIEWER: "Viewer",
-};
+ const load=async()=>{try{setLoading(true);setError("");const [a,p]=await Promise.all([api<User[]>("/api/users"),api<User[]>("/api/admin/users/revoked")]);setActive(a);setPast(p)}catch(e:any){setError(e?.message||"Could not load users")}finally{setLoading(false)}};
+ useEffect(()=>{void load()},[]);
+ useEffect(()=>{if(me.employers?.length){setEmployers(me.employers);return}api<any[]>("/api/employers").then(x=>setEmployers(Array.isArray(x)?x.map(e=>({id:e.id,name:e.name})):[])).catch(()=>{})},[me.employers]);
+ const rows=useMemo(()=>{const source=tab==="past"?past:active;const q=query.trim().toLowerCase();return q?source.filter(u=>[u.name,u.email,u.role,u.partner?.name,...(u.employers||[]).map(e=>e.name)].filter(Boolean).join(" ").toLowerCase().includes(q)):source},[active,past,tab,query]);
+ const flash=(s:string)=>{setNotice(s);window.setTimeout(()=>setNotice(""),3500)};
+ const openEdit=(u:User)=>{setEditing(u);setForm({name:u.name||"",role:u.role||"VIEWER",employerIds:(u.employers||[]).map(e=>e.id),active:u.active!==false})};
+ const save=async()=>{if(!editing)return;try{setBusy(editing.id);await api("/api/users/"+encodeURIComponent(editing.id),{method:"PATCH",headers:{"Content-Type":"application/json"},body:JSON.stringify({name:form.name,role:form.role,employerIds:form.employerIds,active:form.active,reason:form.active?"":"Deactivated from Users"})});setEditing(null);flash("User access updated.");await load()}catch(e:any){setError(e?.message||"Could not update user")}finally{setBusy("")}};
+ const createUser=async(e:FormEvent)=>{e.preventDefault();try{setBusy("create");await api("/api/users",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({name:create.name,email:create.email,role:create.role,employerIds:create.employerIds,sendSetupLink:create.sendSetupLink,tempPassword:create.sendSetupLink?undefined:create.tempPassword})});setCreate({name:"",email:"",role:"VIEWER",employerIds:[],sendSetupLink:true,tempPassword:""});setTab("active");flash("User created.");await load()}catch(e:any){setError(e?.message||"Could not create user")}finally{setBusy("")}};
+ const reset=async(u:User)=>{const password=window.prompt("Temporary password (12+ characters, upper/lower/number):");if(!password)return;try{setBusy(u.id);await api("/api/users/"+encodeURIComponent(u.id)+"/reset-password",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({password})});flash("Password reset; active sessions revoked.")}catch(e:any){setError(e?.message||"Could not reset password")}finally{setBusy("")}};
+ const remove=async(u:User)=>{if(!window.confirm("Permanently delete this deactivated account? This cannot be undone."))return;try{setBusy(u.id);await api("/api/users/"+encodeURIComponent(u.id),{method:"DELETE"});flash("User permanently deleted.");await load()}catch(e:any){setError(e?.message||"Could not delete user")}finally{setBusy("")}};
 
-export function UsersView({ me, onDashboard, onAdmin }: UsersViewProps) {
-  const isSuper = me.role === "SUPERADMIN";
-  const roleOptions = isSuper
-    ? ["ADMIN","SUPERADMIN","EMPLOYER_MANAGER","PORTFOLIO_MANAGER","VIEWER"]
-    : ["EMPLOYER_MANAGER","PORTFOLIO_MANAGER","VIEWER"];
-  const [users,setUsers] = useState<UserRecord[]>([]);
-  const [query,setQuery] = useState("");
-  const [loading,setLoading] = useState(true);
-  const [error,setError] = useState("");
-  const [busy,setBusy] = useState("");
-
-  const load = async () => {
-    try {
-      setLoading(true);
-      setError("");
-      const response = await fetch("/api/users",{credentials:"same-origin",cache:"no-store"});
-      if (!response.ok) throw new Error((await response.json().catch(()=>({}))).error || "Could not load users");
-      const rows = await response.json();
-      setUsers(Array.isArray(rows) ? rows : []);
-    } catch (e: any) {
-      setError(e?.message || "Could not load users");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => { void load(); }, []);
-
-  const filtered = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    if (!q) return users;
-    return users.filter(user =>
-      [user.name,user.email,user.role,user.employer?.name,user.employerName]
-        .filter(Boolean)
-        .join(" ")
-        .toLowerCase()
-        .includes(q)
-    );
-  }, [users,query]);
-
-  const updateRole = async (user: UserRecord, next: string) => {
-    if (!roleOptions.includes(next) || next === user.role) return;
-    try {
-      setBusy(user.id);
-      setError("");
-      const response = await fetch("/api/users/"+encodeURIComponent(user.id),{
-        method:"PATCH",
-        credentials:"same-origin",
-        headers:{"Content-Type":"application/json"},
-        body:JSON.stringify({role:next,reason:"Role updated from React Users"})
-      });
-      if (!response.ok) throw new Error((await response.json().catch(()=>({}))).error || "Could not update role");
-      await load();
-    } catch (e:any) {
-      setError(e?.message || "Could not update role");
-    } finally {
-      setBusy("");
-    }
-  };
-
-  return (
-    <main className="min-h-screen bg-[var(--brand-paper,#f6f7f5)]" style={{
-      "--brand-ink-strong":"#173a36",
-      "--brand-accent":"#8a6f3d",
-    } as CSSProperties}>
-      <div className="mx-auto w-full max-w-[1480px] px-3 py-4 sm:px-5 lg:px-8">
-        <header className="portal-header flex flex-col gap-4 border-b border-slate-200 pb-5 lg:flex-row lg:items-center lg:justify-between">
-          <div>
-            <div className="portal-kicker">EFS Optimise</div>
-            <h1 className="mt-1 font-display text-3xl font-bold tracking-tight text-[var(--brand-ink-strong)] sm:text-4xl">Users</h1>
-            <p className="mt-1 text-sm text-slate-500">Identity, access and role administration for authorised users.</p>
-          </div>
-          <div className="flex flex-wrap items-center gap-2">
-            <Badge>{roleLabels[me.role || ""] || me.role || "User"}</Badge>
-            <Button variant="outline" onClick={onDashboard}>Dashboard</Button>
-            <Button variant="outline" onClick={onAdmin}>Administration</Button>
-          </div>
-        </header>
-
-        <section className="mt-5 border-y border-slate-200 bg-white">
-          <div className="flex flex-col gap-3 p-4 sm:flex-row sm:items-end sm:justify-between">
-            <div>
-              <h2 className="text-sm font-bold text-[var(--brand-ink-strong)]">User directory</h2>
-              <p className="mt-1 text-xs text-slate-500">Search the authorised identity set and update roles within your permission boundary.</p>
-            </div>
-            <label className="w-full sm:max-w-xs">
-              <span className="mb-1 block text-[10px] font-bold uppercase tracking-[.1em] text-slate-500">Search</span>
-              <input value={query} onChange={e=>setQuery(e.target.value)} placeholder="Name, email, role or employer" className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm" />
-            </label>
-          </div>
-        </section>
-
-        {error && <div className="mt-4 border-l-4 border-red-500 bg-red-50 p-4 text-sm text-red-800" role="alert">{error}</div>}
-
-        <section className="mt-4 overflow-hidden border-y border-slate-200 bg-white">
-          {loading ? (
-            <div className="py-14 text-center text-sm text-slate-500">Loading governed user data...</div>
-          ) : filtered.length === 0 ? (
-            <div className="py-14 text-center">
-              <p className="font-semibold text-slate-700">No users found</p>
-              <p className="mt-1 text-xs text-slate-500">Try a different search.</p>
-            </div>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full min-w-[760px] text-left text-xs">
-                <thead className="bg-slate-50 text-[10px] uppercase tracking-wide text-slate-500">
-                  <tr>
-                    <th className="p-3">User</th>
-                    <th className="p-3">Employer</th>
-                    <th className="p-3">Role</th>
-                    <th className="p-3">Status</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100">
-                  {filtered.map(user => (
-                    <tr key={user.id} className="hover:bg-slate-50">
-                      <td className="p-3">
-                        <strong className="block break-words text-slate-900">{user.name || "Unnamed user"}</strong>
-                        <span className="mt-1 block break-words text-[11px] text-slate-500">{user.email || "No email"}</span>
-                      </td>
-                      <td className="p-3 break-words">{user.employer?.name || user.employerName || "Not assigned"}</td>
-                      <td className="p-3">
-                        <Select aria-label={"Change role for "+(user.name || user.email || user.id)} value={user.role || ""} disabled={busy===user.id} onChange={e=>void updateRole(user,e.target.value)}>
-                          <option value={user.role || ""}>{roleLabels[user.role || ""] || user.role || "Not assigned"}</option>
-                          {roleOptions.filter(role=>role!==user.role).map(role=><option key={role} value={role}>{roleLabels[role]}</option>)}
-                        </Select>
-                      </td>
-                      <td className="p-3"><Badge>{user.active === false ? "Inactive" : "Active"}</Badge></td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </section>
-
-        <div className="mt-4 pb-8 text-[10px] leading-5 text-slate-500">
-          {isSuper
-            ? "Super Admin permissions are available only within the Super Admin boundary."
-            : "Privileged Super Admin accounts remain undiscoverable to ordinary Admins."}
-        </div>
-      </div>
-    </main>
-  );
+ const employerPicker=(ids:string[],setIds:(v:string[])=>void)=><select multiple value={ids} onChange={e=>setIds(Array.from(e.target.selectedOptions,o=>o.value))} className="mt-1 min-h-24 w-full rounded-md border border-slate-300 bg-white p-2 text-sm">{employers.map(e=><option key={e.id} value={e.id}>{e.name}</option>)}</select>;
+ return <main className="min-h-screen bg-[var(--brand-paper,#f6f7f5)] text-slate-900"><div className="mx-auto max-w-[1480px] px-3 py-4 sm:px-5 lg:px-8">
+  <header className="flex flex-col gap-4 border-b border-slate-200 pb-5 lg:flex-row lg:items-end lg:justify-between"><div><div className="text-[10px] font-bold uppercase tracking-[.18em] text-[#8a6f3d]">EFS Optimise · Access</div><h1 className="mt-1 font-display text-3xl font-bold tracking-tight text-[#173a36] sm:text-4xl">Users</h1><p className="mt-1 text-sm leading-6 text-slate-500">Identity, access boundaries and account lifecycle.</p></div><div className="flex flex-wrap gap-2"><Badge>{labels[me.role||""]||me.role||"User"}</Badge><Button variant="outline" onClick={onDashboard}>Dashboard</Button><Button variant="outline" onClick={onAdmin}>Administration</Button></div></header>
+  <nav className="mt-5 flex border-b border-slate-200"><button onClick={()=>setTab("active")} className={"border-b-2 px-4 py-3 text-xs font-bold "+(tab==="active"?"border-[#173a36] text-[#173a36]":"border-transparent text-slate-500")}>Current users <span className="ml-1">{active.length}</span></button><button onClick={()=>setTab("past")} className={"border-b-2 px-4 py-3 text-xs font-bold "+(tab==="past"?"border-[#173a36] text-[#173a36]":"border-transparent text-slate-500")}>Past users <span className="ml-1">{past.length}</span></button><button onClick={()=>setTab("create")} className={"border-b-2 px-4 py-3 text-xs font-bold "+(tab==="create"?"border-[#173a36] text-[#173a36]":"border-transparent text-slate-500")}>Add user</button></nav>
+  {notice&&<div className="mt-4 border-l-4 border-[#8a6f3d] bg-white p-3 text-sm">{notice}</div>}{error&&<div className="mt-4 border-l-4 border-red-600 bg-red-50 p-3 text-sm text-red-800">{error}</div>}
+  {tab==="create"?<form onSubmit={createUser} className="mt-5 max-w-4xl border-y border-slate-200 bg-white p-5"><h2 className="text-lg font-bold text-[#173a36]">Add user</h2><p className="mt-1 text-xs text-slate-500">Create an account with a one-time setup link or temporary password.</p><div className="mt-5 grid gap-4 md:grid-cols-2"><label className="text-xs font-semibold">Full name<input required value={create.name} onChange={e=>setCreate({...create,name:e.target.value})} className="mt-1 w-full rounded border p-2.5 text-sm"/></label><label className="text-xs font-semibold">Email<input required type="email" value={create.email} onChange={e=>setCreate({...create,email:e.target.value})} className="mt-1 w-full rounded border p-2.5 text-sm"/></label><label className="text-xs font-semibold">Role<select value={create.role} onChange={e=>setCreate({...create,role:e.target.value})} className="mt-1 w-full rounded border p-2.5 text-sm">{roleOptions.map(r=><option key={r} value={r}>{labels[r]}</option>)}</select></label><label className="text-xs font-semibold">Employer access{employerPicker(create.employerIds,v=>setCreate({...create,employerIds:v}))}</label></div><label className="mt-4 flex items-center gap-2 text-xs font-semibold"><input type="checkbox" checked={create.sendSetupLink} onChange={e=>setCreate({...create,sendSetupLink:e.target.checked})}/> Send one-time password setup link</label>{!create.sendSetupLink&&<label className="mt-3 block text-xs font-semibold">Temporary password<input required type="password" value={create.tempPassword} onChange={e=>setCreate({...create,tempPassword:e.target.value})} className="mt-1 w-full rounded border p-2.5 text-sm"/></label>}<div className="mt-5 flex gap-2"><Button disabled={busy==="create"}>{busy==="create"?"Creating…":"Create user"}</Button><Button type="button" variant="outline" onClick={()=>setTab("active")}>Cancel</Button></div></form>
+  :<><section className="mt-4 flex flex-col gap-3 border-y border-slate-200 bg-white p-4 sm:flex-row sm:items-end sm:justify-between"><div><h2 className="text-sm font-bold text-[#173a36]">{tab==="active"?"Current users":"Past users"}</h2><p className="mt-1 text-xs text-slate-500">{tab==="active"?"Active accounts with current access.":"Deactivated accounts retained with revocation history."}</p></div><input value={query} onChange={e=>setQuery(e.target.value)} placeholder="Search name, email, role or employer" className="w-full rounded border p-2 text-sm sm:max-w-sm"/></section>{loading?<div className="py-16 text-center text-sm text-slate-500">Loading governed user data…</div>:rows.length===0?<div className="mt-4 border-y bg-white py-16 text-center text-sm text-slate-500">No users found.</div>:<div className="mt-4 overflow-x-auto border-y border-slate-200 bg-white"><table className="w-full min-w-[1050px] text-left text-xs"><thead className="bg-slate-50 text-[10px] uppercase tracking-wider text-slate-500"><tr><th className="p-3">User</th><th className="p-3">Employer / partner</th><th className="p-3">Role</th><th className="p-3">Access</th><th className="p-3">Account</th><th className="p-3">Actions</th></tr></thead><tbody className="divide-y divide-slate-100">{rows.map(u=><tr key={u.id} className="hover:bg-slate-50"><td className="p-3"><strong className="block">{u.name||"Unnamed user"}</strong><span className="text-[11px] text-slate-500">{u.email}</span></td><td className="p-3">{(u.employers||[]).map(e=>e.name).join(", ")||"Not assigned"}{u.partner&&<div className="text-[10px] text-slate-500">{u.partner.name}</div>}</td><td className="p-3"><Badge>{labels[u.role||""]||u.role||"Not assigned"}</Badge></td><td className="p-3">{u.active===false?<><span className="text-red-700">Revoked</span>{u.revokedBy&&<span className="ml-1 text-slate-500">by {u.revokedBy}</span>}</>:<span className="text-emerald-700">Active</span>}{u.revokedReason&&<div className="mt-1 max-w-xs text-[10px] text-slate-500">{u.revokedReason}</div>}</td><td className="p-3"><Badge>{u.pendingSetup?"Pending setup":u.hasPassword?"Ready":"No password"}</Badge></td><td className="p-3"><div className="flex flex-wrap gap-1">{u.active!==false&&<><Button variant="outline" onClick={()=>openEdit(u)}>Edit</Button><Button variant="outline" disabled={busy===u.id} onClick={()=>void reset(u)}>Reset password</Button></>}{u.active===false&&<Button variant="outline" disabled={busy===u.id} onClick={()=>void remove(u)}>Delete permanently</Button>}</div></td></tr>)}</tbody></table></div>}</>}
+  {editing&&<div className="fixed inset-0 z-50 flex items-end justify-center bg-black/30 sm:items-center sm:p-5"><div className="w-full max-w-xl bg-white p-5 shadow-2xl"><div className="flex justify-between border-b pb-4"><div><h2 className="text-lg font-bold text-[#173a36]">Edit access</h2><p className="text-xs text-slate-500">{editing.email}</p></div><button onClick={()=>setEditing(null)} aria-label="Close" className="text-xl">×</button></div><div className="mt-5 space-y-4"><label className="block text-xs font-semibold">Name<input value={form.name} onChange={e=>setForm({...form,name:e.target.value})} className="mt-1 w-full rounded border p-2.5 text-sm"/></label><label className="block text-xs font-semibold">Role<select value={form.role} onChange={e=>setForm({...form,role:e.target.value})} className="mt-1 w-full rounded border p-2.5 text-sm">{roleOptions.map(r=><option key={r} value={r}>{labels[r]}</option>)}</select></label><label className="block text-xs font-semibold">Employer access{employerPicker(form.employerIds,v=>setForm({...form,employerIds:v}))}</label><label className="flex items-center gap-2 text-xs font-semibold"><input type="checkbox" checked={form.active} onChange={e=>setForm({...form,active:e.target.checked})}/> Account active</label></div><div className="mt-6 flex justify-end gap-2 border-t pt-4"><Button variant="outline" onClick={()=>setEditing(null)}>Cancel</Button><Button disabled={busy===editing.id} onClick={()=>void save()}>{busy===editing.id?"Saving…":"Save changes"}</Button></div></div></div>}
+ </div></main>;
 }
