@@ -210,28 +210,25 @@ function DashboardView({me}:{me:Me}) {
         {comparison?.current&&<div className="text-xs text-slate-500 lg:ml-auto">Comparing <span className="font-bold text-[var(--brand-accent)]">{comparison.current}</span>{comparison.previous&&<> with <span className="font-bold text-[var(--brand-accent)]">{comparison.previous}</span></>}</div>}
       </section>
 
-      <div className="enterprise-toolbar" aria-label="Dashboard tools">
-        <div id="executive-insight" className="min-w-0">
-          <div className="enterprise-insight">
-            <div className="enterprise-insight-eyebrow">Executive insight</div>
-            <div className="enterprise-insight-copy">
-              {(() => {
-                const score=Number(data.wellness?.score), prior=Number(data.wellness?.prior);
-                const delta=Number.isFinite(score)&&Number.isFinite(prior)?score-prior:null;
-                const saving=Number(data.comparison?.current?.monthlySavingRand??data.kpis?.monthlySaving?.rand);
-                const ewa=Number(data.comparison?.current?.totalAdvancedRaw??data.ewa?.totalRaw);
-                const lead=[...(data.wellness?.drivers??[])].filter(d=>Number.isFinite(Number(d.score))).sort((a,b)=>Number(a.score)-Number(b.score))[0];
-                const statements:string[]=[];
-                if(Number.isFinite(score)) statements.push(`The workforce wellbeing score is ${score}/100${delta===null?"":", "+(delta>0?"up ":delta<0?"down ":"unchanged ")+Math.abs(delta)+" points versus "+(comparison?.previous||"the comparison period")}.`);
-                if(Number.isFinite(saving)) statements.push(`${money(saving)} of monthly cashflow is being restored.`);
-                if(Number.isFinite(ewa)) statements.push(`${money(ewa)} was advanced through early wage access in the selected period.`);
-                if(lead?.name) statements.push(`The clearest improvement opportunity is ${lead.name.toLowerCase()}.`);
-                return statements.join(" ") || "More data is required to produce an executive insight for this view.";
-              })()}
-            </div>
-          </div>
-        </div>
-      </div>
+      <section className="executive-story" aria-label="Executive insight">
+        {(() => {
+          const score=Number(data.wellness?.score), prior=Number(data.wellness?.prior);
+          const delta=Number.isFinite(score)&&Number.isFinite(prior)?score-prior:null;
+          const saving=Number(data.comparison?.current?.monthlySavingRand??data.kpis?.monthlySaving?.rand);
+          const ewa=Number(data.comparison?.current?.totalAdvancedRaw??data.ewa?.totalRaw);
+          const lead=[...(data.wellness?.drivers??[])].filter(d=>Number.isFinite(Number(d.score))).sort((a,b)=>Number(a.score)-Number(b.score))[0];
+          const verdict=data.wellness?.complete===false||!Number.isFinite(score)?"Data incomplete":score>=75?"Strong position":score>=60?"On track":"Needs attention";
+          const deltaText=delta===null?"No prior score":`${delta>0?"+":""}${delta.toFixed(0)} pts vs ${comparison?.previous||"prior period"}`;
+          const narrative=Number.isFinite(score)
+            ? `The workforce is currently at ${score}/100. ${Number.isFinite(saving)?money(saving)+" in monthly cashflow is being restored. ":""}${Number.isFinite(ewa)?money(ewa)+" was advanced through early wage access. ":""}${lead?.name?"The clearest opportunity is "+lead.name.toLowerCase()+".":""}`
+            : "More governed data is required to produce a reliable executive view.";
+          return <div className="executive-story-grid">
+            <div className="executive-story-label"><span>Executive insight</span><small>{data.filterContext?.label||"Programme to date"}</small></div>
+            <div className="executive-score"><strong>{Number.isFinite(score)?score:"—"}</strong><span>/100</span><small>{deltaText}</small></div>
+            <div className="executive-narrative"><p>{narrative}</p><div className={`executive-verdict ${verdict==="Needs attention"?"attention":verdict==="Data incomplete"?"incomplete":""}`}>{verdict}</div></div>
+          </div>;
+        })()}
+      </section>
       <div className="exec-band reveal">
         <div className="exec-head">
           <div className="exec-marker" aria-hidden="true">01</div>
