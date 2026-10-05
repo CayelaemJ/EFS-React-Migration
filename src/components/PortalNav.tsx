@@ -41,8 +41,8 @@ export function PortalNav({ me, active }: { me: Me; active: "dashboard" | "admin
   };
 
   return <header className="react-portal-nav" style={{
-    ["--nav-primary" as string]: me.theme?.primaryColor || "#32217c",
-    ["--nav-accent" as string]: me.theme?.accentColor || "#b15be8",
+    ["--nav-primary" as string]: me.theme?.primaryColor || "#2b1b68",
+    ["--nav-accent" as string]: me.theme?.accentColor || "#7d2fa3",
   }}>
     <div className="react-portal-nav-inner">
       <a className="react-portal-brand" href="/react/dashboard" aria-label="Dashboard">
