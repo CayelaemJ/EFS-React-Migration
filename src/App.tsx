@@ -17,12 +17,6 @@ type Me = {
   theme?: { name?: string; primaryColor?: string; accentColor?: string; navyColor?: string; logoDataUrl?: string | null; tagline?: string | null };
 };
 
-type BrandEngine = {
-  themeController: () => { set: (options: { brand?: { accentColor?: string; primaryColor?: string; navyColor?: string }; light?: "engine" | null; charts?: Record<string,string> }) => void };
-  deriveChartPalette: (theme: { accentColor?: string; primaryColor?: string; navyColor?: string }) => Record<string,string>;
-};
-declare global { interface Window { BrandEngine?: BrandEngine } }
-
 type Dashboard = {
   employer?: string; headcount?: number;
   dataAsOf?: string;
@@ -77,6 +71,18 @@ function normaliseHex(value?: string | null, fallback = "#5f756d") {
   return /^#[0-9a-fA-F]{6}$/.test(hex) ? hex : fallback;
 }
 
+function deriveChartPalette(accentColor:string,primaryColor:string):Record<string,string> {
+  const defs:Record<string,[number,number,number]>={engagement:[150,.50,.78],cashflow:[175,.58,.70],debt:[25,.50,.62],insurance:[285,.48,.78],workforce:[205,.54,.72],low:[150,.58,.68],mid:[65,.58,.62],high:[5,.55,.62]};
+  const a=parseInt(accentColor.replace(/^#/,""),16)||0;
+  const r=(a>>16)&255,g=(a>>8)&255,b=a&255;
+  const hue=((r-b+360)%360); const base=Math.min(Math.max((Math.max(r,g,b)-Math.min(r,g,b))/255,.055),.16);
+  const out:Record<string,string>={};
+  Object.entries(defs).forEach(([key,[offset,,scale]])=>{
+    const c=base*scale, light=.50, h=((hue+offset)%360)/60, x=c*(1-Math.abs(h%2-1)), m=light-c/2;
+    const rgb=h<1?[c,x,0]:h<2?[x,c,0]:h<3?[0,c,x]:h<4?[0,x,c]:h<5?[x,0,c]:[c,0,x];
+    const to=(v:number)=>Math.round((v+m)*255).toString(16).padStart(2,"0"); out[key]="#"+to(rgb[0])+to(rgb[1])+to(rgb[2]);
+  }); return out;
+}
 function LineChart({values,labels,previous=[],previousLabels=[],currentLabel="Selected period",previousLabel="Previous period",prefix="R "}:{values:number[];labels:string[];previous?:number[];previousLabels?:string[];currentLabel?:string;previousLabel?:string;prefix?:string}) {
   const current=values.map(Number).filter(Number.isFinite);
   const prior=previous.map(Number).filter(Number.isFinite);
@@ -137,14 +143,14 @@ function WellnessGauge({score}:{score:number|null|undefined}) {
 function DashboardView({me}:{me:Me}) {
   const [data,setData]=useState<Dashboard|null>(null);
   const [period,setPeriod]=useState("");
-  const [darkMode,setDarkMode]=useState(()=>document.documentElement.classList.contains("portal-dark")); const [range,setRange]=useState<"latest"|"quarter"|"all">("latest");
+  const [darkMode,setDarkMode]=useState(false); const [range,setRange]=useState<"latest"|"quarter"|"all">("latest");
   const [income,setIncome]=useState("all"); const [site,setSite]=useState("all"); const [periodOptions,setPeriodOptions]=useState<string[]>([]);
   const [selectedEmployerId,setSelectedEmployerId]=useState(me.employers?.[0]?.id??""); const [loading,setLoading]=useState(true); const [error,setError]=useState("");
   const employer=me.employers?.find(e=>e.id===selectedEmployerId)??me.employers?.[0];
   const brandPrimary = normaliseHex(me.theme?.primaryColor, "#214b45");
   const brandNavy = normaliseHex(me.theme?.navyColor, "#173a36");
   const brandAccent = normaliseHex(me.theme?.accentColor, "#8a6f3d");
-  const chartPalette = useMemo(() => window.BrandEngine?.deriveChartPalette({accentColor: brandAccent, primaryColor: brandPrimary, navyColor: brandNavy}) ?? {}, [brandAccent, brandPrimary, brandNavy]);
+  const chartPalette = useMemo(() => deriveChartPalette(brandAccent,brandPrimary), [brandAccent,brandPrimary]);
   const themeStyle: CSSProperties = {
     "--brand-primary": brandPrimary,
     "--brand-primary-deep": brandNavy,
@@ -156,14 +162,6 @@ function DashboardView({me}:{me:Me}) {
     "--blue-d": brandAccent,
     ...Object.fromEntries(Object.entries(chartPalette).map(([key,value]) => [`--chart-${key.replace(/^--chart-/,"")}`, value]))
   } as CSSProperties;
-  useEffect(()=>{
-    document.documentElement.classList.toggle("portal-dark",darkMode);
-  },[darkMode]);
-  useEffect(()=>{
-    const engine=window.BrandEngine?.themeController();
-    if(engine) engine.set({brand:{accentColor:brandAccent,primaryColor:brandPrimary,navyColor:brandNavy},light:"engine",charts:chartPalette});
-  },[brandAccent,brandPrimary,brandNavy,chartPalette]);
-
 
   const query=useMemo(()=>{const p=new URLSearchParams();if(period)p.set("period",period);else p.set("range",range);if(income!=="all")p.set("income",income);if(site!=="all")p.set("site",site);return p.toString()},[period,range,income,site]);
 
@@ -196,7 +194,7 @@ function DashboardView({me}:{me:Me}) {
   const role=roleLabels[me.role??""]??me.role??"User";
   const maxIncome=Math.max(1,...(data.income??[]).map(x=>x.count));
 
-  return <main className="dashboard-shell" style={themeStyle}>
+  return <main className={darkMode?"dashboard-shell portal-dark":"dashboard-shell"} style={themeStyle}>
     <div className="topbar">
       <div className="topbar-inner">
         <div className="logo"><span className="logo-mark" aria-hidden="true">EF</span><span className="logo-text">{me.theme?.name||"empower-fin"}</span></div>
