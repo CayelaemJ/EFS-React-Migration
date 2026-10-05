@@ -12,3 +12,20 @@
 .react-portal-menu button{border-top:1px solid #edf0ee;margin-top:4px;border-radius:0 0 9px 9px}
 @media(max-width:760px){.react-portal-nav-inner{padding:0 14px;gap:10px}.react-portal-brand img{height:26px;max-width:145px}.react-portal-links{gap:2px}.react-portal-links a{padding:0 9px;font-size:11px}.react-portal-account-copy{display:none}}
 @media(max-width:500px){.react-portal-nav-inner{min-height:58px}.react-portal-links a{padding:0 7px}.react-portal-brand img{max-width:118px}.react-portal-avatar{width:32px;height:32px}}
+
+/* NewChanges console geometry: compact working surfaces, not a 1480px dashboard canvas. */
+.admin-console{display:grid;grid-template-columns:220px minmax(0,1fr);column-gap:26px;align-items:start}
+.admin-console>header,.admin-console>.admin-alert{grid-column:1/-1}
+.admin-console>.admin-nav{grid-column:1;grid-row:2 / span 20;position:sticky;top:84px;align-self:start;margin-top:20px;padding-right:14px;border-bottom:0!important}
+.admin-console>.admin-nav .admin-nav-list{display:flex;flex-direction:column;min-width:0}
+.admin-console>.admin-nav .admin-tab{width:100%;justify-content:flex-start;border-radius:8px;margin:1px 0;padding:9px 10px}
+.admin-console>.admin-nav .admin-tab-active{background:var(--brand-accent-soft,#f5f2eb)}
+.admin-console>section{grid-column:2;min-width:0}
+.admin-console>.admin-alert+section{grid-column:2}
+.users-console{width:100%}
+@media(max-width:760px){
+ .admin-console{display:block}
+ .admin-console>.admin-nav{position:static;border-right:0!important;border-bottom:1px solid var(--brand-line,#e5e7eb)!important;padding-right:0;overflow-x:auto}
+ .admin-console>.admin-nav .admin-nav-list{flex-direction:row;min-width:max-content}
+ .admin-console>.admin-nav .admin-tab{width:auto;white-space:nowrap}
+}
