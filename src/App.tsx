@@ -11,11 +11,13 @@ import "./newchanges-nav.css";
 import "./newchanges-dark.css";
 import "./newchanges-brand-adapter.css";
 import { NewChangesParitySections, PortfolioView } from "./components/NewChangesParitySections";
+import { UsersView } from "./components/UsersView";
 type Me = {
   name?: string; email?: string; role?: string;
   employers?: Array<{ id: string; name: string }>;
   sections?: Record<string, boolean>;
   theme?: { name?: string; primaryColor?: string; accentColor?: string; navyColor?: string; logoDataUrl?: string | null; tagline?: string | null };
+  modules?: { admin?: boolean; dashboard?: boolean; portfolio?: boolean; users?: boolean };
 };
 
 type Dashboard = {
@@ -491,8 +493,13 @@ function App() {
   useEffect(()=>{api<Me>("/api/auth/me").then(setMe).catch(()=>setMe(null)).finally(()=>setLoading(false));},[]);
   if(loading)return <div className="min-h-screen bg-[var(--brand-paper)] px-4 py-20"><Card className="mx-auto max-w-2xl"><CardContent className="py-12 text-center text-sm text-slate-500">Loading your workspace...</CardContent></Card></div>;
   if(!me)return <div className="min-h-screen bg-[var(--brand-paper)] px-4 py-20"><Card className="mx-auto max-w-lg"><CardHeader><div className="text-[10px] font-extrabold uppercase tracking-[.16em] text-[var(--brand-accent)]">EFS Optimise</div><CardTitle className="mt-2 text-2xl">Sign in to continue</CardTitle><CardDescription>Your existing secure Fastify session remains the authentication authority.</CardDescription></CardHeader><CardContent><Button onClick={()=>window.location.assign("/login")}>Sign in</Button></CardContent></Card></div>;
-  const isAdminRoute=window.location.pathname==="/react/admin" || window.location.pathname==="/react/admin/";
-  return isAdminRoute && (me.role==="ADMIN" || me.role==="SUPERADMIN") ? <AdminView me={me}/> : <DashboardView me={me}/>;
+  const path=window.location.pathname.replace(/\\/+$/, "") || "/";
+  const isAdminRoute=path==="/react/admin";
+  const isUsersRoute=path==="/react/users" || path==="/users";
+  const canAdmin=me.role==="ADMIN" || me.role==="SUPERADMIN";
+  if(isAdminRoute) return canAdmin ? <AdminView me={me}/> : <DashboardView me={me}/>;
+  if(isUsersRoute) return me.modules?.users || canAdmin ? <UsersView me={me} onDashboard={()=>window.location.assign("/react/dashboard")} onAdmin={()=>window.location.assign("/react/admin")}/> : <DashboardView me={me}/>;
+  return <DashboardView me={me}/>;
 }
 class AppErrorBoundary extends Component<PropsWithChildren, {hasError:boolean}> {
   state={hasError:false};
