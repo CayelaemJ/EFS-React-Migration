@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type CSSProperties } from "react";
 import { Badge } from "./ui/badge";
 import { Button } from "./ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/card";
@@ -92,7 +92,7 @@ export function UsersView({ me, onDashboard, onAdmin }: UsersViewProps) {
     <main className="min-h-screen bg-[var(--brand-paper,#f6f7f5)]" style={{
       "--brand-ink-strong":"#173a36",
       "--brand-accent":"#8a6f3d",
-    } as React.CSSProperties}>
+    } as CSSProperties}>
       <div className="mx-auto w-full max-w-[1480px] px-3 py-4 sm:px-5 lg:px-8">
         <header className="portal-header flex flex-col gap-4 border-b border-slate-200 pb-5 lg:flex-row lg:items-center lg:justify-between">
           <div>
