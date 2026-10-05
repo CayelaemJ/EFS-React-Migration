@@ -116,3 +116,35 @@ p, small {
     font-size: 1.75rem;
   }
 }
+
+
+/* Migration visual guardrails: no decorative glow, no gradient gauge, stable chart sizing. */
+.exec-marker {
+  display: grid;
+  place-items: center;
+  width: 2.15rem;
+  height: 2.15rem;
+  flex: 0 0 auto;
+  border: 1px solid var(--brand-accent);
+  color: var(--brand-accent);
+  font: 800 .65rem/1 var(--font-sans);
+  letter-spacing: .08em;
+}
+.wellness-gauge {
+  display: block;
+  width: min(100%, 260px);
+  height: auto;
+}
+.comparison-chart {
+  width: 100%;
+  min-width: 0;
+  overflow: hidden;
+}
+.comparison-chart svg {
+  display: block;
+  width: 100%;
+  min-height: 180px;
+}
+@media (max-width: 640px) {
+  .comparison-chart svg { min-height: 150px; }
+}
