@@ -391,8 +391,8 @@ app.post<{ Body: { name?: unknown; email?: unknown; organisation?: unknown; mess
 });
 app.get("/", async (req, reply) => {
   const user = await currentUser(req);
-  if (user && canAccessModule(user, "dashboard")) return reply.redirect("/dashboard");
-  return serveHtml(reply, "home.html");
+  if (user && canAccessModule(user, "dashboard")) return reply.redirect("/react/dashboard");
+  return reply.redirect("/login");
 });
 app.get("/login", async (_req, reply) => serveHtml(reply, "login.html"));
 app.get("/set-password", async (_req, reply) => serveHtml(reply, "set-password.html"));
@@ -413,12 +413,12 @@ app.get("/admin", async (req, reply) => {
   const user = await currentUser(req);
   if (!user) return reply.redirect("/login");
   if (!canAccessModule(user, "admin")) return reply.code(403).type("text/html").send("<h2 style='font-family:sans-serif;padding:40px'>Admins only. <a href='/dashboard'>Go to dashboard</a></h2>");
-  return serveHtml(reply, "admin.html");
+  return reply.redirect("/react/admin");
 });
 app.get("/users", async (req, reply) => {
   const user = await currentUser(req);
   if (!user || (user.role !== "ADMIN" && user.role !== "SUPERADMIN")) return reply.redirect("/login");
-  return serveHtml(reply, "users.html");
+  return reply.redirect("/react/users");
 });
 
 app.get("/health", async () => ({ ok: true }));
