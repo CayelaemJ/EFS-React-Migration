@@ -16,11 +16,17 @@ const roleLabel = (role?: string) => ({
 
 export function PortalNav({ me, active }: { me: Me; active: "dashboard" | "admin" | "users" }) {
   const [open, setOpen] = useState(false);
-  // Match NewChanges exactly: module flags are the source of truth.
+  // NewChanges keeps primary navigation visible for every destination the current
+  // session can actually enter. Older /api/auth/me responses may omit module flags,
+  // so preserve the legacy ADMIN fallback instead of rendering an empty nav.
+  const isAdmin = me.role === "ADMIN" || me.role === "SUPERADMIN";
+  const canDashboard = me.modules?.dashboard !== false;
+  const canAdmin = me.modules?.admin === true || isAdmin;
+  const canUsers = me.modules?.users === true || isAdmin;
   const destinations = [
-    { key: "dashboard" as const, label: "Dashboard", href: "/react/dashboard", show: me.modules?.dashboard === true },
-    { key: "admin" as const, label: "Administration", href: "/react/admin", show: me.modules?.admin === true },
-    { key: "users" as const, label: "Users", href: "/react/users", show: me.modules?.users === true },
+    { key: "dashboard" as const, label: "Dashboard", href: "/react/dashboard", show: canDashboard },
+    { key: "admin" as const, label: "Administration", href: "/react/admin", show: canAdmin },
+    { key: "users" as const, label: "Users", href: "/react/users", show: canUsers },
   ].filter(item => item.show);
 
   useEffect(() => {
