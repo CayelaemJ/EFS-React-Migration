@@ -1,0 +1,13 @@
+/* NewChanges -> React visual adapter. */
+.dashboard-shell{--blue:var(--brand-accent,#8a6f3d);--blue-d:var(--brand-accent,#8a6f3d);--brand-grad-1:var(--brand-primary,#214b45);--brand-grad-2:var(--brand-accent,#8a6f3d);--brand-grad-3:var(--brand-accent,#8a6f3d)}
+.dashboard-shell .topbar{background:var(--brand-primary,#214b45)}
+.dashboard-shell .head h1,.dashboard-shell .card-title,.dashboard-shell .kpi-value,.dashboard-shell .portal-numbers strong,.dashboard-shell .comparison-last-value{color:var(--brand-primary,#214b45)}
+.dashboard-shell .head-eyebrow,.dashboard-shell .filter-tag{color:var(--brand-accent,#8a6f3d)}
+.dashboard-shell .btn-primary,.dashboard-shell .seg button.on{background:var(--brand-primary,#214b45);border-color:var(--brand-primary,#214b45)}
+.dashboard-shell .btn-primary:hover{background:var(--brand-accent,#8a6f3d);border-color:var(--brand-accent,#8a6f3d)}
+.dashboard-shell .topbar::after{background:var(--brand-accent,#8a6f3d)}
+.dashboard-shell .comparison-chart svg{max-width:100%}
+.dashboard-shell .portal-header{border-color:var(--line)}
+.dashboard-shell .portal-theme-quick{color:#fff;border-color:rgba(255,255,255,.25);background:transparent}
+@media(max-width:900px){.dashboard-shell .topbar-inner,.dashboard-shell .wrap{padding-left:18px;padding-right:18px}}
+@media(max-width:640px){.dashboard-shell .topbar-inner{height:60px;gap:10px}.dashboard-shell .audience-switch,.dashboard-shell .topbar-divider{display:none}.dashboard-shell .wrap{padding-left:14px;padding-right:14px}.dashboard-shell .head h1{font-size:30px}}

@@ -6,6 +6,10 @@ import { Progress } from "./components/ui/progress";
 import { Select } from "./components/ui/select";
 import MuiTooltip from "@mui/material/Tooltip";
 import "./enterprise.css";
+import "./newchanges-dashboard.css";
+import "./newchanges-nav.css";
+import "./newchanges-dark.css";
+import "./newchanges-brand-adapter.css";
 type Me = {
   name?: string; email?: string; role?: string;
   employers?: Array<{ id: string; name: string }>;
