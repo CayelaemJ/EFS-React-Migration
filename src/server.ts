@@ -331,7 +331,8 @@ app.get("/react/dashboard", async (_req, reply) => {
   } catch {
     return reply.code(503).send({ error: "React frontend has not been built yet" });
   }
-});
+});\napp.get("/react/users", async (_req, reply) => {\n  try {\n    const html = await readFile(join(PUBLIC_DIR, "react", "index.html"), "utf-8");\n    return reply.type("text/html; charset=utf-8").header("Cache-Control", "no-store").send(html);\n  } catch {\n    return reply.code(503).send({ error: "React frontend has not been built yet" });\n  }\n});\n
+
 app.get("/react/users", async (_req, reply) => {
   try {
     const html = await readFile(join(PUBLIC_DIR, "react", "index.html"), "utf-8");
@@ -341,26 +342,19 @@ app.get("/react/users", async (_req, reply) => {
   }
 });
 
-
 app.get("/favicon.ico", async (_req, reply) => reply.redirect("/static/favicon.ico"));
 app.get("/contact", async (_req, reply) => serveHtml(reply, "contact.html"));
 app.get("/thank-you", async (_req, reply) => serveHtml(reply, "thank-you.html"));
 app.get("/robots.txt", async (req, reply) => reply.type("text/plain; charset=utf-8").header("Cache-Control", "public, max-age=3600").send(
   ["User-agent: *", "Allow: /login", "Allow: /contact", "Allow: /privacy", "Allow: /terms", "Allow: /cookies", "Allow: /static/og-image.png",
    "Disallow: /api/", "Disallow: /admin", "Disallow: /dashboard", "Disallow: /users", "Disallow: /set-password", "Disallow: /thank-you", "",
-   `Sitemap: ${publicOrigin(req)}/sitemap.xml`, ""].join("
-")));
+   `Sitemap: ${publicOrigin(req)}/sitemap.xml`, ""].join("\n")));
 app.get("/sitemap.xml", async (req, reply) => {
   const base = publicOrigin(req), today = new Date().toISOString().slice(0, 10);
   const urls = [["/", "1.0"], ["/contact", "0.8"], ["/login", "0.8"], ["/privacy", "0.4"], ["/terms", "0.4"], ["/cookies", "0.3"]];
   return reply.type("application/xml; charset=utf-8").header("Cache-Control", "public, max-age=3600").send(
-    `<?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-` +
-    urls.map(([p, pr]) => `  <url><loc>${base}${p}</loc><lastmod>${today}</lastmod><priority>${pr}</priority></url>`).join("
-") + `
-</urlset>
-`);
+    `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n` +
+    urls.map(([p, pr]) => `  <url><loc>${base}${p}</loc><lastmod>${today}</lastmod><priority>${pr}</priority></url>`).join("\n") + `\n</urlset>\n`);
 });
 
 // custom 404: branded page for browsers, JSON for API clients
@@ -386,8 +380,7 @@ app.post<{ Body: { name?: unknown; email?: unknown; organisation?: unknown; mess
     const e = escAttr;
     await sendMail({
       to: CONTACT_EMAIL, replyTo: email,
-      subject: `Portal contact request from ${name.replace(/[\r
-]+/g, " ")}`,
+      subject: `Portal contact request from ${name.replace(/[\r\n]+/g, " ")}`,
       html: `<div style="font-family:Arial,sans-serif;color:#241536"><h2 style="color:#32217c">New contact request</h2><p><b>Name:</b> ${e(name)}<br><b>Email:</b> ${e(email)}<br><b>Organisation:</b> ${e(organisation || "—")}</p><p style="white-space:pre-wrap">${e(message)}</p></div>`,
     });
     return { ok: true };
@@ -541,25 +534,15 @@ app.get("/api/admin/events", async (req, reply) => {
   });
 
   const send = (event: { id: string; type: string; jobId?: string; payload: Record<string, unknown> }) => {
-    res.write(`id: ${event.id}
-event: ${event.type}
-data: ${JSON.stringify(event.payload)}
-
-`);
+    res.write(`id: ${event.id}\nevent: ${event.type}\ndata: ${JSON.stringify(event.payload)}\n\n`);
   };
 
-  res.write("retry: 3000
-
-");
-  res.write(": connected
-
-");
+  res.write("retry: 3000\n\n");
+  res.write(": connected\n\n");
 
   const unsubscribe = subscribeAdminEvents(jobId, send);
   const heartbeat = setInterval(() => {
-    try { res.write(`: heartbeat ${Date.now()}
-
-`); } catch {}
+    try { res.write(`: heartbeat ${Date.now()}\n\n`); } catch {}
   }, 15000);
 
   const close = () => {
