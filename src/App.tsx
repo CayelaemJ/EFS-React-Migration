@@ -154,9 +154,9 @@ function DashboardView({me}:{me:Me}) {
   const [income,setIncome]=useState("all"); const [site,setSite]=useState("all"); const [periodOptions,setPeriodOptions]=useState<string[]>([]);
   const [selectedEmployerId,setSelectedEmployerId]=useState(me.employers?.[0]?.id??""); const [showPortfolio,setShowPortfolio]=useState(false); const [loading,setLoading]=useState(true); const [error,setError]=useState("");
   const employer=me.employers?.find(e=>e.id===selectedEmployerId)??me.employers?.[0];
-  const brandPrimary = normaliseHex(me.theme?.primaryColor, "#214b45");
-  const brandNavy = normaliseHex(me.theme?.navyColor, "#173a36");
-  const brandAccent = normaliseHex(me.theme?.accentColor, "#8a6f3d");
+  const brandPrimary = normaliseHex(me.theme?.primaryColor, "#2b1b68");
+  const brandNavy = normaliseHex(me.theme?.navyColor, "#32217c");
+  const brandAccent = normaliseHex(me.theme?.accentColor, "#7d2fa3");
   const chartPalette = useMemo(() => deriveChartPalette(brandAccent,brandPrimary), [brandAccent,brandPrimary]);
   const themeStyle: CSSProperties = {
     "--brand-primary": brandPrimary,
