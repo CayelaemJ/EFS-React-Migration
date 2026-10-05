@@ -123,7 +123,7 @@ export function AdminView({me}:Props){
     <div className="mx-auto w-full max-w-[1480px] px-3 py-4 sm:px-5 lg:px-8">
       <header className="portal-header flex flex-col gap-4 border-b border-slate-200 pb-5 lg:flex-row lg:items-center lg:justify-between">
         <div><div className="portal-kicker">EFS Optimise</div><h1 className="mt-1 font-display text-3xl font-bold tracking-tight text-[var(--brand-ink-strong)] sm:text-4xl">Administration</h1><p className="mt-1 text-sm text-slate-500">Governed control plane for identity, data, reporting, integrations and compliance.</p></div>
-        <div className="flex items-center gap-3"><Badge>{roleLabels[me.role]||me.role||"User"}</Badge><Button variant="outline" onClick={()=>window.location.assign("/react/dashboard")}>Dashboard</Button></div>
+        <div className="flex items-center gap-3"><Badge>{roleLabels[me.role]||me.role||"User"}</Badge></div>
       </header>
       <nav className="admin-nav mt-5 overflow-x-auto border-b border-[var(--brand-line)]" aria-label="Administration sections"><div className="flex min-w-max">{nav.map(([key,label],i)=><Button key={key} size="sm" variant="ghost" className={tab===key?"admin-tab admin-tab-active":"admin-tab"} onClick={()=>setTab(key)}><span className="admin-tab-index">{String(i+1).padStart(2,"0")}</span>{label}</Button>)}</div></nav>
       {error&&<div className="admin-alert mt-4 border-l-4 border-red-500 bg-red-50 p-4 text-sm text-red-800">{error}</div>}
