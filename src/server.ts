@@ -331,7 +331,7 @@ app.get("/react/dashboard", async (_req, reply) => {
   } catch {
     return reply.code(503).send({ error: "React frontend has not been built yet" });
   }
-});\napp.get("/react/users", async (_req, reply) => {\n  try {\n    const html = await readFile(join(PUBLIC_DIR, "react", "index.html"), "utf-8");\n    return reply.type("text/html; charset=utf-8").header("Cache-Control", "no-store").send(html);\n  } catch {\n    return reply.code(503).send({ error: "React frontend has not been built yet" });\n  }\n});\n
+});
 
 app.get("/react/users", async (_req, reply) => {
   try {
