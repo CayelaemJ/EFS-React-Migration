@@ -113,9 +113,8 @@ function WellnessGauge({score}:{score:number|null|undefined}) {
   if(score==null || !Number.isFinite(Number(score))) return <div className="wellness-gauge-empty">Not available</div>;
   const value=Math.max(0,Math.min(100,Number(score)));
   return <svg viewBox="0 0 160 96" width="180" className="wellness-gauge" role="img" aria-label={`Workforce Financial Wellness Score ${value} out of 100`}>
-    <defs><linearGradient id="wellnessGaugeGradient" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stopColor="var(--brand-grad-1)"/><stop offset=".5" stopColor="var(--brand-grad-3)"/><stop offset="1" stopColor="var(--brand-grad-5)"/></linearGradient></defs>
     <path d="M16 88 A64 64 0 0 1 144 88" fill="none" stroke="var(--ice-2)" strokeWidth="13" strokeLinecap="round"/>
-    <path d="M16 88 A64 64 0 0 1 144 88" fill="none" stroke="url(#wellnessGaugeGradient)" strokeWidth="13" strokeLinecap="round" pathLength="100" strokeDasharray={`${value} ${100-value}`} strokeDashoffset="0"/>
+    <path d="M16 88 A64 64 0 0 1 144 88" fill="none" stroke="var(--chart-engagement,var(--brand-accent))" strokeWidth="13" strokeLinecap="round" pathLength="100" strokeDasharray={`${value} ${100-value}`} strokeDashoffset="0"/>
     <text x="80" y="74" textAnchor="middle" fontFamily="Fraunces,serif" fontSize="34" fontWeight="600" fill="var(--brand-primary)">{value.toFixed(0)}</text>
     <text x="80" y="90" textAnchor="middle" fontSize="9.5" fontWeight="700" fill="var(--grey-l)">/ 100</text>
   </svg>;
@@ -128,9 +127,9 @@ function DashboardView({me}:{me:Me}) {
   const [income,setIncome]=useState("all"); const [site,setSite]=useState("all"); const [periodOptions,setPeriodOptions]=useState<string[]>([]);
   const [selectedEmployerId,setSelectedEmployerId]=useState(me.employers?.[0]?.id??""); const [loading,setLoading]=useState(true); const [error,setError]=useState("");
   const employer=me.employers?.find(e=>e.id===selectedEmployerId)??me.employers?.[0];
-  const brandPrimary = normaliseHex(me.theme?.primaryColor, "#2b1b68");
-  const brandNavy = normaliseHex(me.theme?.navyColor, "#0d2a47");
-  const brandAccent = normaliseHex(me.theme?.accentColor, "#7d2fa3");
+  const brandPrimary = normaliseHex(me.theme?.primaryColor, "#214b45");
+  const brandNavy = normaliseHex(me.theme?.navyColor, "#173a36");
+  const brandAccent = normaliseHex(me.theme?.accentColor, "#8a6f3d");
   const chartPalette = useMemo(() => window.BrandEngine?.deriveChartPalette({accentColor: brandAccent, primaryColor: brandPrimary, navyColor: brandNavy}) ?? {}, [brandAccent, brandPrimary, brandNavy]);
   const themeStyle: CSSProperties = {
     "--brand-primary": brandPrimary,
@@ -219,11 +218,14 @@ function DashboardView({me}:{me:Me}) {
               {(() => {
                 const score=Number(data.wellness?.score), prior=Number(data.wellness?.prior);
                 const delta=Number.isFinite(score)&&Number.isFinite(prior)?score-prior:null;
-                const pc=data.comparison;
+                const saving=Number(data.comparison?.current?.monthlySavingRand??data.kpis?.monthlySaving?.rand);
+                const ewa=Number(data.comparison?.current?.totalAdvancedRaw??data.ewa?.totalRaw);
+                const lead=[...(data.wellness?.drivers??[])].filter(d=>Number.isFinite(Number(d.score))).sort((a,b)=>Number(a.score)-Number(b.score))[0];
                 const statements:string[]=[];
-                if(Number.isFinite(score)) statements.push(`Financial wellbeing score is ${score}/100${delta===null?"":", "+(delta>0?"up ":delta<0?"down ":"unchanged ")+Math.abs(delta)+" points versus "+(comparison?.previous||"the comparison period")}.`);
-                if(Number.isFinite(Number(pc?.current?.monthlySavingRand))) statements.push(`Monthly cash freed up is ${money(pc?.current?.monthlySavingRand)}.`);
-                if(Number.isFinite(Number(pc?.current?.totalAdvancedRaw))) statements.push(`Total advanced through early wage access is ${money(pc?.current?.totalAdvancedRaw)} in this period.`);
+                if(Number.isFinite(score)) statements.push(`The workforce wellbeing score is ${score}/100${delta===null?"":", "+(delta>0?"up ":delta<0?"down ":"unchanged ")+Math.abs(delta)+" points versus "+(comparison?.previous||"the comparison period")}.`);
+                if(Number.isFinite(saving)) statements.push(`${money(saving)} of monthly cashflow is being restored.`);
+                if(Number.isFinite(ewa)) statements.push(`${money(ewa)} was advanced through early wage access in the selected period.`);
+                if(lead?.name) statements.push(`The clearest improvement opportunity is ${lead.name.toLowerCase()}.`);
                 return statements.join(" ") || "More data is required to produce an executive insight for this view.";
               })()}
             </div>
@@ -232,7 +234,7 @@ function DashboardView({me}:{me:Me}) {
       </div>
       <div className="exec-band reveal">
         <div className="exec-head">
-          <div className="exec-pulse"></div>
+          <div className="exec-marker" aria-hidden="true">01</div>
           <div><div className="exec-title">Financial wellbeing impact summary</div><div className="exec-sub">{data.filterContext?.label||"Programme to date"} · at a glance</div></div>
           <div className={`exec-verdict ${data.wellness?.complete===false||data.wellness?.score==null?"is-incomplete":""}`}>
             {data.wellness?.complete===false||data.wellness?.score==null?"Data incomplete":Number(data.wellness.score)>=75?"Strong":Number(data.wellness.score)>=60?"On track":"Needs attention"}
