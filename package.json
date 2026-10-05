@@ -1,12 +1,13 @@
 {
-  "name": "efs-optimise-frontend",
+  "name": "efs-react-migration",
   "private": true,
   "version": "0.2.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "start": "vite preview --host 0.0.0.0"
   },
   "dependencies": {
     "clsx": "^2.1.1",
