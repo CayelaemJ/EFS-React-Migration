@@ -1213,3 +1213,9 @@ table.ct th,table.ct td{vertical-align:middle;}
     min-height:190px;
   }
 }
+
+
+/* React shell owns global navigation; this row is dashboard-only context/actions. */
+.dashboard-viewbar{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:14px 0 12px;border-bottom:1px solid var(--line,#e5e7eb)}
+.dashboard-viewbar .topbar-meta{display:flex;align-items:center;gap:10px}
+@media(max-width:640px){.dashboard-viewbar{align-items:flex-start;flex-direction:column}.dashboard-viewbar .topbar-meta{width:100%;justify-content:space-between}}
