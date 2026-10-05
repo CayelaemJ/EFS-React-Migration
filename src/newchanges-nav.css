@@ -58,3 +58,6 @@
   .portal-theme-quick{width:32px;height:32px;}
 }
 .portal-account-build{margin-top:7px;font-size:10px;font-weight:700;color:var(--grey-l,#8497a7);letter-spacing:.03em;}
+/* Use the original NewChanges brand asset rather than recreating the mark in JSX. */
+.dashboard-shell .logo-image{display:block;width:min(170px,22vw);height:auto;max-height:34px;object-fit:contain;object-position:left center;}
+@media (max-width:640px){.dashboard-shell .logo-image{width:132px;max-height:30px;}}
