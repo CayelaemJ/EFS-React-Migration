@@ -13,6 +13,7 @@ import "./newchanges-brand-adapter.css";
 import { NewChangesParitySections, PortfolioView } from "./components/NewChangesParitySections";
 import { UsersView } from "./components/UsersView";
 import { AdminView } from "./components/AdminView";
+import { DashboardReporting } from "./components/DashboardReporting";
 type Me = {
   name?: string; email?: string; role?: string;
   employers?: Array<{ id: string; name: string }>;
@@ -334,6 +335,7 @@ function DashboardView({me}:{me:Me}) {
           <Card style={{gridColumn:"span 12"}} className="ewa-card"><CardHeader><SectionHeading title="Total advanced per month" description="Finalised advances only · monthly run-rate."/></CardHeader><CardContent><div className="metric-deck ewa-metric-deck"><div className="metric-primary"><span>Current advance volume</span><strong>{money(data.comparison?.current?.totalAdvancedRaw??data.ewa?.totalRaw)}</strong><small>{data.ewa?.advances==null?"Not available":number(data.ewa.advances)+" advances in the period"}</small></div><div className="metric-secondary"><span>Employees using EWA</span><strong>{number(data.ewa?.clients)}</strong><small>{data.ewa?.avg||"Not available"} average advance</small></div><div className="metric-secondary"><span>Average per client</span><strong>{money(data.ewa?.perClient)}</strong><small>earned wage access</small></div></div><LineChart values={advancedTrend} labels={advancedLabels} previous={data.comparison?.previous?.ewa??[]} previousLabels={data.comparison?.previous?.ewaLabels??[]} currentLabel={data.comparison?.current?.label||comparison?.current||"Selected period"} previousLabel={data.comparison?.previous?.label||comparison?.previous||"Previous period"}/></CardContent></Card>
         </div>
       </section>
+      <DashboardReporting me={me} data={data} period={period} range={range} site={site} income={income}/>
       <NewChangesParitySections data={data}/>
 
       <section className="mt-4 grid gap-4 lg:grid-cols-2">
