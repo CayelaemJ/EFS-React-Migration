@@ -10,6 +10,7 @@ import "./newchanges-dashboard.css";
 import "./newchanges-nav.css";
 import "./newchanges-dark.css";
 import "./newchanges-brand-adapter.css";
+import { NewChangesParitySections, PortfolioView } from "./components/NewChangesParitySections";
 type Me = {
   name?: string; email?: string; role?: string;
   employers?: Array<{ id: string; name: string }>;
@@ -145,7 +146,7 @@ function DashboardView({me}:{me:Me}) {
   const [period,setPeriod]=useState("");
   const [darkMode,setDarkMode]=useState(false); const [range,setRange]=useState<"latest"|"quarter"|"all">("latest");
   const [income,setIncome]=useState("all"); const [site,setSite]=useState("all"); const [periodOptions,setPeriodOptions]=useState<string[]>([]);
-  const [selectedEmployerId,setSelectedEmployerId]=useState(me.employers?.[0]?.id??""); const [loading,setLoading]=useState(true); const [error,setError]=useState("");
+  const [selectedEmployerId,setSelectedEmployerId]=useState(me.employers?.[0]?.id??""); const [showPortfolio,setShowPortfolio]=useState(false); const [loading,setLoading]=useState(true); const [error,setError]=useState("");
   const employer=me.employers?.find(e=>e.id===selectedEmployerId)??me.employers?.[0];
   const brandPrimary = normaliseHex(me.theme?.primaryColor, "#214b45");
   const brandNavy = normaliseHex(me.theme?.navyColor, "#173a36");
@@ -181,6 +182,7 @@ function DashboardView({me}:{me:Me}) {
   if(loading)return <Card className="mx-auto mt-20 max-w-2xl"><CardContent className="py-12 text-center text-sm text-slate-500">Loading governed dashboard data...</CardContent></Card>;
   if(error)return <Card className="mx-auto mt-20 max-w-2xl border-red-200"><CardContent className="py-10"><div className="flex gap-3"><span className="text-xs font-bold uppercase tracking-widest text-red-700">Error</span><div><p className="font-semibold text-red-700">Dashboard unavailable</p><p className="mt-1 text-sm text-slate-600">{error}</p></div></div></CardContent></Card>;
   if(!data)return null;
+  if(showPortfolio) return <PortfolioView employers={me.employers||[]} theme={{primary:brandPrimary,accent:brandAccent,navy:brandNavy}} onBack={()=>setShowPortfolio(false)}/>;
 
   const comparison=data.filterContext?.comparison;
   const currentSaving=data.comparison?.current?.monthlySavingRand??data.kpis?.monthlySaving?.rand??0;
@@ -199,7 +201,7 @@ function DashboardView({me}:{me:Me}) {
       <div className="topbar-inner">
         <div className="logo"><span className="logo-mark" aria-hidden="true">EF</span><span className="logo-text">{me.theme?.name||"empower-fin"}</span></div>
         <div className="topbar-divider" />
-        <div className="audience-switch"><button className="on" type="button">Employer view</button><button type="button" disabled>Portfolio view</button></div>
+        <div className="audience-switch"><button className="on" type="button" onClick={()=>setShowPortfolio(false)}>Employer view</button>{me.employers&&me.employers.length>1&&<button type="button" onClick={()=>setShowPortfolio(true)}>Portfolio view</button>}</div>
         <div className="topbar-spacer" />
         <div className="topbar-meta">
           <div className="data-fresh"><span className="dot" /><span>Live dashboard</span></div>
@@ -329,6 +331,8 @@ function DashboardView({me}:{me:Me}) {
           <Card style={{gridColumn:"span 12"}} className="ewa-card"><CardHeader><SectionHeading title="Total advanced per month" description="Finalised advances only · monthly run-rate."/></CardHeader><CardContent><div className="metric-deck ewa-metric-deck"><div className="metric-primary"><span>Current advance volume</span><strong>{money(data.comparison?.current?.totalAdvancedRaw??data.ewa?.totalRaw)}</strong><small>{data.ewa?.advances==null?"Not available":number(data.ewa.advances)+" advances in the period"}</small></div><div className="metric-secondary"><span>Employees using EWA</span><strong>{number(data.ewa?.clients)}</strong><small>{data.ewa?.avg||"Not available"} average advance</small></div><div className="metric-secondary"><span>Average per client</span><strong>{money(data.ewa?.perClient)}</strong><small>earned wage access</small></div></div><LineChart values={advancedTrend} labels={advancedLabels} previous={data.comparison?.previous?.ewa??[]} previousLabels={data.comparison?.previous?.ewaLabels??[]} currentLabel={data.comparison?.current?.label||comparison?.current||"Selected period"} previousLabel={data.comparison?.previous?.label||comparison?.previous||"Previous period"}/></CardContent></Card>
         </div>
       </section>
+      <NewChangesParitySections data={data}/>
+
       <section className="mt-4 grid gap-4 lg:grid-cols-2">
         <Card><CardHeader><SectionHeading title="Workforce funnel"/></CardHeader><CardContent><div className="grid gap-4">{(data.funnel||[]).map(row=><div className="grid grid-cols-[minmax(105px,1fr)_minmax(70px,2fr)_55px] items-center gap-3" key={row.label}><div><b className="text-xs">{row.label}</b><small className="mt-1 block text-[9px] text-slate-500">{row.sub}</small></div><Progress value={row.pct??0}/><strong className="text-right text-xs text-[var(--brand-ink-strong)]">{number(row.n)}</strong></div>)}</div></CardContent></Card>
         <Card><CardHeader><SectionHeading title="Activated employees by income band"/></CardHeader><CardContent><div className="grid gap-4">{(data.income||[]).map(row=><div className="grid grid-cols-[minmax(100px,1fr)_minmax(70px,2fr)_45px] items-center gap-3" key={row.name}><span className="text-xs">{row.name}</span><Progress value={row.count/maxIncome*100}/><strong className="text-right text-xs text-[var(--brand-ink-strong)]">{number(row.count)}</strong></div>)}</div></CardContent></Card>
