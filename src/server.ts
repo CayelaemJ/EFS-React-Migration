@@ -42,8 +42,7 @@ import { runMLOpsAssessment, getMLOpsPortfolioAssessment, recordMLOpsFeedback, l
 import { getBrandLearningProfile, learnFromBrandUpload, recordBrandCorrection } from "./services/brandLearningService.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const PUBLIC_DIR = [join(__dirname, "public"), join(__dirname, "..", "public")]
-  .find((p) => existsSync(join(p, "dashboard.html"))) ?? join(__dirname, "..", "public");
+const PUBLIC_DIR = join(__dirname, "..", "..", "public");
 
 const MAX_UPLOAD_BYTES = Number(process.env.UPLOAD_MAX_BYTES ?? 50 * 1024 * 1024);
 
