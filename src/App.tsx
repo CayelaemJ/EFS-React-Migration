@@ -14,6 +14,8 @@ import { NewChangesParitySections, PortfolioView } from "./components/NewChanges
 import { UsersView } from "./components/UsersView";
 import { AdminView } from "./components/AdminView";
 import { DashboardReporting } from "./components/DashboardReporting";
+import { PortalShell } from "./components/PortalShell";
+import "./react-portal-nav.css";
 type Me = {
   name?: string; email?: string; role?: string;
   employers?: Array<{ id: string; name: string }>;
@@ -374,9 +376,9 @@ function App() {
   const isAdminRoute=path==="/react/admin";
   const isUsersRoute=path==="/react/users" || path==="/users";
   const canAdmin=me.role==="ADMIN" || me.role==="SUPERADMIN";
-  if(isAdminRoute) return canAdmin ? <AdminView me={me}/> : <DashboardView me={me}/>;
-  if(isUsersRoute) return me.modules?.users || canAdmin ? <UsersView me={me} onDashboard={()=>window.location.assign("/react/dashboard")} onAdmin={()=>window.location.assign("/react/admin")}/> : <DashboardView me={me}/>;
-  return <DashboardView me={me}/>;
+  if(isAdminRoute) return canAdmin ? <PortalShell me={me} active="admin"><AdminView me={me}/></PortalShell> : <PortalShell me={me} active="dashboard"><DashboardView me={me}/></PortalShell>;
+  if(isUsersRoute) return me.modules?.users || canAdmin ? <PortalShell me={me} active="users"><UsersView me={me} onDashboard={()=>window.location.assign("/react/dashboard")} onAdmin={()=>window.location.assign("/react/admin")}/></PortalShell> : <PortalShell me={me} active="dashboard"><DashboardView me={me}/></PortalShell>;
+  return <PortalShell me={me} active="dashboard"><DashboardView me={me}/></PortalShell>;
 }
 class AppErrorBoundary extends Component<PropsWithChildren, {hasError:boolean}> {
   state={hasError:false};
