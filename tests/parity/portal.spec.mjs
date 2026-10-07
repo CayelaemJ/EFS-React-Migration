@@ -99,6 +99,27 @@ for (const width of [1440, 390])
         path: testInfo.outputPath("difference.png"),
         contentType: "image/png",
       });
+      if (changed / (a.width * a.height) >= 0.005) {
+        for (let i = 0; i < pages.length; i++)
+          console.log(
+            "Region layout",
+            i,
+            await pages[i]
+              .locator("#region-bars .hbar-row")
+              .evaluateAll((rows) =>
+                rows.map((row) => ({
+                  height: row.getBoundingClientRect().height,
+                  children: [...row.children].map((child) => ({
+                    className: child.className,
+                    style: child.getAttribute("style"),
+                    height: child.getBoundingClientRect().height,
+                    font: getComputedStyle(child).fontSize,
+                    lineHeight: getComputedStyle(child).lineHeight,
+                  })),
+                })),
+              ),
+          );
+      }
       expect(changed / (a.width * a.height)).toBeLessThan(0.005);
       for (const page of pages) await page.close();
     });
@@ -250,4 +271,167 @@ test("sign out posts to the session endpoint and returns to login", async ({
   await page.locator("[data-portal-signout]").click();
   await logout;
   await expect(page).toHaveURL(/\/login$/);
+});
+
+test("React quick actions searches sections and restores focus on Escape", async ({
+  page,
+}) => {
+  await ready(page, "/dashboard");
+  await page.locator("#btn-command").click();
+  await expect(page.locator(".command-search")).toBeFocused();
+  await page.locator(".command-search").fill("wellness");
+  await expect(page.locator(".command-item")).toHaveCount(1);
+  await expect(page.locator(".command-item")).toContainText("Wellness score");
+  await page.locator(".command-search").fill("no matching section");
+  await expect(page.locator(".command-empty")).toHaveText(
+    "No matching section",
+  );
+  await page.keyboard.press("Escape");
+  await expect(page.locator("#quick-actions")).toHaveCount(0);
+  await expect(page.locator("#btn-command")).toBeFocused();
+  await page.keyboard.press("Control+k");
+  await expect(page.locator("#quick-actions")).toBeVisible();
+  await page.locator('.command-item[data-target="#wellness"]').click();
+  await expect(page.locator("#quick-actions")).toHaveCount(0);
+});
+
+test("React schedule form preserves fields on failure and sends selected timing and filters", async ({
+  page,
+}) => {
+  await ready(page, "/dashboard", {
+    "/api/report-schedules/config": {
+      configured: true,
+      defaultTimezone: "Africa/Johannesburg",
+    },
+  });
+  let fail = true;
+  const payloads = [];
+  await page.route("**/api/report-schedules", async (route) => {
+    if (route.request().method() === "GET") return route.fulfill({ json: [] });
+    payloads.push(route.request().postDataJSON());
+    await route.fulfill({
+      status: fail ? 503 : 200,
+      json: fail
+        ? { error: "Mail configuration temporarily unavailable" }
+        : { nextRunAt: "2026-10-12T06:00:00Z" },
+    });
+  });
+  await page.locator("#btn-schedule").click();
+  await page.locator("#schedule-name").fill("Weekly wellbeing");
+  await page.locator("#schedule-window").selectOption("quarter");
+  await page.locator("#schedule-frequency").selectOption("WEEKLY");
+  await expect(page.locator("#schedule-weekly-wrap")).toBeVisible();
+  await expect(page.locator("#schedule-monthly-wrap")).toBeHidden();
+  await page.locator("#schedule-weekday").selectOption("3");
+  await page.locator("#schedule-time").fill("09:15");
+  await page
+    .locator("#schedule-recipients")
+    .fill("one@example.invalid, two@example.invalid");
+  await page
+    .getByRole("button", { name: "Save schedule", exact: true })
+    .click();
+  await expect(page.locator("#schedule-result")).toContainText(
+    "Mail configuration temporarily unavailable",
+  );
+  await expect(page.locator("#schedule-name")).toHaveValue("Weekly wellbeing");
+  fail = false;
+  await page
+    .getByRole("button", { name: "Save schedule", exact: true })
+    .click();
+  await expect(page.locator("#schedule-result")).toContainText(
+    "Report scheduled.",
+  );
+  expect(payloads).toHaveLength(2);
+  expect(payloads[1]).toMatchObject({
+    name: "Weekly wellbeing",
+    employerId: "employer-1",
+    filters: { range: "quarter" },
+    frequency: "WEEKLY",
+    dayOfWeek: 3,
+    dayOfMonth: null,
+    onceDate: null,
+    sendTime: "09:15",
+    timezone: "Africa/Johannesburg",
+    recipients: ["one@example.invalid", "two@example.invalid"],
+  });
+  await page.locator("#schedule-frequency").selectOption("ONCE");
+  await expect(page.locator("#schedule-once-wrap")).toBeVisible();
+  await expect(page.locator("#schedule-weekly-wrap")).toBeHidden();
+  await page.keyboard.press("Escape");
+  await expect(page.locator("#schedule-backdrop")).toHaveCount(0);
+  await expect(page.locator("#btn-schedule")).toBeFocused();
+});
+
+test("React schedule actions update the list and display server errors", async ({
+  page,
+}) => {
+  const schedule = {
+    id: "schedule-1",
+    name: "Existing report",
+    employer: { name: "Example" },
+    active: true,
+    frequency: "MONTHLY",
+    dayOfMonth: 1,
+    sendTime: "08:00",
+    nextRunAt: "2026-11-01T06:00:00Z",
+  };
+  await ready(page, "/dashboard", {
+    "/api/report-schedules/config": { configured: true },
+  });
+  let rows = [schedule];
+  const calls = [];
+  await page.route("**/api/report-schedules", (route) =>
+    route.fulfill({ json: rows }),
+  );
+  await page.route("**/api/report-schedules/schedule-1**", async (route) => {
+    const req = route.request();
+    calls.push({ method: req.method(), path: new URL(req.url()).pathname });
+    if (req.url().endsWith("send-now"))
+      return route.fulfill({
+        status: 503,
+        json: { error: "Delivery service unavailable" },
+      });
+    if (req.method() === "PATCH")
+      rows = [{ ...schedule, active: req.postDataJSON().active }];
+    if (req.method() === "DELETE") rows = [];
+    await route.fulfill({ json: { ok: true } });
+  });
+  await page.locator("#btn-schedule").click();
+  await page.getByRole("button", { name: "Pause", exact: true }).click();
+  await expect(
+    page.getByRole("button", { name: "Resume", exact: true }),
+  ).toBeVisible();
+  await page.getByRole("button", { name: "Send now", exact: true }).click();
+  await expect(page.locator("#schedule-result")).toContainText(
+    "Delivery service unavailable",
+  );
+  await expect(
+    page.getByRole("button", { name: "Send now", exact: true }),
+  ).toBeEnabled();
+  page.once("dialog", (dialog) => dialog.accept());
+  await page.getByRole("button", { name: "Delete", exact: true }).click();
+  await expect(page.locator("#schedule-list-body")).toContainText(
+    "No scheduled reports yet.",
+  );
+  expect(calls.map((call) => call.method)).toEqual(["PATCH", "POST", "DELETE"]);
+});
+
+test("employer schedule recipients stay read-only and unavailable mail disables saving", async ({
+  page,
+}) => {
+  await ready(page, "/dashboard", {
+    "/api/auth/me": { ...me, role: "EMPLOYER_MANAGER" },
+    "/api/report-schedules/config": { configured: false },
+  });
+  await page.locator("#btn-schedule").click();
+  await expect(page.locator("#schedule-recipients")).toHaveAttribute(
+    "readonly",
+    "",
+  );
+  await expect(
+    page.getByRole("button", { name: "Save schedule", exact: true }),
+  ).toBeDisabled();
+  await expect(page.locator(".schedule-note.err")).toContainText(
+    "System email is not configured",
+  );
 });

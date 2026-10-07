@@ -2330,7 +2330,8 @@ function applyState(){
   renderSavings(); renderEwa(); renderDebtProfile(); renderCreditors(); renderRegions(); renderIncome();
   renderRatings(); renderDebtStates(); renderPrescription(); renderRiskSignals(); renderOpportunities(); renderChat();
   renderStressMap();
-  requestAnimationFrame(()=>fitResponsiveDataValues());
+  // Do not apply a queued demo-layout pass to newly loaded live API data.
+  requestAnimationFrame(()=>{if(!window.__LIVE__) fitResponsiveDataValues();});
   wireMetricTips(document.getElementById('employer-view'));
   updateContextLine();
   const ep=document.getElementById('exec-period'); if(ep) ep.textContent=PERIOD[STATE.period].label+' · at a glance';

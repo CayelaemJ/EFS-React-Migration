@@ -93,16 +93,28 @@ for(const file of fs.readdirSync('public').filter(x=>x.endsWith('.html'))){
   return children?`<${n.tagName}${attrs}>${children}</${n.tagName}>`:`<${n.tagName}${attrs}/>`;
  }
  const markup=body.childNodes.map(jsx).join('\n');
- const control=transform(scripts.join('\n;\n'));
- const code=`// Ported from New Changes ${file}; keep source structure and CSS selectors intact.\nimport React from 'react';\nimport BrandEngine from '../lib/brand-engine.js';\nimport {renderMarkup,insertMarkup,registerAction,decodeAttribute,onReady,createMarkupElement} from './runtime.jsx';\nimport {siteText} from '../native/site-config.js';\nlet actions=[];\nexport function Page(){return <>${markup}</>;}\nlet started=false;\nexport function start(){if(started)return;started=true;\nactions=[${handlers.join(',\n')}];\n${control}\n}\n`;
+ let controllerSource=scripts.join('\n;\n');
+ if(name==='dashboard'){
+  const quickStart=controllerSource.indexOf('function openQuickActions(){');
+  const quickEnd=controllerSource.indexOf('/* rebuild DATA',quickStart);
+  if(quickStart<0||quickEnd<0)throw new Error('Missing quick-actions migration boundary');
+  controllerSource=controllerSource.slice(0,quickStart)+'function openQuickActions(){showQuickActions();}\n'+controllerSource.slice(quickEnd);
+  const scheduleStart=controllerSource.indexOf('/* ─────── scheduled reports');
+  const scheduleEnd=controllerSource.indexOf('/* ─────── drill-down drawer',scheduleStart);
+  if(scheduleStart<0||scheduleEnd<0)throw new Error('Missing schedule migration boundary');
+  controllerSource=controllerSource.slice(0,scheduleStart)+'function openScheduleReport(){showScheduleReport({me:window.__ME__||{},data:DATA,employerId:employerIdFromUrl(),period:periodFromUrl()});}\n'+controllerSource.slice(scheduleEnd);
+ }
+ const control=transform(controllerSource);
+ const code=`// Ported from New Changes ${file}; keep source structure and CSS selectors intact.\nimport React from 'react';\n${name==='dashboard'?"import {showQuickActions,showScheduleReport} from '../native/DashboardDialogs.jsx';\n":''}import BrandEngine from '../lib/brand-engine.js';\nimport {renderMarkup,insertMarkup,registerAction,decodeAttribute,onReady,createMarkupElement} from './runtime.jsx';\nimport {siteText} from '../native/site-config.js';\nlet actions=[];\nexport function Page(){return <>${markup}</>;}\nlet started=false;\nexport function start(){if(started)return;started=true;\nactions=[${handlers.join(',\n')}];\n${control}\n}\n`;
  fs.writeFileSync(`${out}/${name}.jsx`,code);
  const native=fs.existsSync(`frontend/src/native/${name}.jsx`);
  const staticPage=['home','404','privacy','terms','cookies','thank-you'].includes(name);
- const entry=native
+ let entry=native
   ? `import {mountPage} from './mount.jsx';\nimport {Page} from '../native/${name}.jsx';\nmountPage(Page,()=>{});\n`
   : staticPage
   ? `import React from 'react';\nimport {mountPage} from './mount.jsx';\nimport {Page} from './${name}.jsx';\nimport {Shared} from '../native/Shared.jsx';\nmountPage(()=> <Shared><Page/></Shared>,()=>{});\n`
   : `import React from 'react';\nimport {mountPage} from './mount.jsx';\nimport {Page,start} from './${name}.jsx';\nimport {PortalNavigation,installPortalNavigation} from '../native/PortalNavigation.jsx';\ninstallPortalNavigation();\nmountPage(()=> <><Page/><PortalNavigation/></>,start);\n`;
+ if(name==='dashboard')entry="import {DashboardDialogs} from '../native/DashboardDialogs.jsx';\n"+entry.replace('<PortalNavigation/>','<PortalNavigation/><DashboardDialogs/>');
  fs.writeFileSync(`${out}/${name}.entry.jsx`,entry);
  let skeleton=source.replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi,'');
  skeleton=skeleton.replace(/<body([^>]*)>[\s\S]*<\/body>/i,`<body$1><div id="root" style="display:contents"></div><script type="module" src="/src/parity/${name}.entry.jsx"></script></body>`);

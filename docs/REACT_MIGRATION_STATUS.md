@@ -1,4 +1,4 @@
-# React migration status — 6 October 2026
+# React migration status — 7 October 2026
 
 ## Source and scope
 
@@ -12,6 +12,7 @@ The goal is a fully declarative React frontend covering both employer and portfo
 | Home, privacy, terms, cookies, thank you, 404 | React JSX with shared React lifecycle behaviour | Content remains source-identical |
 | Protected-page navigation and account controls | Shared React state, portals, theme persistence, mobile links, sign-out and deactivation dialog | Remove temporary controller-to-component data boundary when page controllers are replaced |
 | Employer and portfolio dashboards | React JSX layout and dynamic React rendering with retained imperative controller logic | Replace controller-owned DOM/state with React components/hooks; verify all employer/portfolio permutations |
+| Dashboard Quick Actions and report schedules | React components, controlled inputs, request/error state, keyboard focus lifecycle | Authenticated SMTP delivery verification |
 | Administration | React JSX layout and dynamic React rendering with retained imperative controller logic | Convert reports, imports, integration, job progress and other panels to React state/components |
 | User management and security centre | React JSX layout and dynamic React rendering with retained imperative controller logic | Convert editors, role/access state, security tables and telemetry to React components |
 | Backend and access rules | Existing Fastify/Prisma services retained; canonical routes serve built React pages | Live database and environment integration testing before release |
@@ -24,13 +25,14 @@ The goal is a fully declarative React frontend covering both employer and portfo
 - A malformed dashboard CSS brace, two missing login stylesheet references and ignored late font imports were repaired. The admin avatar selector now uses an explicit data attribute.
 - Schedule-dialog backdrop clicks no longer close the dialog when editing an input; Quick Actions closes on Escape.
 - Navigation/account menus and deactivation use React state, lifecycle cleanup, keyboard handling and error recovery.
+- A queued demo number-fitting pass now checks whether live API data has replaced the demo before adjusting font sizes. This removes a timing-dependent layout difference exposed by CI Chromium.
 - Static HTML access cannot bypass protected canonical routes. Legacy `/react/` links redirect to canonical routes.
 
 ## Verification and limits
 
 The production build, frontend typecheck, source regression suite, score engine and Brand Engine checks pass. Fastify injection checks cover public React responses, anonymous protected-route redirects, static HTML restrictions, aliases, logo and health responses.
 
-Browser verification covers all twelve page mounts; full-page screenshot comparisons at 1440px and 390px for dashboard, administration and users; navigation, theme persistence, mobile account destinations, gauge/Brand Engine, filters, portfolio, Quick Actions, schedule dialog, user editor, privileged role visibility, report selection, integration tabs and sign-in recovery. Additional navigation tests exercise logout and deactivation failure recovery. Screenshot checks use a 0.5% maximum differing-pixel ratio with a per-pixel threshold of 0.15; they do not establish exact pixel identity.
+Browser verification covers all twelve page mounts; full-page screenshot comparisons at 1440px and 390px for dashboard, administration and users; navigation, theme persistence, mobile account destinations, gauge/Brand Engine, filters, portfolio, Quick Actions, schedule dialog, user editor, privileged role visibility, report selection, integration tabs and sign-in recovery. Navigation tests exercise logout and deactivation failure recovery. Schedule tests cover frequency fields, payload filters, save/retry, pause, delete, delivery errors and employer recipient restrictions. The expanded local suite has 30 tests. Screenshot checks use a 0.5% maximum differing-pixel ratio with a per-pixel threshold of 0.15; they do not establish exact pixel identity.
 
 The browser API is mocked with local fixtures. These checks do **not** prove real database writes, SMTP delivery, external database synchronisation, live report delivery or all role/data combinations. Fonts are isolated from external network dependencies. Original HTML remains a test/reference input, not a production page entry.
 
@@ -39,3 +41,7 @@ The dependency audit currently reports one low and four moderate findings, with 
 ## Deployment status
 
 No Railway deployment, source-branch switch, variable change or database mutation was performed. The inspected Railway migration-test service still pointed at `migration/fullstack-test`. Repository healthcheck `/health` differs from that service's `/react/` override; reconcile it before any authorized rollout. Keep this work in draft until the remaining controllers are replaced and authenticated integration validation is complete.
+
+## CI follow-up
+
+The first GitHub run passed build, security, route and interaction checks, but failed the two dashboard screenshot comparisons in Chromium 145. The saved screenshots exposed the queued demo number-fitting race described above. The follow-up guards that callback; CI must pass on the updated commit before accepting this checkpoint.

@@ -1,5 +1,6 @@
 // Ported from New Changes dashboard.html; keep source structure and CSS selectors intact.
 import React from 'react';
+import {showQuickActions,showScheduleReport} from '../native/DashboardDialogs.jsx';
 import BrandEngine from '../lib/brand-engine.js';
 import {renderMarkup,insertMarkup,registerAction,decodeAttribute,onReady,createMarkupElement} from './runtime.jsx';
 import {siteText} from '../native/site-config.js';
@@ -2368,41 +2369,8 @@ function saveCurrentView() {
   showToast('Saved view', 'This view is saved on this browser.');
 }
 function openQuickActions() {
-  if (document.getElementById('quick-actions')) return;
-  const commands = [['Executive summary', '#exec-summary'], ['Wellness score', '#wellness'], ['Financial problems resolved', '#outcomes'], ['Value delivered to your people', '#value-strip'], ['Monthly cash freed up', '#savings-chart'], ['Total advanced per month', '#ewa-chart'], ['Debt pressure profile', '#debt-profile'], ['Who the programme is reaching', '#income-donut'], ['Employee ratings', '#ratings']];
-  const back = el('<div class="command-backdrop" id="quick-actions"></div>');
-  const box = el('<div class="command-palette" role="dialog" aria-label="Quick actions"><input class="command-search" type="search" placeholder="Search dashboard sections" autocomplete="off"><div class="command-results"></div></div>');
-  const results = box.querySelector('.command-results');
-  function draw(term) {
-    const q = String(term || '').toLowerCase();
-    const rows = commands.filter(x => x[0].toLowerCase().includes(q));
-    renderMarkup(results, rows.map(x => '<button type="button" class="command-item" data-target="' + x[1] + '">' + esc(x[0]) + '<span>Open</span></button>').join('') || '<div class="command-empty">No matching section</div>');
-    results.querySelectorAll('[data-target]').forEach(b => b.addEventListener('click', () => {
-      back.remove();
-      document.querySelector(b.dataset.target)?.scrollIntoView({
-        behavior: 'smooth',
-        block: 'start'
-      });
-    }));
-  }
-  box.querySelector('.command-search').addEventListener('input', e => draw(e.target.value));
-  back.appendChild(box);
-  document.body.appendChild(back);
-  back.addEventListener('click', e => {
-    if (e.target === back) back.remove();
-  });
-  draw('');
-  box.querySelector('.command-search').focus();
+  showQuickActions();
 }
-document.addEventListener('keydown', e => {
-  if (e.key === 'Escape' && document.getElementById('quick-actions')) {
-    document.getElementById('quick-actions').remove();
-    document.getElementById('btn-command')?.focus();
-  } else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
-    e.preventDefault();
-    openQuickActions();
-  }
-});
 /* rebuild DATA from BASE according to STATE, then re-render everything */
 function applyState() {
   // When real data is loaded from the API, render it directly. The period /
@@ -2588,7 +2556,10 @@ function applyState() {
   renderOpportunities();
   renderChat();
   renderStressMap();
-  requestAnimationFrame(() => fitResponsiveDataValues());
+  // Do not apply a queued demo-layout pass to newly loaded live API data.
+  requestAnimationFrame(() => {
+    if (!window.__LIVE__) fitResponsiveDataValues();
+  });
   wireMetricTips(document.getElementById('employer-view'));
   updateContextLine();
   const ep = document.getElementById('exec-period');
@@ -3171,231 +3142,14 @@ function wireHeaderBtns() {
   const sch = document.getElementById('btn-schedule');
   if (sch) sch.addEventListener('click', openScheduleReport);
 }
-
-/* ─────── scheduled reports ─────── */
-const scheduleEsc = v => String(v ?? '').replace(/[&<>"']/g, ch => ({
-  '&': '&amp;',
-  '<': '&lt;',
-  '>': '&gt;',
-  '"': '&quot;',
-  "'": '&#039;'
-})[ch]);
-function scheduleCurrentFilters() {
-  const p = new URLSearchParams(location.search);
-  const filters = {};
-  if (p.get('period')) filters.period = p.get('period');else filters.range = p.get('range') || 'all';
-  if (p.get('site')) filters.site = p.get('site');
-  if (p.get('income')) filters.income = p.get('income');
-  return filters;
-}
-function scheduleFrequencyLabel(s) {
-  const days = ['', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-  if (s.frequency === 'ONCE') return 'Once';
-  if (s.frequency === 'DAILY') return `Daily at ${s.sendTime}`;
-  if (s.frequency === 'WEEKLY') return `Weekly · ${days[s.dayOfWeek] || ''} ${s.sendTime}`;
-  if (s.frequency === 'MONTHLY') return `Monthly · day ${s.dayOfMonth} · ${s.sendTime}`;
-  return s.frequency || '';
-}
-function scheduleLocalWhen(v) {
-  if (!v) return 'Not available';
-  try {
-    return new Date(v).toLocaleString('en-ZA', {
-      day: '2-digit',
-      month: 'short',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
-  } catch (_) {
-    return v;
-  }
-}
-async function openScheduleReport() {
-  closeScheduleReport();
-  const me = window.__ME__ || {};
-  let cfg = {
-    configured: false,
-    defaultTimezone: 'Africa/Johannesburg'
-  };
-  try {
-    const r = await fetch('/api/report-schedules/config');
-    if (r.ok) cfg = await r.json();
-  } catch (_) {}
-  const currentEmployer = employerIdFromUrl() || me.employers?.[0]?.id || '';
-  const currentFilters = scheduleCurrentFilters();
-  const currentPeriod = periodFromUrl();
-  const range = currentFilters.range || 'all';
-  const tomorrow = new Date(Date.now() + 86400000);
-  const yyyy = tomorrow.getFullYear(),
-    mm = String(tomorrow.getMonth() + 1).padStart(2, '0'),
-    dd = String(tomorrow.getDate()).padStart(2, '0');
-  const currentEmployerName = (me.employers || []).find(e => e.id === currentEmployer)?.name || DATA.employer || 'Employer';
-  const siteOptions = [`<option value="all">All regions</option>`].concat((DATA.filterOptions?.sites || []).map(x => `<option value="${scheduleEsc(x.value)}" ${currentFilters.site === x.value ? 'selected' : ''}>${scheduleEsc(x.label)}</option>`)).join('');
-  const incomeOptions = [`<option value="all">All income bands</option>`].concat((DATA.filterOptions?.incomes || []).map(x => `<option value="${scheduleEsc(x.value)}" ${currentFilters.income === x.value ? 'selected' : ''}>${scheduleEsc(x.label)}</option>`)).join('');
-  const periodOption = currentPeriod ? `<option value="period:${scheduleEsc(currentPeriod)}" selected>${scheduleEsc(DATA.filterContext?.label || currentPeriod)} (fixed month)</option>` : '';
-  const admin = me.role === 'ADMIN';
-  const back = document.createElement('div');
-  back.className = 'schedule-backdrop';
-  back.id = 'schedule-backdrop';
-  renderMarkup(back, `<div class="schedule-modal" role="dialog" aria-modal="true" aria-label="Schedule report" data-react-click="${registerAction(event => {
-    event.stopPropagation();
-  })}">
-    <div class="schedule-hd"><div><div class="schedule-title">Schedule report</div><div class="schedule-sub">Choose when the report should be emailed and which dashboard filters it should use.</div></div><button class="schedule-close" data-react-click="${registerAction(event => {
-    closeScheduleReport();
-  })}">×</button></div>
-    <div class="schedule-body">
-      ${cfg.configured ? '' : `<div class="schedule-note err">System email is not configured yet. An administrator must complete <strong>Administration → System Email & Scheduled Reports</strong> before schedules can send.</div>`}
-      <div class="schedule-grid">
-        <label class="schedule-field full">Report name<input id="schedule-name" value="${scheduleEsc(DATA.employer || 'Employer')} financial wellbeing report"></label>
-        <label class="schedule-field">Employer<div style="margin-top:6px;padding:10px 11px;border:1px solid var(--line);border-radius:9px;background:#f7f6fb;font-weight:700;color:var(--brand-primary)">${scheduleEsc(currentEmployerName)}</div><input id="schedule-employer" type="hidden" value="${scheduleEsc(currentEmployer)}"></label>
-        <label class="schedule-field">Reporting window<select id="schedule-window">${periodOption}<option value="all" ${!currentPeriod && range === 'all' ? 'selected' : ''}>Programme to date</option><option value="30d" ${!currentPeriod && range === '30d' ? 'selected' : ''}>Last 30 days</option><option value="quarter" ${!currentPeriod && range === 'quarter' ? 'selected' : ''}>Current quarter</option></select></label>
-        <label class="schedule-field">Region / site<select id="schedule-site">${siteOptions}</select></label>
-        <label class="schedule-field">Income band<select id="schedule-income">${incomeOptions}</select></label>
-        <label class="schedule-field">Frequency<select id="schedule-frequency" data-react-change="${registerAction(event => {
-    scheduleToggleFrequency();
-  })}"><option value="ONCE">Once</option><option value="DAILY">Daily</option><option value="WEEKLY">Weekly</option><option value="MONTHLY" selected>Monthly</option></select></label>
-        <label class="schedule-field">Send time<input id="schedule-time" type="time" value="08:00"></label>
-        <label class="schedule-field" id="schedule-once-wrap" style="display:none">Send date<input id="schedule-once-date" type="date" value="${yyyy}-${mm}-${dd}"></label>
-        <label class="schedule-field" id="schedule-weekly-wrap" style="display:none">Day of week<select id="schedule-weekday"><option value="1">Monday</option><option value="2">Tuesday</option><option value="3">Wednesday</option><option value="4">Thursday</option><option value="5">Friday</option><option value="6">Saturday</option><option value="7">Sunday</option></select></label>
-        <label class="schedule-field" id="schedule-monthly-wrap">Day of month<input id="schedule-monthday" type="number" min="1" max="31" value="1"></label>
-        <label class="schedule-field">Timezone<input id="schedule-timezone" value="${scheduleEsc(cfg.defaultTimezone || 'Africa/Johannesburg')}"></label>
-        <label class="schedule-field full">Recipients<input id="schedule-recipients" type="email" ${admin ? 'multiple' : ''} value="${scheduleEsc(me.email || '')}" ${admin ? '' : 'readonly'}><span style="display:block;margin-top:5px;font-weight:600;color:var(--grey-l);font-size:11px">${admin ? 'Administrators may enter multiple addresses separated by commas.' : 'Reports are sent to your signed-in email address.'}</span></label>
-      </div>
-      <div id="schedule-result"></div>
-      <div class="schedule-actions"><button class="btn" data-react-click="${registerAction(event => {
-    closeScheduleReport();
-  })}">Cancel</button><button class="btn btn-primary" ${cfg.configured ? '' : 'disabled'} data-react-click="${registerAction(event => {
-    createScheduledReport();
-  })}">Save schedule</button></div>
-      <div class="schedule-list"><div class="schedule-list-title">Your scheduled reports</div><div id="schedule-list-body"><div class="muted">Loading schedules…</div></div></div>
-    </div></div>`);
-  back.addEventListener('click', event => {
-    if (event.target === back) closeScheduleReport();
+function openScheduleReport() {
+  showScheduleReport({
+    me: window.__ME__ || {},
+    data: DATA,
+    employerId: employerIdFromUrl(),
+    period: periodFromUrl()
   });
-  document.body.appendChild(back);
-  scheduleToggleFrequency();
-  loadMySchedules();
 }
-function closeScheduleReport() {
-  document.getElementById('schedule-backdrop')?.remove();
-}
-function scheduleToggleFrequency() {
-  const f = document.getElementById('schedule-frequency')?.value || 'MONTHLY';
-  const set = (id, on) => {
-    const e = document.getElementById(id);
-    if (e) e.style.display = on ? 'block' : 'none';
-  };
-  set('schedule-once-wrap', f === 'ONCE');
-  set('schedule-weekly-wrap', f === 'WEEKLY');
-  set('schedule-monthly-wrap', f === 'MONTHLY');
-}
-function scheduleFormPayload() {
-  const w = document.getElementById('schedule-window').value;
-  const filters = {};
-  if (w.startsWith('period:')) filters.period = w.slice(7);else filters.range = w;
-  const site = document.getElementById('schedule-site').value,
-    income = document.getElementById('schedule-income').value;
-  if (site !== 'all') filters.site = site;
-  if (income !== 'all') filters.income = income;
-  const recipients = document.getElementById('schedule-recipients').value.split(',').map(x => x.trim()).filter(Boolean);
-  const frequency = document.getElementById('schedule-frequency').value;
-  return {
-    name: document.getElementById('schedule-name').value.trim(),
-    employerId: document.getElementById('schedule-employer').value,
-    filters,
-    frequency,
-    timezone: document.getElementById('schedule-timezone').value.trim(),
-    sendTime: document.getElementById('schedule-time').value,
-    onceDate: frequency === 'ONCE' ? document.getElementById('schedule-once-date').value : null,
-    dayOfWeek: frequency === 'WEEKLY' ? Number(document.getElementById('schedule-weekday').value) : null,
-    dayOfMonth: frequency === 'MONTHLY' ? Number(document.getElementById('schedule-monthday').value) : null,
-    recipients
-  };
-}
-async function createScheduledReport() {
-  const out = document.getElementById('schedule-result');
-  renderMarkup(out, '<div class="schedule-note">Saving schedule…</div>');
-  try {
-    const r = await fetch('/api/report-schedules', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify(scheduleFormPayload())
-    });
-    const d = await r.json();
-    if (!r.ok) throw new Error(d.error || 'Could not create schedule');
-    renderMarkup(out, `<div class="schedule-note" style="background:var(--green-soft);color:#137a47">✓ Report scheduled. Next send: ${scheduleLocalWhen(d.nextRunAt)}</div>`);
-    loadMySchedules();
-  } catch (e) {
-    renderMarkup(out, `<div class="schedule-note err">✕ ${scheduleEsc(e.message)}</div>`);
-  }
-}
-async function loadMySchedules() {
-  const wrap = document.getElementById('schedule-list-body');
-  if (!wrap) return;
-  try {
-    const r = await fetch('/api/report-schedules');
-    const rows = await r.json();
-    if (!r.ok) throw new Error(rows.error || 'Could not load schedules');
-    if (!rows.length) {
-      renderMarkup(wrap, '<div class="muted">No scheduled reports yet.</div>');
-      return;
-    }
-    renderMarkup(wrap, rows.map(s => `<div class="schedule-row"><div><strong>${scheduleEsc(s.name)}</strong><small>${scheduleEsc(s.employer?.name || '')} · ${scheduleFrequencyLabel(s)} · ${s.active ? 'next ' + scheduleLocalWhen(s.nextRunAt) : 'paused'}</small>${s.lastStatus === 'FAILED' ? `<small style="color:#b5391f">Last send failed: ${scheduleEsc(s.lastError || '')}</small>` : ''}</div><div class="schedule-row-actions"><button class="schedule-mini" data-react-click="${registerAction(event => {
-      scheduleSendNow(`${decodeAttribute(esc(s.id))}`);
-    })}">Send now</button><button class="schedule-mini" data-react-click="${registerAction(event => {
-      scheduleToggleActive(`${decodeAttribute(esc(s.id))}`, !s.active);
-    })}">${s.active ? 'Pause' : 'Resume'}</button><button class="schedule-mini danger" data-react-click="${registerAction(event => {
-      scheduleDelete(`${decodeAttribute(esc(s.id))}`);
-    })}">Delete</button></div></div>`).join(''));
-  } catch (e) {
-    renderMarkup(wrap, `<div class="schedule-note err">${scheduleEsc(e.message)}</div>`);
-  }
-}
-async function scheduleToggleActive(id, active) {
-  const r = await fetch(`/api/report-schedules/${id}`, {
-    method: 'PATCH',
-    headers: {
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify({
-      active
-    })
-  });
-  const d = await r.json().catch(() => ({}));
-  if (!r.ok) {
-    openToast(d.error || 'Could not update schedule');
-    return;
-  }
-  loadMySchedules();
-}
-async function scheduleDelete(id) {
-  if (!confirm('Delete this scheduled report?')) return;
-  const r = await fetch(`/api/report-schedules/${id}`, {
-    method: 'DELETE'
-  });
-  const d = await r.json().catch(() => ({}));
-  if (!r.ok) {
-    openToast(d.error || 'Could not delete schedule');
-    return;
-  }
-  loadMySchedules();
-}
-async function scheduleSendNow(id) {
-  openToast('Sending report…');
-  const r = await fetch(`/api/report-schedules/${id}/send-now`, {
-    method: 'POST'
-  });
-  const d = await r.json().catch(() => ({}));
-  if (!r.ok) {
-    openToast(d.error || 'Could not send report');
-    return;
-  }
-  openToast('Report sent successfully.');
-  loadMySchedules();
-}
-
 /* ─────── drill-down drawer ─────── */
 function openDrawer(title, sub, bodyHTML) {
   closeDrawer();
