@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="stylesheet" href="/static/dark-mode-v1.css?v=1">
+
+
+<title>Sign in | empower-fin Dashboard Portal</title>
+<meta name="description" content="Sign in to the empower-fin Dashboard Portal: secure, auditable financial-wellbeing analytics for employers and their partners.">
+<meta name="robots" content="index,follow">
+<link rel="canonical" href="{{BASE_URL}}/login">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="empower-fin Dashboard Portal">
+<meta property="og:title" content="Sign in | empower-fin Dashboard Portal">
+<meta property="og:description" content="Sign in to the empower-fin Dashboard Portal: secure, auditable financial-wellbeing analytics for employers and their partners.">
+<meta property="og:url" content="{{BASE_URL}}/login">
+<meta property="og:image" content="{{BASE_URL}}/static/og-image.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="empower-fin Dashboard Portal: financial wellbeing, measured with rigour.">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Sign in | empower-fin Dashboard Portal">
+<meta name="twitter:description" content="Sign in to the empower-fin Dashboard Portal: secure, auditable financial-wellbeing analytics for employers and their partners.">
+<meta name="twitter:image" content="{{BASE_URL}}/static/og-image.png">
+<meta name="theme-color" content="#32217c">
+<link rel="icon" href="/favicon.ico" sizes="48x48">
+<link rel="icon" type="image/png" sizes="32x32" href="/static/favicon-32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="/static/favicon-16.png">
+<link rel="apple-touch-icon" sizes="180x180" href="/static/apple-touch-icon.png">
+<link rel="manifest" href="/static/site.webmanifest">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Fraunces:opsz,wght@9..144,500;9..144,600&display=swap');
+  :root{--blue:#b15be8;--blue-d:#8e42bd;--brand-primary:#32217c;--ice:#f3efff;--line:#e8e1f7;--ink:#0f2438;--grey:#5b6b7a;--red:#e0492f;--red-soft:#fdecea;}
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:'Manrope',system-ui,sans-serif;color:var(--ink);background:radial-gradient(1100px 560px at 80% -10%,rgba(0,120,199,.10),transparent 60%),#f3f7fb;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;}
+  .card{background:#fff;border:1px solid var(--line);border-radius:20px;box-shadow:0 8px 40px rgba(13,42,71,.10);width:100%;max-width:400px;padding:40px 36px;}
+  .logo{font-weight:800;font-size:20px;letter-spacing:-.4px;color:var(--brand-primary);text-align:center;}
+  .logo .o{color:var(--blue);}
+  h1{font-family:'Fraunces',serif;font-weight:600;font-size:24px;color:var(--brand-primary);text-align:center;margin:22px 0 4px;}
+  .sub{text-align:center;color:var(--grey);font-size:13.5px;margin-bottom:26px;}
+  label{display:block;font-size:12.5px;font-weight:700;color:var(--brand-primary);margin:14px 0 6px;}
+  input{width:100%;font-family:inherit;font-size:14px;padding:12px 14px;border:1px solid var(--line);border-radius:11px;background:#fafcfe;transition:.15s;}
+  input:focus{outline:none;border-color:var(--blue);background:#fff;box-shadow:0 0 0 3px rgba(0,120,199,.12);}
+  button{width:100%;margin-top:22px;font-family:inherit;font-weight:700;font-size:14px;color:#fff;background:var(--brand-primary);border:none;border-radius:11px;padding:13px;cursor:pointer;transition:.15s;}
+  button:hover{background:var(--blue-d);}
+  button:disabled{opacity:.6;cursor:not-allowed;}
+  .err{display:none;background:var(--red-soft);color:#b5391f;font-size:13px;font-weight:600;padding:11px 14px;border-radius:11px;margin-top:18px;}
+  #cookie-banner{position:fixed;left:0;right:0;bottom:0;background:#fff;border-top:1px solid var(--line);box-shadow:0 -8px 30px rgba(13,42,71,.08);padding:16px 20px;display:none;z-index:999;}
+  #cookie-banner .inner{max-width:900px;margin:0 auto;display:flex;align-items:center;gap:20px;flex-wrap:wrap;}
+  #cookie-banner p{flex:1;min-width:220px;font-size:13px;color:var(--grey);margin:0;line-height:1.5;}
+  #cookie-banner a{color:var(--blue-d);font-weight:700;text-decoration:none;}
+  #cookie-banner .actions{display:flex;gap:10px;flex-shrink:0;}
+  #cookie-banner button{width:auto;margin:0;font-size:13px;padding:10px 18px;border-radius:9px;}
+  #cookie-banner .accept{background:var(--brand-primary);color:#fff;border:none;}
+  #cookie-banner .accept:hover{background:var(--blue-d);}
+  #cookie-banner .dismiss{background:#fff;color:var(--grey);border:1px solid var(--line);}
+  /* Login uses the saved/system theme directly. Do not apply the dashboard's
+     legacy whole-page inversion filter to this page. */
+  html[data-theme="dark"]{filter:none !important;background:#0b1420 !important;color:#eaf2f8;}
+  html[data-theme="dark"] body{background:#0b1420;color:#eaf2f8;}
+  html[data-theme="dark"] .card{background:#111e2c;border-color:#26384a;box-shadow:0 12px 40px rgba(0,0,0,.35);}
+  html[data-theme="dark"] h1,html[data-theme="dark"] label,html[data-theme="dark"] .logo{color:#eef6fb;}
+  html[data-theme="dark"] .sub,html[data-theme="dark"] label[style],html[data-theme="dark"] #cookie-banner p{color:#aebdca;}
+  html[data-theme="dark"] input{background:#0d1824;color:#eef6fb;border-color:#304458;}
+  html[data-theme="dark"] input:focus{background:#132131;}
+  html[data-theme="dark"] #cookie-banner{background:#111e2c;border-color:#26384a;}
+  html[data-theme="dark"] #cookie-banner .dismiss{background:#162535;color:#c8d5df;border-color:#304458;}
+  html[data-theme="dark"] #forgot-link,html[data-theme="dark"] .card a{color:#c89bea !important;}
+</style>
+<link rel="stylesheet" href="/static/enterprise.css?v=2">
+  <link rel="stylesheet" href="/static/enterprise-v3.css?v=3">
+<meta name="portal-config" content="{{PORTAL_CONFIG}}"></head>
+<body class="auth has-sticky-cta"><div id="root" style="display:contents"></div><script type="module" src="/src/parity/login.entry.jsx"></script></body>
+</html>

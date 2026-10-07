@@ -1,0 +1,98 @@
+[
+  {
+    "page": "404",
+    "source": "404.html",
+    "implementation": "declarative-react",
+    "navigation": null,
+    "staticHandlers": 0,
+    "scripts": 2
+  },
+  {
+    "page": "admin",
+    "source": "admin.html",
+    "implementation": "transitional-controller",
+    "navigation": "declarative-react",
+    "staticHandlers": 28,
+    "scripts": 10
+  },
+  {
+    "page": "contact",
+    "source": "contact.html",
+    "implementation": "declarative-react",
+    "navigation": null,
+    "staticHandlers": 0,
+    "scripts": 3
+  },
+  {
+    "page": "cookies",
+    "source": "cookies.html",
+    "implementation": "declarative-react",
+    "navigation": null,
+    "staticHandlers": 0,
+    "scripts": 2
+  },
+  {
+    "page": "dashboard",
+    "source": "dashboard.html",
+    "implementation": "transitional-controller",
+    "navigation": "declarative-react",
+    "staticHandlers": 2,
+    "scripts": 8
+  },
+  {
+    "page": "home",
+    "source": "home.html",
+    "implementation": "declarative-react",
+    "navigation": null,
+    "staticHandlers": 0,
+    "scripts": 2
+  },
+  {
+    "page": "login",
+    "source": "login.html",
+    "implementation": "declarative-react",
+    "navigation": null,
+    "staticHandlers": 6,
+    "scripts": 5
+  },
+  {
+    "page": "privacy",
+    "source": "privacy.html",
+    "implementation": "declarative-react",
+    "navigation": null,
+    "staticHandlers": 0,
+    "scripts": 2
+  },
+  {
+    "page": "set-password",
+    "source": "set-password.html",
+    "implementation": "declarative-react",
+    "navigation": null,
+    "staticHandlers": 1,
+    "scripts": 2
+  },
+  {
+    "page": "terms",
+    "source": "terms.html",
+    "implementation": "declarative-react",
+    "navigation": null,
+    "staticHandlers": 0,
+    "scripts": 2
+  },
+  {
+    "page": "thank-you",
+    "source": "thank-you.html",
+    "implementation": "declarative-react",
+    "navigation": null,
+    "staticHandlers": 0,
+    "scripts": 2
+  },
+  {
+    "page": "users",
+    "source": "users.html",
+    "implementation": "transitional-controller",
+    "navigation": "declarative-react",
+    "staticHandlers": 10,
+    "scripts": 8
+  }
+]
