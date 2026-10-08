@@ -1,8 +1,8 @@
-# React migration status — 7 October 2026
+# React migration status — 8 October 2026
 
 ## Source and scope
 
-Visual and functional reference: the supplied `NewChanges-main (6)(2).zip`. Target repository: `CayelaemJ/EFS-React-Migration`. This branch starts from main commit `4df9d0016249d7287c2e3a13d1cff77cf533ce88` and imports the source application alongside the React migration. It does not merge the separately deployed `migration/fullstack-test` branch.
+Initial reference: the supplied `NewChanges-main (6)(2).zip`. The updated parity target is now NewChanges main commit `ed5a71a7cf9ee5ea5d3b337924be1db94a8a76f8` (PR #87), inspected on 8 October 2026. Reconciliation is pending; the existing React build does not yet contain all of these upstream updates. See `UPSTREAM_SOURCE.json`. Target repository: `CayelaemJ/EFS-React-Migration`. This branch starts from main commit `4df9d0016249d7287c2e3a13d1cff77cf533ce88` and imports the source application alongside the React migration. It does not merge the separately deployed `migration/fullstack-test` branch.
 
 The goal is a fully declarative React frontend covering both employer and portfolio dashboards and all supporting pages. **That goal is not complete.** React rendering alone does not satisfy it while imperative controllers remain.
 
@@ -45,3 +45,11 @@ No Railway deployment, source-branch switch, variable change or database mutatio
 ## CI follow-up
 
 The first GitHub run passed build, security, route and interaction checks, but failed the two dashboard screenshot comparisons in Chromium 145. The saved screenshots exposed the queued demo number-fitting race described above. The follow-up guards that callback; CI must pass on the updated commit before accepting this checkpoint.
+
+## Updated upstream reference
+
+The source must continue to track NewChanges rather than treating the original ZIP as frozen. The latest inspected main adds The Fixer branding and approved light/dark assets, Brand Engine 1.4, partner co-branding, dark-mode repairs, client dashboard preview behaviour and a greeting after login. Reconcile each change into the React-owned navigation, forms and dialogs as well as the remaining transitional pages. Do not overwrite native React work with source controllers.
+
+Before acceptance, compare backend/API/security and source-sync services against the same pinned source commit; port relevant changes, then test against that source. Expand visual coverage to default and partner branding in light/dark mode on desktop/mobile. A change is not marked incorporated merely because it appears in this inventory.
+
+The latest migration CI rerun still failed. The queued demo-layout guard and local passing tests are not sufficient evidence that hosted CI parity is resolved; inspect the failed run before acceptance.

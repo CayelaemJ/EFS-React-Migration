@@ -1,6 +1,6 @@
 # EFS React migration
 
-Migration of the supplied **NewChanges-main (6)(2).zip** into a React frontend while retaining its Fastify/Prisma backend, assets, layouts, branding and canonical routes.
+Migration initially based on **NewChanges-main (6)(2).zip**, now tracking **NewChanges main** (pinned in `docs/UPSTREAM_SOURCE.json`) into a React frontend while retaining its Fastify/Prisma backend, assets, layouts, branding and canonical routes.
 
 **Work in progress.** All twelve pages have React build entries. The public pages and protected-page navigation are declarative React. The dashboard, administration and user-management bodies still use transitional controllers and are not yet a completed React rewrite. See [migration status](docs/REACT_MIGRATION_STATUS.md).
 
