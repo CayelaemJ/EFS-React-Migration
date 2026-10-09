@@ -75,7 +75,7 @@ for(const file of fs.readdirSync('public').filter(x=>x.endsWith('.html'))){
  const name=file.slice(0,-5),source=fs.readFileSync('public/'+file,'utf8'),doc=htmlParse(source);
  const html=doc.childNodes.find(n=>n.tagName==='html'),head=html.childNodes.find(n=>n.tagName==='head'),body=html.childNodes.find(n=>n.tagName==='body');
  const handlers=[],scripts=[];
- let securityLayout=false;
+ let securityLayout=false,emailLayout=false;
  function collect(n){if(n.tagName==='script'){if(name==='users')return;const src=n.attrs.find(a=>a.name==='src')?.value; const inline=n.childNodes.map(n=>n.value||'').join(''); if(name==='users'&&!src&&inline.includes('async function addUser()'))return; scripts.push((src?.includes('portal-nav-v080.js')||src?.includes('admin-source-status.js'))?'':src?.includes('brand-engine.js')?'window.BrandEngine=BrandEngine;':src?fs.readFileSync('public/'+src.split('/').pop().split('?')[0],'utf8'):inline);}else n.childNodes?.forEach(collect)} collect(head);collect(body);
  function jsx(n){
   if(n.nodeName==='#comment'||n.tagName==='script')return '';
@@ -83,6 +83,8 @@ for(const file of fs.readdirSync('public').filter(x=>x.endsWith('.html'))){
   if(!n.tagName)return '';
   if(name==='admin'){
    const id=n.attrs?.find(a=>a.name==='id')?.value;
+   if(!emailLayout&&id==='email-settings-card')return '<AdminEmailPanel/>';
+   if(!emailLayout&&n.tagName==='div'&&n.childNodes?.some(child=>child.childNodes?.some(title=>title.tagName==='h2'&&title.childNodes?.some(text=>text.value==='Automations'))))return '<AdminAutomationPanel/>';
    if(id==='rep-list')return '<ReportPicker/>';
    if(id==='sec-list')return '<AdminSections/>';
    if(id==='hist-body')return '<ImportHistoryRows/>';
@@ -97,16 +99,34 @@ for(const file of fs.readdirSync('public').filter(x=>x.endsWith('.html'))){
   }
   let attrs='';
   const nodeId=n.attrs?.find(a=>a.name==='id')?.value;
-  for(const a of n.attrs||[]){let key=attrName(a.name);if(a.name.startsWith('on')){const ev=a.name.slice(2); if(securityLayout){const action={'loadSecurityCenter()':'refresh','renderSecuritySessions()':'search','downloadSecurityAuditLog()':'download'}[a.value];if(!action)throw new Error('Unknown security handler '+a.value);attrs+=` on${eventNames[ev]}={actions.${action}}`;continue;} const id=handlers.length;handlers.push(generate(callback(a.value)).code);attrs+=` on${eventNames[ev]}={event => actions[${id}]?.(event)}`;continue;}
+  const settingsStyle=emailLayout?n.attrs?.find(a=>a.name==='style')?.value||'':'';
+  const settingsClasses=emailLayout?[settingsStyle.includes('grid-column:span 2')?'settings-wide':'',settingsStyle.includes('color:#5b6b7a')?'settings-label':'',settingsStyle.includes('color:#32217c')?'settings-accent':'',settingsStyle.includes('color:#7a5512')?'settings-warning':''].filter(Boolean).join(' '):'';
+  for(const a of n.attrs||[]){let key=attrName(a.name);if(a.name.startsWith('on')){const ev=a.name.slice(2); if(emailLayout){const action={'saveEmailSettings()':'saveEmail','testEmailSettings()':'testEmail','saveAutomations()':'saveAutomation',"runAutomationNow('stale')":'runStale',"runAutomationNow('digest')":'runDigest',"runAutomationNow('test')":'runTest'}[a.value];if(!action)throw new Error('Unknown settings handler '+a.value);attrs+=` on${eventNames[ev]}={actions.${action}}`;continue;} if(securityLayout){const action={'loadSecurityCenter()':'refresh','renderSecuritySessions()':'search','downloadSecurityAuditLog()':'download'}[a.value];if(!action)throw new Error('Unknown security handler '+a.value);attrs+=` on${eventNames[ev]}={actions.${action}}`;continue;} const id=handlers.length;handlers.push(generate(callback(a.value)).code);attrs+=` on${eventNames[ev]}={event => actions[${id}]?.(event)}`;continue;}
+   if(emailLayout&&['input','select'].includes(n.tagName)&&['value','checked'].includes(key))continue;
+   if(emailLayout&&nodeId==='mail-password'&&key==='placeholder')continue;
+   if(settingsClasses&&key==='className'){attrs+=` className={siteText(${json(a.value+' '+settingsClasses)})}`;continue;}
+   if(emailLayout&&['mail-status','auto-status'].includes(nodeId)&&key==='className'){attrs+=` className={state.${nodeId==='mail-status'?'mailStatusClass':'autoStatusClass'}}`;continue;}
+   if(emailLayout&&['mail-status','auto-status'].includes(nodeId)&&key==='style'){attrs+=' style={{display:state.config?"block":"none",marginBottom:14}}';continue;}
    if(securityLayout&&key==='className'&&nodeId==='security-center'){attrs+=' className={"card"+(state.collapsed?" compact-collapsed":"")}';continue;}
    if(securityLayout&&key==='className'&&nodeId==='sec-db-status'){attrs+=' className={state.databaseClass}';continue;}
-   if(key==='style'){attrs+=` style={${json(style(a.value))}} ref={node => { if(node) node.setAttribute("style", ${json(a.value)}); }}`;continue;}
+   if(key==='style'){attrs+=` style={${json(style(a.value))}}`+(emailLayout?'':` ref={node => { if(node) node.setAttribute("style", ${json(a.value)}); }}`);continue;}
    if(key==='value'&&['input','textarea','select'].includes(n.tagName))key='defaultValue';if(key==='checked')key='defaultChecked';
    if(key==='selected'){continue;}
    attrs+=bools.has(key)||key==='defaultChecked'?` ${key}={true}`:` ${key}={siteText(${json(a.value)})}`;
   }
   if(n.tagName==='select'){const option=n.childNodes?.find(x=>x.tagName==='option'&&x.attrs?.some(a=>a.name==='selected'));if(option)attrs+=` defaultValue={${json(option.attrs.find(a=>a.name==='value')?.value||'')}}`;}
   let children=(n.childNodes||[]).map(jsx).join('');
+  if(emailLayout){
+   if(settingsClasses&&!n.attrs?.some(a=>a.name==='class'))attrs+=` className=${json(settingsClasses)}`;
+   if(['input','select'].includes(n.tagName)){
+    const checked=n.attrs?.some(a=>a.name==='type'&&a.value==='checkbox');
+    attrs+=` ${checked?'checked':'value'}={state.values[${json(nodeId)}]} disabled={state.disabled} onChange={event=>actions.change(${json(nodeId)},event.target.${checked?'checked':'value'})}`;
+   }
+   if(n.tagName==='button')attrs+=' type="button" disabled={state.disabled}';
+   if(nodeId==='mail-password')attrs+=' placeholder={state.passwordPlaceholder}';
+   const fields={'mail-status':'mailStatus','auto-status':'autoStatus','mail-result':'mailResult','auto-result':'autoResult','mail-schedules':'schedules','mail-deliveries':'deliveries'};
+   if(fields[nodeId])children=`{state.${fields[nodeId]}}`;
+  }
   if(securityLayout){
    const fields={'sec-live':'live','sec-failed':'failed','sec-alerts':'alertsCount','sec-success':'success','security-state-title':'title','security-state-copy':'copy','sec-session-rows':'sessions','sec-alert-rows':'alerts','sec-login-rows':'logins','sec-device-rows':'devices','sec-access-rows':'access','sec-db-copy':'databaseCopy','sec-db-status':'databaseStatus','sec-db-controls':'databaseControls'};
    if(fields[nodeId])children=`{state.${fields[nodeId]}}`;
@@ -117,6 +137,14 @@ for(const file of fs.readdirSync('public').filter(x=>x.endsWith('.html'))){
   if(n.tagName==='textarea'){return `<textarea${attrs} defaultValue={${json((n.childNodes||[]).map(x=>x.value||'').join(''))}}/>`;}
   return children?`<${n.tagName}${attrs}>${children}</${n.tagName}>`:`<${n.tagName}${attrs}/>`;
  }
+ if(name==='admin'){
+  function findNode(n,predicate){if(predicate(n))return n;for(const child of n.childNodes||[]){const result=findNode(child,predicate);if(result)return result;}}
+  const mail=findNode(body,n=>n.attrs?.some(a=>a.name==='id'&&a.value==='email-settings-card'));
+  const automation=findNode(body,n=>n.tagName==='div'&&n.childNodes?.some(child=>child.childNodes?.some(title=>title.tagName==='h2'&&title.childNodes?.some(text=>text.value==='Automations'))));
+  if(!mail||!automation)throw new Error('Missing email/automation layout');
+  emailLayout=true;const mailMarkup=jsx(mail),automationMarkup=jsx(automation);emailLayout=false;
+  fs.writeFileSync(`${out}/admin-email-layout.jsx`,`// NewChanges settings layout; state and actions are owned by React.\nimport React from 'react';\nimport {siteText} from '../native/site-config.js';\nexport function EmailLayout({state,actions}){return (${mailMarkup});}\nexport function AutomationLayout({state,actions}){return (${automationMarkup});}\n`);
+ }
  if(name==='users'){
   function findSecurity(n){if(n.attrs?.some(a=>a.name==='id'&&a.value==='security-center'))return n;for(const child of n.childNodes||[]){const found=findSecurity(child);if(found)return found;}}
   securityLayout=true;const securityMarkup=jsx(findSecurity(body));securityLayout=false;
@@ -125,6 +153,11 @@ for(const file of fs.readdirSync('public').filter(x=>x.endsWith('.html'))){
  const markup=body.childNodes.map(jsx).join('\n');
  let controllerSource=scripts.join('\n;\n');
  if(name==='admin'){
+  const emailStart=controllerSource.indexOf('function emailDraft(){');
+  const emailEnd=controllerSource.indexOf('// ── admin audit log',emailStart);
+  if(emailStart<0||emailEnd<0)throw new Error('Missing email/automation controller boundary');
+  controllerSource=controllerSource.slice(0,emailStart)+controllerSource.slice(emailEnd);
+  controllerSource=controllerSource.replace("    ['email',loadEmailSettings],\n",'');
   const sectionsStart=controllerSource.indexOf('const ROLE_LABEL =');
   const sectionsEnd=controllerSource.indexOf('// ── danger zone: full reset',sectionsStart);
   if(sectionsStart<0||sectionsEnd<0)throw new Error('Missing section permissions migration boundary');
@@ -157,7 +190,7 @@ for(const file of fs.readdirSync('public').filter(x=>x.endsWith('.html'))){
  const control=transform(controllerSource);
  const code=`// Ported from New Changes ${file}; keep source structure and CSS selectors intact.\nimport React from 'react';\n${name==='users'?"import {AddUser,UsersList,RevokedUsers} from '../native/UsersManagement.jsx';\nimport {SecurityCenter} from '../native/SecurityCenter.jsx';\n":''}${name==='dashboard'?"import {showQuickActions,showScheduleReport} from '../native/DashboardDialogs.jsx';\n":''}import BrandEngine from '../lib/brand-engine.js';\nimport {renderMarkup,insertMarkup,registerAction,decodeAttribute,onReady,createMarkupElement} from './runtime.jsx';\nimport {siteText} from '../native/site-config.js';\nlet actions=[];\nexport function Page(){return <>${markup}</>;}\nlet started=false;\nexport function start(){if(started)return;started=true;\nactions=[${handlers.join(',\n')}];\n${control}\n}\n`;
  fs.writeFileSync(`${out}/${name}.jsx`,code);
- if(name==='admin')fs.writeFileSync(`${out}/${name}.jsx`,code.replace("import React from 'react';", "import React from 'react';\nimport {AdminSections} from '../native/AdminSections.jsx';\nimport {ReportPicker,ReportWorkspace,ImportHistoryRows,initializeReports,refreshImportHistory} from '../native/AdminReports.jsx';"));
+ if(name==='admin')fs.writeFileSync(`${out}/${name}.jsx`,code.replace("import React from 'react';", "import React from 'react';\nimport {AdminEmailPanel,AdminAutomationPanel} from '../native/AdminSettings.jsx';\nimport {AdminSections} from '../native/AdminSections.jsx';\nimport {ReportPicker,ReportWorkspace,ImportHistoryRows,initializeReports,refreshImportHistory} from '../native/AdminReports.jsx';"));
  const native=fs.existsSync(`frontend/src/native/${name}.jsx`);
  const staticPage=['home','404','privacy','terms','cookies','thank-you'].includes(name);
  let entry=native
@@ -169,6 +202,7 @@ for(const file of fs.readdirSync('public').filter(x=>x.endsWith('.html'))){
  if(name==='dashboard')entry="import {DashboardDialogs} from '../native/DashboardDialogs.jsx';\n"+entry.replace('<PortalNavigation/>','<PortalNavigation/><DashboardDialogs/>');
  if(name==='users')entry="import {UsersProvider} from '../native/UsersManagement.jsx';\n"+entry.replace('<><Page/><PortalNavigation/><SourceStatus/></>','<UsersProvider><Page/><PortalNavigation/><SourceStatus/></UsersProvider>');
  if(name==='admin')entry="import {AdminReportsProvider} from '../native/AdminReports.jsx';\n"+entry.replace('<><Page/><PortalNavigation/><SourceStatus/></>','<AdminReportsProvider><Page/><PortalNavigation/><SourceStatus/></AdminReportsProvider>');
+ if(name==='admin')entry="import {AdminSettingsProvider} from '../native/AdminSettings.jsx';\n"+entry.replace('<AdminReportsProvider>','<AdminSettingsProvider><AdminReportsProvider>').replace('</AdminReportsProvider>','</AdminReportsProvider></AdminSettingsProvider>');
  fs.writeFileSync(`${out}/${name}.entry.jsx`,entry);
  let skeleton=source.replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi,'');
  skeleton=skeleton.replace(/<body([^>]*)>[\s\S]*<\/body>/i,`<body$1><div id="root" style="display:contents"></div><script type="module" src="/src/parity/${name}.entry.jsx"></script></body>`);

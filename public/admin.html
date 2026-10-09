@@ -241,7 +241,15 @@
   .source-mode-card strong{display:block;font-size:13.5px;color:var(--brand-primary);}
   .source-mode-card small{display:block;margin-top:3px;color:var(--grey-l);font-size:11.5px;line-height:1.4;font-weight:600;}
   .integration-panel-title{font-size:13px;font-weight:800;color:var(--brand-primary);margin:2px 0 2px;grid-column:span 2;}
-  @media(max-width:720px){.source-mode-grid{grid-template-columns:1fr}.integration-two-col{grid-template-columns:1fr!important}.integration-two-col label[style*="grid-column:span 2"],.integration-panel-title{grid-column:span 1!important}}
+  @media(max-width:720px){.source-mode-grid{grid-template-columns:1fr}.integration-two-col{grid-template-columns:1fr!important}.integration-two-col label[style*="grid-column:span 2"],.integration-two-col .settings-wide,.integration-panel-title{grid-column:span 1!important}}
+  /* Native React styles serialize differently from source HTML. Use stable
+     classes for responsive fields and theme overrides, not style substrings. */
+  html.portal-dark .settings-label{color:var(--grey)!important;}
+  html.portal-dark .settings-accent{color:var(--brand-primary)!important;}
+  html.portal-dark .settings-warning{color:#f2c46b!important;background:var(--amber-soft)!important;border-color:var(--dm-line)!important;}
+  html.portal-dark .settings-error{color:#ff9c8a!important;}
+  html.portal-dark .settings-success{color:#6fe3a6!important;}
+  html.portal-dark #mail-provider{background:var(--dm-surface)!important;}
 
   /* ── welcome splash (shown briefly right after sign-in) ── */
   #welcome-splash{position:fixed;inset:0;z-index:9999;display:flex;align-items:center;justify-content:center;background:#f3f7fb;background:radial-gradient(900px 520px at 50% -8%,color-mix(in srgb,var(--blue) 12%,transparent),transparent 62%),linear-gradient(160deg,color-mix(in srgb,var(--ice) 42%,#fff) 0%,color-mix(in srgb,var(--brand-soft) 68%,#f3f7fb) 100%);transition:opacity .45s ease, visibility .45s ease;}

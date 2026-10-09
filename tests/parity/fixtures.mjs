@@ -22,6 +22,7 @@ export function fixture(url,method='GET'){
  if(p.endsWith('/periods'))return {periods:[{value:'2026-09',label:'September 2026'}],latest:'2026-09'};
  if(p==='/api/users')return method==='GET'?users:{ok:true};
  if(p==='/api/admin/sections')return sections;
+ if(p==='/api/admin/email-settings')return {};
  if(p==='/api/admin/reports')return {loadOrder:LOAD_ORDER,reports:formatManifest(REPORT_FORMATS)};
  if(p.endsWith('/overview')||p.endsWith('/database')||p.endsWith('/integration')||p.endsWith('/email')||p.endsWith('/automations')||p.endsWith('/data-quality')||p.endsWith('/replica-health'))return {};
  if(p.includes('/engagement'))return {summary:{},daily:[],topUsers:[],topPages:[],events:[]};

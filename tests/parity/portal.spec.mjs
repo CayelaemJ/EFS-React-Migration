@@ -1061,17 +1061,299 @@ test("React section permission list retries load failures and stays hidden for o
   await page.reload();
   await expect(page.locator("#rep-list .rep")).toHaveCount(10);
   await expect(
-    page
-      .locator(".card")
-      .filter({
-        has: page.getByRole("heading", {
-          name: "Dashboard Sections",
-          exact: true,
-        }),
+    page.locator(".card").filter({
+      has: page.getByRole("heading", {
+        name: "Dashboard Sections",
+        exact: true,
       }),
+    }),
   ).toBeHidden();
   await expect(
     page.locator('[data-section-key="voiceOfEmployee"]'),
   ).toHaveCount(0);
   expect(attempts).toBe(previous);
 });
+
+test("React email settings retain failed drafts, clear saved secrets and send current test values", async ({
+  page,
+}) => {
+  const config = {
+    emailProvider: "smtp",
+    smtpHost: "smtp.example.invalid",
+    smtpPort: 587,
+    configured: true,
+    hasPassword: true,
+    fromEmail: "reports@example.invalid",
+  };
+  const posts = [];
+  let rejectSave = true;
+  await mockApi(page, { "/api/admin/email-settings": config });
+  await page.addInitScript(() =>
+    localStorage.setItem("cookieNoticeDismissed", "1"),
+  );
+  await page.route("**/api/admin/email-settings", async (route) => {
+    if (route.request().method() === "GET")
+      return route.fulfill({ json: config });
+    const body = route.request().postDataJSON();
+    posts.push(body);
+    if (rejectSave) {
+      rejectSave = false;
+      return route.fulfill({
+        status: 503,
+        json: { error: "Email provider unavailable" },
+      });
+    }
+    Object.assign(config, body);
+    return route.fulfill({ json: { ok: true } });
+  });
+  await page.route("**/api/admin/email-settings/test", (route) => {
+    posts.push(route.request().postDataJSON());
+    return route.fulfill({ json: { recipient: "tester@example.invalid" } });
+  });
+  await page.goto(url + "/admin");
+  await expect(page.locator("#mail-host")).toHaveValue(config.smtpHost);
+  await page.locator("#mail-host").fill("smtp.new.example.invalid");
+  await page.locator("#mail-password").fill("isolated-test-password");
+  await page.locator("#mail-resend-key").fill("isolated-test-key");
+  await page
+    .getByRole("button", { name: "Save email settings", exact: true })
+    .click();
+  await expect(page.locator("#mail-result")).toContainText(
+    "Email provider unavailable",
+  );
+  await expect(page.locator("#mail-host")).toHaveValue(
+    "smtp.new.example.invalid",
+  );
+  await expect(page.locator("#mail-password")).toHaveValue(
+    "isolated-test-password",
+  );
+  await page
+    .getByRole("button", { name: "Save email settings", exact: true })
+    .click();
+  await expect(page.locator("#mail-result")).toContainText(
+    "Email settings saved",
+  );
+  await expect(page.locator("#mail-password")).toHaveValue("");
+  await expect(page.locator("#mail-resend-key")).toHaveValue("");
+  await page.locator("#mail-provider").selectOption("resend");
+  await page.locator("#mail-test-recipient").fill("tester@example.invalid");
+  await page
+    .getByRole("button", { name: "Send test email", exact: true })
+    .click();
+  await expect(page.locator("#mail-result")).toContainText(
+    "Test email sent to tester@example.invalid",
+  );
+  await expect(page.locator("#mail-provider")).toHaveValue("resend");
+  expect(posts[1].smtpPassword).toBe("isolated-test-password");
+  expect(posts[1].resendApiKey).toBe("isolated-test-key");
+  expect(posts[2]).toMatchObject({
+    emailProvider: "resend",
+    recipient: "tester@example.invalid",
+  });
+  expect(posts[2]).not.toHaveProperty("smtpPassword");
+  expect(posts[2]).not.toHaveProperty("resendApiKey");
+});
+
+test("React automation saves and run-now actions preserve unrelated drafts", async ({
+  page,
+}) => {
+  const config = {
+    emailProvider: "smtp",
+    smtpHost: "smtp.example.invalid",
+    configured: true,
+  };
+  const posts = [];
+  await mockApi(page, { "/api/admin/email-settings": config });
+  await page.addInitScript(() =>
+    localStorage.setItem("cookieNoticeDismissed", "1"),
+  );
+  await page.route("**/api/admin/email-settings", (route) => {
+    if (route.request().method() === "GET")
+      return route.fulfill({ json: config });
+    const body = route.request().postDataJSON();
+    posts.push(body);
+    Object.assign(config, body);
+    return route.fulfill({ json: { ok: true } });
+  });
+  await page.route("**/api/admin/automations/run", (route) => {
+    posts.push(route.request().postDataJSON());
+    return route.fulfill({
+      json: { message: "Completed isolated automation" },
+    });
+  });
+  await page.goto(url + "/admin");
+  await expect(page.locator("#mail-host")).toHaveValue(config.smtpHost);
+  await page.locator("#mail-host").fill("unsaved.example.invalid");
+  await page.locator("#auto-alert-emails").fill("admin@example.invalid");
+  await page.locator("#auto-stale-days").fill("180");
+  await page.locator("#auto-digest-enabled").check();
+  await page.locator("#synthetic-data-mode").check();
+  await page
+    .getByRole("button", { name: "Save automation settings", exact: true })
+    .click();
+  await expect(page.locator("#auto-result")).toContainText(
+    "Automation settings saved",
+  );
+  await expect(page.locator("#mail-host")).toHaveValue(
+    "unsaved.example.invalid",
+  );
+  expect(posts[0]).toMatchObject({
+    alertEmails: "admin@example.invalid",
+    staleDeactivateDays: 180,
+    digestEnabled: true,
+    syntheticDataMode: true,
+  });
+  expect(posts[0]).not.toHaveProperty("smtpHost");
+  await page
+    .locator("#auto-alert-emails")
+    .fill("unsaved-admin@example.invalid");
+  for (const name of [
+    "Run stale-account check now",
+    "Send digest now",
+    "Send test alert",
+  ]) {
+    await page.getByRole("button", { name, exact: true }).click();
+    await expect(page.locator("#auto-result")).toContainText(
+      "Completed isolated automation",
+    );
+    await expect(page.getByRole("button", { name, exact: true })).toBeEnabled();
+  }
+  await expect(page.locator("#auto-alert-emails")).toHaveValue(
+    "unsaved-admin@example.invalid",
+  );
+  expect(posts.slice(1)).toEqual([
+    { kind: "stale" },
+    { kind: "digest" },
+    { kind: "test" },
+  ]);
+});
+
+test("React settings retry failed loads and render schedule and delivery values as text", async ({
+  page,
+}) => {
+  let attempts = 0;
+  await mockApi(page, {
+    "/api/admin/report-schedules": [
+      {
+        id: "mail-schedule",
+        name: "Payroll report",
+        frequency: "WEEKLY",
+        dayOfWeek: 1,
+        sendTime: "08:00",
+        active: false,
+        user: { name: "Example User", email: "user@example.invalid" },
+      },
+    ],
+    "/api/admin/report-deliveries": [
+      {
+        id: "mail-delivery",
+        subject: "<img src=x onerror=alert(1)>",
+        status: "FAILED",
+        recipients: ["user@example.invalid"],
+        error: "Delivery rejected",
+      },
+    ],
+  });
+  await page.addInitScript(() =>
+    localStorage.setItem("cookieNoticeDismissed", "1"),
+  );
+  await page.route("**/api/admin/email-settings", (route) =>
+    ++attempts === 1
+      ? route.fulfill({ status: 503, json: { error: "Settings unavailable" } })
+      : route.fulfill({ json: { configured: true, emailProvider: "resend" } }),
+  );
+  await page.goto(url + "/admin");
+  await expect(page.locator("#mail-result")).toContainText(
+    "Settings unavailable",
+  );
+  await page
+    .locator("#mail-result")
+    .getByRole("button", { name: "Retry", exact: true })
+    .click();
+  await expect(page.locator("#mail-status")).toContainText(
+    "Resend API is configured",
+  );
+  await expect(page.locator("#mail-schedules")).toContainText(
+    "Weekly · Mon 08:00",
+  );
+  await expect(page.locator("#mail-schedules")).toContainText("Paused");
+  await expect(page.locator("#mail-deliveries")).toContainText(
+    "<img src=x onerror=alert(1)>",
+  );
+  await expect(page.locator("#mail-deliveries img")).toHaveCount(0);
+  await expect(page.locator("#mail-deliveries")).toContainText(
+    "Delivery rejected",
+  );
+  await expect(
+    page.getByRole("button", { name: "Save email settings", exact: true }),
+  ).toBeEnabled();
+});
+
+for (const width of [1440, 390])
+  test(`React settings preserve source dark-mode layout and colours at ${width}px`, async ({
+    browser,
+  }) => {
+    const measurements = [];
+    for (const port of [4101, 4100]) {
+      const page = await browser.newPage({
+        viewport: { width, height: 1000 },
+        timezoneId: "Africa/Johannesburg",
+      });
+      await mockApi(page, {
+        "/api/admin/email-settings": {
+          emailProvider: "smtp",
+          configured: true,
+        },
+        "/api/admin/report-deliveries": [
+          {
+            id: "delivery",
+            subject: "Test report",
+            status: "FAILED",
+            error: "Delivery rejected",
+            recipients: ["test@example.invalid"],
+          },
+        ],
+      });
+      await page.addInitScript(() => {
+        localStorage.setItem("cookieNoticeDismissed", "1");
+        localStorage.setItem("empower-fin-theme", "dark");
+      });
+      await page.goto(`http://127.0.0.1:${port}/admin`);
+      await expect(page.locator("html")).toHaveClass(/portal-dark/);
+      await expect(page.locator("#mail-status")).toContainText(
+        "SMTP is configured",
+      );
+      await expect(page.locator("#mail-deliveries")).toContainText(
+        "Delivery rejected",
+      );
+      const selectors = [
+        "#mail-provider",
+        "#mail-host",
+        "#mail-portal-url",
+        "#auto-alert-emails",
+        "label:has(#mail-from-email)",
+        "label:has(#mail-secure)",
+        "label:has(#synthetic-data-mode)",
+        "#mail-deliveries td:nth-child(3)",
+        "#mail-deliveries td:nth-child(4) div",
+      ];
+      const values = [];
+      for (const selector of selectors)
+        values.push(
+          await page.locator(selector).evaluate((node) => {
+            const style = getComputedStyle(node),
+              rect = node.getBoundingClientRect();
+            return {
+              color: style.color,
+              background: style.backgroundColor,
+              border: style.borderColor,
+              width: Math.round(rect.width),
+              height: Math.round(rect.height),
+            };
+          }),
+        );
+      measurements.push(values);
+      await page.close();
+    }
+    expect(measurements[1]).toEqual(measurements[0]);
+  });

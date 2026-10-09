@@ -18,6 +18,8 @@ for(const {page}of manifest){
  for(const [,asset]of built.matchAll(/(?:src|href)="(\/static\/[^"?]+)(?:\?[^\"]*)?"/g))assert.ok(fs.existsSync('public/'+asset.slice(8)),`${page}: missing ${asset}`);
 }
 const server=read('src/server.ts');
+assert.doesNotMatch(read('frontend/src/parity/admin.jsx'), /function (emailDraft|loadEmailSettings|saveEmailSettings|testEmailSettings|saveAutomations|runAutomationNow|loadScheduledReportsAdmin|loadEmailDeliveries)\(/, 'Email/automation controllers must not return to production');
+assert.doesNotMatch(read('frontend/src/native/AdminSettings.jsx'), /innerHTML|querySelector|document\.getElementById/, 'Native settings must render from React state');
 assert.ok(server.includes('join(PUBLIC_DIR, "react", "pages", file)'),'Canonical routes must serve built React pages');
 assert.ok(server.includes('canAccessModule(user, "dashboard")'));
 assert.ok(server.includes('canAccessModule(user, "admin")'));
