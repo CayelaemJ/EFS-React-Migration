@@ -70,11 +70,49 @@ for (const width of [1440, 390])
           localStorage.setItem("cookieNoticeDismissed", "1"),
         );
         await page.goto(`http://127.0.0.1:${port}/${name}`);
+        if (name === "dashboard") {
+          await expect(page.locator("#data-fresh-label")).toContainText(
+            "Source updated",
+          );
+          await expect(
+            page.locator("#region-bars .hbar-val").first(),
+          ).toHaveCSS("white-space", "nowrap");
+        }
         await page.waitForTimeout(1800);
         await page.addStyleTag({
           content:
             "*,*::before,*::after {transition:none!important;animation:none!important;caret-color:transparent!important;} #ent-progress,#welcome-splash{display:none!important;}",
         });
+        await page.evaluate(async () => {
+          await document.fonts.ready;
+          await new Promise((resolve) =>
+            requestAnimationFrame(() => requestAnimationFrame(resolve)),
+          );
+        });
+        const layout = await page
+          .locator(
+            "[id],.kpi-value,.stat-value,.metric-value,.stat-cell .v,.rating-big,.stress-v",
+          )
+          .evaluateAll((nodes) =>
+            nodes.map((node) => {
+              const rect = node.getBoundingClientRect();
+              const style = getComputedStyle(node);
+              return {
+                id: node.id,
+                className: node.getAttribute("class"),
+                text: node.textContent?.slice(0, 80),
+                y: rect.y,
+                height: rect.height,
+                width: rect.width,
+                font: style.fontSize,
+                lineHeight: style.lineHeight,
+              };
+            }),
+          );
+        fs.writeFileSync(
+          testInfo.outputPath(`layout-${port}.json`),
+          JSON.stringify(layout, null, 2),
+        );
       }
       const a = PNG.sync.read(await pages[0].screenshot({ fullPage: true }));
       const b = PNG.sync.read(await pages[1].screenshot({ fullPage: true }));
@@ -129,6 +167,29 @@ for (const width of [1440, 390])
       for (const page of pages) await page.close();
     });
   }
+test("live dashboard values fit after initial load and filter refresh", async ({
+  browser,
+}) => {
+  for (const port of [4101, 4100]) {
+    const page = await browser.newPage({
+      viewport: { width: 1440, height: 1000 },
+    });
+    await mockApi(page);
+    await page.goto(`http://127.0.0.1:${port}/dashboard`);
+    const value = page.locator("#region-bars .hbar-val").first();
+    await expect(value).toHaveCSS("white-space", "nowrap");
+    const refresh = page.waitForResponse(
+      (response) =>
+        response.url().includes("/dashboard?") &&
+        response.url().includes("range=30d"),
+    );
+    await page.locator("#month-select").selectOption("30d");
+    await refresh;
+    await expect(value).toHaveCSS("white-space", "nowrap");
+    await expect(value).toHaveCSS("font-size", "12.5px");
+    await page.close();
+  }
+});
 test("navigation, dark mode and mobile account destinations", async ({
   page,
 }) => {

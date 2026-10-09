@@ -2418,6 +2418,7 @@ function applyState() {
     const incomeLabel = document.querySelector('#income-filter .tag-label');
     if (siteLabel) siteLabel.textContent = DATA.filterContext?.site || (STATE.region === 'all' ? 'All regions' : STATE.region);
     if (incomeLabel) incomeLabel.textContent = DATA.filterContext?.incomeLabel || (STATE.income === 'all' ? 'All income bands' : STATE.income);
+    requestAnimationFrame(() => fitResponsiveDataValues());
     return;
   }
   const p = PERIOD[STATE.period],
