@@ -2,7 +2,14 @@ import { test, expect } from "@playwright/test";
 import { PNG } from "pngjs";
 import pixelmatch from "pixelmatch";
 import fs from "node:fs";
-import { mockApi, me, users, dashboard, fixture } from "./fixtures.mjs";
+import {
+  mockApi,
+  me,
+  users,
+  sections,
+  dashboard,
+  fixture,
+} from "./fixtures.mjs";
 import { completedJobResponse } from "../../dist/services/jobResponses.js";
 const url = "http://127.0.0.1:4100";
 async function ready(page, path, overrides = {}) {
@@ -945,4 +952,126 @@ test("employer schedule recipients stay read-only and unavailable mail disables 
   await expect(page.locator(".schedule-note.err")).toContainText(
     "System email is not configured",
   );
+});
+
+test("React section permissions save visibility, roles and individual grants with recovery", async ({
+  page,
+}) => {
+  let current = structuredClone(sections),
+    rejectNext = true;
+  const writes = [];
+  await mockApi(page);
+  await page.addInitScript(() =>
+    localStorage.setItem("cookieNoticeDismissed", "1"),
+  );
+  await page.route("**/api/admin/sections**", async (route) => {
+    const request = route.request();
+    if (request.method() === "GET") return route.fulfill({ json: current });
+    const body = request.postDataJSON(),
+      path = new URL(request.url()).pathname;
+    writes.push({ body, path, method: request.method() });
+    if (rejectNext) {
+      rejectNext = false;
+      return route.fulfill({
+        status: 503,
+        json: { error: "Permissions unavailable" },
+      });
+    }
+    if (path.endsWith("/revoke")) current[0].overrides = [];
+    else if (path.endsWith("/grant"))
+      current[0].overrides = [
+        { userId: body.userId, name: users[0].name, email: users[0].email },
+      ];
+    else Object.assign(current[0], body);
+    return route.fulfill({ json: { ok: true } });
+  });
+  await page.goto(url + "/admin");
+  const card = page.locator('[data-section-key="voiceOfEmployee"]');
+  const visible = card.getByRole("checkbox", {
+    name: "Voice of the employee",
+    exact: true,
+  });
+  await expect(visible).toBeChecked();
+  await visible.click();
+  await expect(page.locator('#sec-list [role="alert"]')).toContainText(
+    "Permissions unavailable",
+  );
+  await expect(visible).toBeChecked();
+  await visible.click();
+  await expect(visible).not.toBeChecked();
+  await expect(card).toContainText("Hidden from everyone");
+  await card.getByRole("checkbox", { name: "Viewer", exact: true }).click();
+  await expect(
+    card.getByRole("checkbox", { name: "Viewer", exact: true }),
+  ).not.toBeChecked();
+  expect(current[0].allowedRoles).toContain("SUPERADMIN");
+  await card
+    .getByRole("link", { name: "Revoke access for Example User" })
+    .click();
+  await expect(
+    card.getByRole("link", { name: "Revoke access for Example User" }),
+  ).toHaveCount(0);
+  await card.getByRole("combobox").selectOption("user-1");
+  await card.getByRole("button", { name: "Grant", exact: true }).click();
+  await expect(
+    card.getByRole("link", { name: "Revoke access for Example User" }),
+  ).toBeVisible();
+  await expect(card.getByRole("combobox")).toHaveValue("");
+  expect(writes.map((row) => row.method)).toEqual([
+    "PATCH",
+    "PATCH",
+    "PATCH",
+    "POST",
+    "POST",
+  ]);
+  expect(writes.at(-1).body).toEqual({ userId: "user-1" });
+});
+
+test("React section permission list retries load failures and stays hidden for operational admins", async ({
+  page,
+}) => {
+  let attempts = 0;
+  await mockApi(page);
+  await page.addInitScript(() =>
+    localStorage.setItem("cookieNoticeDismissed", "1"),
+  );
+  await page.route("**/api/admin/sections", (route) =>
+    ++attempts === 1
+      ? route.fulfill({
+          status: 503,
+          json: { error: "Section service unavailable" },
+        })
+      : route.fulfill({ json: sections }),
+  );
+  await page.goto(url + "/admin");
+  await expect(page.locator('#sec-list [role="alert"]')).toContainText(
+    "Section service unavailable",
+  );
+  await page
+    .locator("#sec-list")
+    .getByRole("button", { name: "Retry", exact: true })
+    .click();
+  await expect(
+    page.locator('[data-section-key="voiceOfEmployee"]'),
+  ).toBeVisible();
+  await page.route("**/api/auth/me", (route) =>
+    route.fulfill({ json: { ...me, role: "ADMIN" } }),
+  );
+  const previous = attempts;
+  await page.reload();
+  await expect(page.locator("#rep-list .rep")).toHaveCount(10);
+  await expect(
+    page
+      .locator(".card")
+      .filter({
+        has: page.getByRole("heading", {
+          name: "Dashboard Sections",
+          exact: true,
+        }),
+      }),
+  ).toBeHidden();
+  await expect(
+    page.locator('[data-section-key="voiceOfEmployee"]'),
+  ).toHaveCount(0);
+  expect(attempts).toBe(previous);
 });

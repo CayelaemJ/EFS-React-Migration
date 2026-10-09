@@ -84,6 +84,7 @@ for(const file of fs.readdirSync('public').filter(x=>x.endsWith('.html'))){
   if(name==='admin'){
    const id=n.attrs?.find(a=>a.name==='id')?.value;
    if(id==='rep-list')return '<ReportPicker/>';
+   if(id==='sec-list')return '<AdminSections/>';
    if(id==='hist-body')return '<ImportHistoryRows/>';
    if(n.tagName==='div'&&n.attrs?.some(a=>a.name==='class'&&a.value==='card')&&n.childNodes?.some(child=>child.childNodes?.some(title=>title.attrs?.some(a=>a.name==='id'&&a.value==='rep-title'))))return '<ReportWorkspace/>';
   }
@@ -124,6 +125,11 @@ for(const file of fs.readdirSync('public').filter(x=>x.endsWith('.html'))){
  const markup=body.childNodes.map(jsx).join('\n');
  let controllerSource=scripts.join('\n;\n');
  if(name==='admin'){
+  const sectionsStart=controllerSource.indexOf('const ROLE_LABEL =');
+  const sectionsEnd=controllerSource.indexOf('// ── danger zone: full reset',sectionsStart);
+  if(sectionsStart<0||sectionsEnd<0)throw new Error('Missing section permissions migration boundary');
+  controllerSource=controllerSource.slice(0,sectionsStart)+controllerSource.slice(sectionsEnd);
+  controllerSource=controllerSource.replace("    ['sections',loadSections],\n",'');
   const manifestStart=controllerSource.indexOf("  try{\n    const r=await fetch(`${API}/api/admin/reports`");
   const manifestEnd=controllerSource.indexOf('  const optionalLoads=[',manifestStart);
   if(manifestStart<0||manifestEnd<0)throw new Error('Missing report manifest migration boundary');
@@ -151,7 +157,7 @@ for(const file of fs.readdirSync('public').filter(x=>x.endsWith('.html'))){
  const control=transform(controllerSource);
  const code=`// Ported from New Changes ${file}; keep source structure and CSS selectors intact.\nimport React from 'react';\n${name==='users'?"import {AddUser,UsersList,RevokedUsers} from '../native/UsersManagement.jsx';\nimport {SecurityCenter} from '../native/SecurityCenter.jsx';\n":''}${name==='dashboard'?"import {showQuickActions,showScheduleReport} from '../native/DashboardDialogs.jsx';\n":''}import BrandEngine from '../lib/brand-engine.js';\nimport {renderMarkup,insertMarkup,registerAction,decodeAttribute,onReady,createMarkupElement} from './runtime.jsx';\nimport {siteText} from '../native/site-config.js';\nlet actions=[];\nexport function Page(){return <>${markup}</>;}\nlet started=false;\nexport function start(){if(started)return;started=true;\nactions=[${handlers.join(',\n')}];\n${control}\n}\n`;
  fs.writeFileSync(`${out}/${name}.jsx`,code);
- if(name==='admin')fs.writeFileSync(`${out}/${name}.jsx`,code.replace("import React from 'react';", "import React from 'react';\nimport {ReportPicker,ReportWorkspace,ImportHistoryRows,initializeReports,refreshImportHistory} from '../native/AdminReports.jsx';"));
+ if(name==='admin')fs.writeFileSync(`${out}/${name}.jsx`,code.replace("import React from 'react';", "import React from 'react';\nimport {AdminSections} from '../native/AdminSections.jsx';\nimport {ReportPicker,ReportWorkspace,ImportHistoryRows,initializeReports,refreshImportHistory} from '../native/AdminReports.jsx';"));
  const native=fs.existsSync(`frontend/src/native/${name}.jsx`);
  const staticPage=['home','404','privacy','terms','cookies','thank-you'].includes(name);
  let entry=native
