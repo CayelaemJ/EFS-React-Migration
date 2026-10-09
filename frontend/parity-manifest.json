@@ -12,7 +12,7 @@
     "source": "admin.html",
     "implementation": "transitional-controller",
     "navigation": "declarative-react",
-    "staticHandlers": 28,
+    "staticHandlers": 29,
     "scripts": 10
   },
   {
@@ -37,7 +37,7 @@
     "implementation": "transitional-controller",
     "navigation": "declarative-react",
     "staticHandlers": 2,
-    "scripts": 8
+    "scripts": 9
   },
   {
     "page": "home",
@@ -90,9 +90,9 @@
   {
     "page": "users",
     "source": "users.html",
-    "implementation": "transitional-controller",
+    "implementation": "declarative-react",
     "navigation": "declarative-react",
-    "staticHandlers": 10,
-    "scripts": 8
+    "staticHandlers": 0,
+    "scripts": 0
   }
 ]

@@ -40,13 +40,15 @@ for (const name of [
     await ready(page, name === "home" ? "/" : "/" + name);
     await page.waitForTimeout(400);
     expect(errors).toEqual([]);
-    const broken = await page
-      .locator("img")
-      .evaluateAll((imgs) =>
-        imgs
-          .filter((i) => i.complete && i.naturalWidth === 0)
-          .map((i) => i.src),
-      );
+    const broken = await page.locator("img").evaluateAll((imgs) =>
+      imgs
+        // NewChanges keeps an unset, hidden partner-logo slot until branding
+        // supplies an image. Only an assigned image URL can fail to load.
+        .filter(
+          (i) => i.getAttribute("src") && i.complete && i.naturalWidth === 0,
+        )
+        .map((i) => i.src),
+    );
     expect(broken).toEqual([]);
   });
 }
@@ -104,20 +106,22 @@ for (const width of [1440, 390])
           console.log(
             "Region layout",
             i,
-            await pages[i]
-              .locator("#region-bars .hbar-row")
-              .evaluateAll((rows) =>
-                rows.map((row) => ({
-                  height: row.getBoundingClientRect().height,
-                  children: [...row.children].map((child) => ({
-                    className: child.className,
-                    style: child.getAttribute("style"),
-                    height: child.getBoundingClientRect().height,
-                    font: getComputedStyle(child).fontSize,
-                    lineHeight: getComputedStyle(child).lineHeight,
+            JSON.stringify(
+              await pages[i]
+                .locator("#region-bars .hbar-row")
+                .evaluateAll((rows) =>
+                  rows.map((row) => ({
+                    height: row.getBoundingClientRect().height,
+                    children: [...row.children].map((child) => ({
+                      className: child.className,
+                      style: child.getAttribute("style"),
+                      height: child.getBoundingClientRect().height,
+                      font: getComputedStyle(child).fontSize,
+                      lineHeight: getComputedStyle(child).lineHeight,
+                    })),
                   })),
-                })),
-              ),
+                ),
+            ),
           );
       }
       expect(changed / (a.width * a.height)).toBeLessThan(0.005);
@@ -149,7 +153,7 @@ test("dashboard gauge, filters, portfolio, quick actions and schedule dialog", a
   page.on("request", (r) => requests.push(r.url()));
   await ready(page, "/dashboard");
   await expect(page.locator("#executive-insight")).toContainText("70/100");
-  expect(await page.evaluate(() => window.BrandEngine?.VERSION)).toBe("1.1.0");
+  expect(await page.evaluate(() => window.BrandEngine?.VERSION)).toBe("1.4.0");
   await page.locator("#month-select").selectOption("30d");
   await expect
     .poll(() =>
@@ -199,6 +203,184 @@ test("regular administrators cannot grant privileged roles", async ({
   await expect(page.locator("#n-access-superadmin")).toHaveCount(0);
   await expect(page.locator("#n-access-admin")).toHaveCount(0);
 });
+test("React user creation retains inputs on failure and supplies an unsent setup link", async ({
+  page,
+}) => {
+  await ready(page, "/users");
+  let attempt = 0,
+    body;
+  await page.route("**/api/users", async (route) => {
+    if (route.request().method() === "GET") {
+      await route.fulfill({ json: users });
+      return;
+    }
+    body = route.request().postDataJSON();
+    attempt++;
+    await route.fulfill(
+      attempt === 1
+        ? { status: 400, json: { error: "Email already exists" } }
+        : {
+            json: {
+              setupPath: "/set-password?token=test",
+              emailSent: false,
+              emailError: "Mail unavailable",
+            },
+          },
+    );
+  });
+  await page.locator("#n-name").fill("New Person");
+  await page.locator("#n-email").fill("new@example.invalid");
+  await page.locator('input[name="access"][value="link"]').check();
+  await page.locator("#emp-pick input").check();
+  await page.getByRole("button", { name: "Create user", exact: true }).click();
+  await expect(page.locator("#add-msg")).toContainText("Email already exists");
+  await expect(page.locator("#n-email")).toHaveValue("new@example.invalid");
+  await page.getByRole("button", { name: "Create user", exact: true }).click();
+  await expect(page.locator("#link-box")).toContainText(
+    "/set-password?token=test",
+  );
+  expect(body).toMatchObject({
+    name: "New Person",
+    email: "new@example.invalid",
+    role: "EMPLOYER_MANAGER",
+    employerIds: ["employer-1"],
+    sendSetupLink: true,
+  });
+  await expect(page.locator("#n-name")).toHaveValue("");
+});
+test("React user editor clears employer links for admin roles and retains errors", async ({
+  page,
+}) => {
+  await ready(page, "/users");
+  let body,
+    attempt = 0;
+  await page.route("**/api/users/user-1", async (route) => {
+    body = route.request().postDataJSON();
+    attempt++;
+    await route.fulfill(
+      attempt === 1
+        ? { status: 400, json: { error: "Role update unavailable" } }
+        : { json: { ok: true } },
+    );
+  });
+  await page.locator("#user-list-card .compact-toggle").click();
+  await page
+    .locator("#user-rows")
+    .getByRole("button", { name: "Edit", exact: true })
+    .click();
+  await page.locator("#e-role-user-1").selectOption("ADMIN");
+  await page.locator("#e-name-user-1").fill("Updated User");
+  await page.getByRole("button", { name: "Save changes" }).click();
+  await expect(page.locator("#e-msg-user-1")).toContainText(
+    "Role update unavailable",
+  );
+  await expect(page.locator("#e-name-user-1")).toHaveValue("Updated User");
+  expect(body).toEqual({
+    name: "Updated User",
+    role: "ADMIN",
+    partnerId: null,
+    employerIds: [],
+  });
+  await page.getByRole("button", { name: "Save changes" }).click();
+  await expect(page.locator("#editor-user-1")).toHaveCount(0);
+});
+test("React security centre filters sessions, resolves alerts, and closes the profile on Escape", async ({
+  page,
+}) => {
+  const session = {
+    id: "session-1",
+    user: { id: "user-1", name: "Example User", email: "user@example.invalid" },
+    active: true,
+    location: "Cape Town",
+    ipAddress: "127.0.0.1",
+    deviceType: "Desktop",
+    browser: "Chrome",
+    operatingSystem: "Linux",
+    durationSeconds: 120,
+    createdAt: "2026-10-01",
+    lastSeenAt: "2026-10-01",
+  };
+  await ready(page, "/users", {
+    "/api/admin/security/sessions": [session],
+    "/api/admin/security/alerts": [
+      {
+        id: "alert-1",
+        severity: "HIGH",
+        title: "New device",
+        summary: "Device changed",
+        createdAt: "2026-10-01",
+      },
+    ],
+  });
+  await expect(page.locator("#sec-session-rows")).toContainText("Cape Town");
+  await page.locator("#sec-search").fill("missing");
+  await expect(page.locator("#sec-session-rows")).toContainText(
+    "No matching sessions",
+  );
+  await page.locator("#sec-search").fill("");
+  let resolved = false;
+  await page.route(
+    "**/api/admin/security/alerts/alert-1/resolve",
+    async (route) => {
+      resolved = true;
+      await route.fulfill({ json: { ok: true } });
+    },
+  );
+  await page
+    .locator("#sec-alert-rows")
+    .getByRole("button", { name: "Resolve" })
+    .click();
+  await expect.poll(() => resolved).toBe(true);
+  await page.locator("#user-list-card .compact-toggle").click();
+  await page
+    .locator("#user-rows")
+    .getByRole("button", { name: "Security", exact: true })
+    .click();
+  await expect(
+    page.getByRole("dialog", { name: "Example User" }),
+  ).toContainText("Cape Town");
+  await page.keyboard.press("Escape");
+  await expect(page.locator(".security-drawer")).toHaveCount(0);
+});
+for (const role of ["EMPLOYER_MANAGER", "SUPERADMIN"])
+  test(`latest partner branding follows ${role} shell rules in light and dark mode`, async ({
+    page,
+  }) => {
+    const logo =
+      "data:image/svg+xml," +
+      encodeURIComponent(
+        '<svg xmlns="http://www.w3.org/2000/svg" width="150" height="40"><rect width="150" height="40" fill="#204080"/><text x="10" y="26" fill="white">Partner</text></svg>',
+      );
+    const theme = {
+      name: "Partner",
+      branded: true,
+      logoDataUrl: logo,
+      accentColor: "A84628",
+      primaryColor: "204080",
+      navyColor: "204080",
+    };
+    await ready(page, "/dashboard", {
+      "/api/auth/me": { ...me, role, theme },
+      "/api/employers/employer-1/dashboard": { ...dashboard, theme },
+    });
+    for (const dark of [false, true]) {
+      if (dark) await page.locator(".portal-theme-quick").click();
+      await expect(page.locator("#portal-brand-default")).toBeVisible({
+        visible: role === "SUPERADMIN",
+      });
+      await expect(page.locator("#portal-brand-partner")).toBeVisible({
+        visible: role === "EMPLOYER_MANAGER",
+      });
+      if (role === "EMPLOYER_MANAGER")
+        await expect(page.locator("#portal-partner-logo")).toHaveAttribute(
+          "src",
+          logo,
+        );
+      await expect(
+        page.locator(".portal-powered-by,.portal-fixer-secondary"),
+      ).toHaveCount(0);
+    }
+  });
 test("report selection and integration mode buttons", async ({ page }) => {
   await ready(page, "/admin");
   await page.locator("#rep-list .rep").first().click();

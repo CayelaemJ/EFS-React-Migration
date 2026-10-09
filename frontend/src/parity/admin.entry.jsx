@@ -1,6 +1,7 @@
+import {SourceStatus} from '../native/SourceStatus.jsx';
 import React from 'react';
 import {mountPage} from './mount.jsx';
 import {Page,start} from './admin.jsx';
 import {PortalNavigation,installPortalNavigation} from '../native/PortalNavigation.jsx';
 installPortalNavigation();
-mountPage(()=> <><Page/><PortalNavigation/></>,start);
+mountPage(()=> <><Page/><PortalNavigation/><SourceStatus/></>,start);

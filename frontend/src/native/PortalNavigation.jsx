@@ -29,6 +29,7 @@ export function installPortalNavigation() {
   };
 }
 async function signOut() {
+  try {sessionStorage.removeItem("ef_splash_shown");} catch {}
   try {
     await fetch("/api/auth/logout", { method: "POST" });
   } catch {

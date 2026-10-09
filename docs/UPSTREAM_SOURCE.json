@@ -1,10 +1,10 @@
 {
   "repository": "CayelaemJ/NewChanges",
   "branch": "main",
-  "targetCommit": "ed5a71a7cf9ee5ea5d3b337924be1db94a8a76f8",
-  "checkedAt": "2026-10-08",
+  "targetCommit": "19f32c1905371ea8868eef82a6078c4439c93300",
+  "checkedAt": "2026-10-09",
   "previousReference": "NewChanges-main (6)(2).zip",
-  "status": "reconciliation-pending",
+  "status": "incorporated-pending-full-react-and-live-validation",
   "rule": "Latest verified NewChanges main is the parity reference. A newer source commit must be reviewed before migration acceptance; do not replace already migrated React components with legacy controllers.",
   "latestMergeFiles": [
     "docs/THE_FIXER_BRAND_RELEASE_CHECKLIST.md",
@@ -35,12 +35,26 @@
     "tests/brand-engine.test.mjs"
   ],
   "requiredAreas": [
-    "The Fixer approved default/reversed assets and partner co-branding",
+    "The Fixer approved default/reversed assets; custom partner portals use partner-only branding",
     "Brand Engine 1.4 and light/dark tokens",
     "Admin/Superadmin default shell versus partner employer content",
     "Dashboard visual/runtime fixes and client preview navigation",
     "Post-login greeting",
     "Backend source sync, reset/rebuild, role/security and API changes since ZIP",
     "Regression tests against updated source in default/partner, light/dark, desktop/mobile states"
+  ],
+  "previousReferenceCommit": "115a28a12ddc7ea1b5effbdb0baa354824ce7841",
+  "reconciledBackendServices": [
+    "dailyRefresh.ts",
+    "dataQualityService.ts",
+    "reportFormats.ts",
+    "snapshotBuilder.ts",
+    "partnerService.ts",
+    "asyncJobs.ts",
+    "importService.ts",
+    "syncJobs.ts",
+    "sourceAdapter.ts",
+    "syncService.ts",
+    "reportScheduler.ts"
   ]
 }

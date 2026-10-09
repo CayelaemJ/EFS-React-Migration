@@ -1,55 +1,37 @@
-# React migration status — 8 October 2026
+# React migration status — 9 October 2026
 
-## Source and scope
+The migration is **not ready for acceptance**. Dashboard and administration controllers still need conversion, hosted GitHub CI must pass on this checkpoint, and real authenticated workflows require migration-test credentials.
 
-Initial reference: the supplied `NewChanges-main (6)(2).zip`. The updated parity target is now NewChanges main commit `ed5a71a7cf9ee5ea5d3b337924be1db94a8a76f8` (PR #87), inspected on 8 October 2026. Reconciliation is pending; the existing React build does not yet contain all of these upstream updates. See `UPSTREAM_SOURCE.json`. Target repository: `CayelaemJ/EFS-React-Migration`. This branch starts from main commit `4df9d0016249d7287c2e3a13d1cff77cf533ce88` and imports the source application alongside the React migration. It does not merge the separately deployed `migration/fullstack-test` branch.
+## Source
 
-The goal is a fully declarative React frontend covering both employer and portfolio dashboards and all supporting pages. **That goal is not complete.** React rendering alone does not satisfy it while imperative controllers remain.
+The supplied ZIP was based on NewChanges commit `115a28a12ddc7ea1b5effbdb0baa354824ce7841`. The current source target is `19f32c1905371ea8868eef82a6078c4439c93300`, verified on 9 October. The initial reconciliation imported 53 changed files through `ed5a71a7cf9ee5ea5d3b337924be1db94a8a76f8`; the subsequent source update changes custom partner portals to partner-only branding. Existing native React components are retained rather than replaced with upstream controllers.
 
-| Surface | Current implementation | Remaining work |
+Brand Engine 1.4, supplied The Fixer normal/reversed SVG assets, updated styles, source-status UI, post-login greeting, dashboard/admin changes, backend source synchronisation, daily refresh, import, snapshot, report, partner and job services have been reconciled. The source frontend starter is not the production entry point: production uses the twelve React page entries and shared components. No Prisma schema changes were introduced by the source delta. SQL/deployment script changes are included but have not been executed against Railway.
+
+## React conversion
+
+| Surface | Implementation | Remaining work |
 | --- | --- | --- |
-| Sign-in, set password, contact | React components, controlled forms and request/error state | Broader authenticated backend integration verification |
-| Home, privacy, terms, cookies, thank you, 404 | React JSX with shared React lifecycle behaviour | Content remains source-identical |
-| Protected-page navigation and account controls | Shared React state, portals, theme persistence, mobile links, sign-out and deactivation dialog | Remove temporary controller-to-component data boundary when page controllers are replaced |
-| Employer and portfolio dashboards | React JSX layout and dynamic React rendering with retained imperative controller logic | Replace controller-owned DOM/state with React components/hooks; verify all employer/portfolio permutations |
-| Dashboard Quick Actions and report schedules | React components, controlled inputs, request/error state, keyboard focus lifecycle | Authenticated SMTP delivery verification |
-| Administration | React JSX layout and dynamic React rendering with retained imperative controller logic | Convert reports, imports, integration, job progress and other panels to React state/components |
-| User management and security centre | React JSX layout and dynamic React rendering with retained imperative controller logic | Convert editors, role/access state, security tables and telemetry to React components |
-| Backend and access rules | Existing Fastify/Prisma services retained; canonical routes serve built React pages | Live database and environment integration testing before release |
+| Sign-in, password setup, contact | React controlled forms, validation and API/error state | Real authenticated integration verification |
+| Home and legal/support pages | Declarative React JSX and shared lifecycle behaviour | Broader content/visual review |
+| Navigation/account controls | React menus, mobile links, light/dark state, logout and deactivation | Remove the temporary data bridge when dashboard/admin controllers are replaced |
+| User management | React creation, role/access/employer/partner fields, editors, search/status filters, activation and past users | Authenticated database writes and all role permutations |
+| Security centre | React sessions, alerts, sign-in/device/access history, database status, audit export, profile drawer and session revocation | Live security telemetry and server integration verification |
+| Source-status badge | React polling, event refresh, visibility refresh and cleanup | Live source-job verification |
+| Dashboard dialogs | React Quick Actions and scheduled reports | Authenticated delivery and SMTP verification |
+| Employer and portfolio dashboards | React JSX with retained imperative calculation/render controllers | Full conversion to React state/components; broader data permutations |
+| Administration | React JSX with retained report/import/integration/job controllers | Full conversion to React state/components |
 
-## Changes needed for faithful behaviour
+The users entry no longer starts the legacy users or user-security scripts. Source HTML remains a reference fixture. Default Admin/Superadmin shells use The Fixer; custom partner dashboards show the partner identity alone, matching the latest source product decision.
 
-- Brand Engine is imported explicitly as ESM. The initial nested UMD conversion failed to populate the browser engine and used fallback colours; the fix restores original palettes and is covered by browser checks.
-- Original class names, markup structure, logos and CSS are retained. Raw style formatting is preserved where existing attribute selectors require it.
-- Dynamic inline actions are compiled to closures and attached through React; no runtime `eval` or HTML script execution is used.
-- A malformed dashboard CSS brace, two missing login stylesheet references and ignored late font imports were repaired. The admin avatar selector now uses an explicit data attribute.
-- Schedule-dialog backdrop clicks no longer close the dialog when editing an input; Quick Actions closes on Escape.
-- Navigation/account menus and deactivation use React state, lifecycle cleanup, keyboard handling and error recovery.
-- A queued demo number-fitting pass now checks whether live API data has replaced the demo before adjusting font sizes. This removes a timing-dependent layout difference exposed by CI Chromium.
-- Static HTML access cannot bypass protected canonical routes. Legacy `/react/` links redirect to canonical routes.
+## Verification
 
-## Verification and limits
+All 35 local browser checks passed on the final checkpoint, including six full-page visual comparisons and the new user/security workflows. The production build also passed. The upstream regression suite, typecheck and Fastify route/access checks are rerun before publication. Browser coverage includes twelve mounts, dashboard/admin/users full-page comparisons at 1440px and 390px, navigation/account actions, portfolio and filters, schedules, controlled user creation/editing with failure recovery, security filtering/profile/alerts and partner light/dark shell rules. API responses are mocked. These tests do not prove real database writes, external source sync, SMTP delivery or all role/data combinations.
 
-The production build, frontend typecheck, source regression suite, score engine and Brand Engine checks pass. Fastify injection checks cover public React responses, anonymous protected-route redirects, static HTML restrictions, aliases, logo and health responses.
+The screenshot gate remains a maximum differing-pixel ratio of 0.5%, with per-pixel threshold 0.15. It is not a claim of exact pixel identity. Fonts are isolated from external network dependencies. The intermittent dashboard difference was traced to number fitting increasing labels smaller than its minimum and running inconsistently after live renders. Fitting now cannot enlarge the CSS font size, runs after data renders, and ignores height-only resize events. Repeated local mobile comparisons pass; hosted CI remains the acceptance gate.
 
-Browser verification covers all twelve page mounts; full-page screenshot comparisons at 1440px and 390px for dashboard, administration and users; navigation, theme persistence, mobile account destinations, gauge/Brand Engine, filters, portfolio, Quick Actions, schedule dialog, user editor, privileged role visibility, report selection, integration tabs and sign-in recovery. Navigation tests exercise logout and deactivation failure recovery. Schedule tests cover frequency fields, payload filters, save/retry, pause, delete, delivery errors and employer recipient restrictions. The expanded local suite has 30 tests. Screenshot checks use a 0.5% maximum differing-pixel ratio with a per-pixel threshold of 0.15; they do not establish exact pixel identity.
+## Railway and publication
 
-The browser API is mocked with local fixtures. These checks do **not** prove real database writes, SMTP delivery, external database synchronisation, live report delivery or all role/data combinations. Fonts are isolated from external network dependencies. Original HTML remains a test/reference input, not a production page entry.
+The migration-test app is healthy at `https://efs-react-migration-migration-test.up.railway.app`. The inspected deployment is `d73e4d9b-fc5a-4dad-b7af-0b54bb86036e` (SUCCESS). It still follows `migration/newchanges-react-parity`, has `/health` configured, and uses a service-level `prisma db push` predeploy override. No Railway configuration, variables or database data were changed by this checkpoint.
 
-The dependency audit currently reports one low and four moderate findings, with no high/critical findings at the configured gate. Dependency remediation remains separate from claims of UI parity.
-
-## Deployment status
-
-No Railway deployment, source-branch switch, variable change or database mutation was performed. The inspected Railway migration-test service still pointed at `migration/fullstack-test`. Repository healthcheck `/health` differs from that service's `/react/` override; reconcile it before any authorized rollout. Keep this work in draft until the remaining controllers are replaced and authenticated integration validation is complete.
-
-## CI follow-up
-
-The first GitHub run passed build, security, route and interaction checks, but failed the two dashboard screenshot comparisons in Chromium 145. The saved screenshots exposed the queued demo number-fitting race described above. The follow-up guards that callback; CI must pass on the updated commit before accepting this checkpoint.
-
-## Updated upstream reference
-
-The source must continue to track NewChanges rather than treating the original ZIP as frozen. The latest inspected main adds The Fixer branding and approved light/dark assets, Brand Engine 1.4, partner co-branding, dark-mode repairs, client dashboard preview behaviour and a greeting after login. Reconcile each change into the React-owned navigation, forms and dialogs as well as the remaining transitional pages. Do not overwrite native React work with source controllers.
-
-Before acceptance, compare backend/API/security and source-sync services against the same pinned source commit; port relevant changes, then test against that source. Expand visual coverage to default and partner branding in light/dark mode on desktop/mobile. A change is not marked incorporated merely because it appears in this inventory.
-
-The latest migration CI rerun still failed. The queued demo-layout guard and local passing tests are not sufficient evidence that hosted CI parity is resolved; inspect the failed run before acceptance.
+This checkpoint uses `migration/newchanges-upstream-react` to avoid automatically deploying unfinished work from the service's tracked branch. Main is not merged. Railway OAuth exposes variable names with values redacted; no migration database URL or admin password is available for authenticated testing. Health and anonymous authentication responses were checked, but authenticated database/Railway workflows remain unverified.

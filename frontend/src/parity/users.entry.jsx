@@ -1,6 +1,5 @@
-import React from 'react';
+import {UsersProvider} from '../native/UsersManagement.jsx';
+import {SourceStatus} from '../native/SourceStatus.jsx';
 import {mountPage} from './mount.jsx';
-import {Page,start} from './users.jsx';
-import {PortalNavigation,installPortalNavigation} from '../native/PortalNavigation.jsx';
-installPortalNavigation();
-mountPage(()=> <><Page/><PortalNavigation/></>,start);
+import {Page} from '../native/users.jsx';
+mountPage(Page,()=>{});

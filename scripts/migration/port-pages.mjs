@@ -69,28 +69,51 @@ function transform(code){
 // be consumed by Vite instead of attaching the engine to the browser window.
 const brandSource=fs.readFileSync('public/brand-engine.js','utf8');
 const brandBody=brandSource.slice(brandSource.indexOf("function () {\n  'use strict';")+13,brandSource.lastIndexOf('});'));
-fs.writeFileSync('frontend/src/lib/brand-engine.js',`// Colour maths preserved from New Changes Brand Engine 1.1.0.\nconst BrandEngine=(()=>{${brandBody}\n})();\nexport default BrandEngine;\n`);
+fs.writeFileSync('frontend/src/lib/brand-engine.js',`// Colour maths preserved from New Changes Brand Engine 1.4.0.\nconst BrandEngine=(()=>{${brandBody}\n})();\nexport default BrandEngine;\n`);
 const manifest=[];
 for(const file of fs.readdirSync('public').filter(x=>x.endsWith('.html'))){
  const name=file.slice(0,-5),source=fs.readFileSync('public/'+file,'utf8'),doc=htmlParse(source);
  const html=doc.childNodes.find(n=>n.tagName==='html'),head=html.childNodes.find(n=>n.tagName==='head'),body=html.childNodes.find(n=>n.tagName==='body');
  const handlers=[],scripts=[];
- function collect(n){if(n.tagName==='script'){const src=n.attrs.find(a=>a.name==='src')?.value; scripts.push(src?.includes('portal-nav-v080.js')?'':src?.includes('brand-engine.js')?'window.BrandEngine=BrandEngine;':src?fs.readFileSync('public/'+src.split('/').pop().split('?')[0],'utf8'):n.childNodes.map(n=>n.value||'').join(''));}else n.childNodes?.forEach(collect)} collect(head);collect(body);
+ let securityLayout=false;
+ function collect(n){if(n.tagName==='script'){if(name==='users')return;const src=n.attrs.find(a=>a.name==='src')?.value; const inline=n.childNodes.map(n=>n.value||'').join(''); if(name==='users'&&!src&&inline.includes('async function addUser()'))return; scripts.push((src?.includes('portal-nav-v080.js')||src?.includes('admin-source-status.js'))?'':src?.includes('brand-engine.js')?'window.BrandEngine=BrandEngine;':src?fs.readFileSync('public/'+src.split('/').pop().split('?')[0],'utf8'):inline);}else n.childNodes?.forEach(collect)} collect(head);collect(body);
  function jsx(n){
   if(n.nodeName==='#comment'||n.tagName==='script')return '';
   if(n.nodeName==='#text')return n.value?`{siteText(${json(n.value)})}`:'';
   if(!n.tagName)return '';
+  if(name==='users'){
+   const id=n.attrs?.find(a=>a.name==='id')?.value;
+   if(id==='security-center'&&!securityLayout)return '<SecurityCenter/>';
+   if(id==='user-list-card')return '<UsersList/>';
+   if(id==='revoked-users-card')return '<RevokedUsers/>';
+   if(n.tagName==='div'&&n.attrs?.some(a=>a.name==='class'&&a.value==='card')&&n.childNodes?.some(child=>child.childNodes?.some(title=>title.tagName==='h2'&&title.childNodes?.some(text=>text.value==='Add a user'))))return '<AddUser/>';
+  }
   let attrs='';
-  for(const a of n.attrs||[]){let key=attrName(a.name);if(a.name.startsWith('on')){const ev=a.name.slice(2); const id=handlers.length;handlers.push(generate(callback(a.value)).code);attrs+=` on${eventNames[ev]}={event => actions[${id}]?.(event)}`;continue;}
+  const nodeId=n.attrs?.find(a=>a.name==='id')?.value;
+  for(const a of n.attrs||[]){let key=attrName(a.name);if(a.name.startsWith('on')){const ev=a.name.slice(2); if(securityLayout){const action={'loadSecurityCenter()':'refresh','renderSecuritySessions()':'search','downloadSecurityAuditLog()':'download'}[a.value];if(!action)throw new Error('Unknown security handler '+a.value);attrs+=` on${eventNames[ev]}={actions.${action}}`;continue;} const id=handlers.length;handlers.push(generate(callback(a.value)).code);attrs+=` on${eventNames[ev]}={event => actions[${id}]?.(event)}`;continue;}
+   if(securityLayout&&key==='className'&&nodeId==='security-center'){attrs+=' className={"card"+(state.collapsed?" compact-collapsed":"")}';continue;}
+   if(securityLayout&&key==='className'&&nodeId==='sec-db-status'){attrs+=' className={state.databaseClass}';continue;}
    if(key==='style'){attrs+=` style={${json(style(a.value))}} ref={node => { if(node) node.setAttribute("style", ${json(a.value)}); }}`;continue;}
    if(key==='value'&&['input','textarea','select'].includes(n.tagName))key='defaultValue';if(key==='checked')key='defaultChecked';
    if(key==='selected'){continue;}
    attrs+=bools.has(key)||key==='defaultChecked'?` ${key}={true}`:` ${key}={siteText(${json(a.value)})}`;
   }
   if(n.tagName==='select'){const option=n.childNodes?.find(x=>x.tagName==='option'&&x.attrs?.some(a=>a.name==='selected'));if(option)attrs+=` defaultValue={${json(option.attrs.find(a=>a.name==='value')?.value||'')}}`;}
-  const children=(n.childNodes||[]).map(jsx).join('');
+  let children=(n.childNodes||[]).map(jsx).join('');
+  if(securityLayout){
+   const fields={'sec-live':'live','sec-failed':'failed','sec-alerts':'alertsCount','sec-success':'success','security-state-title':'title','security-state-copy':'copy','sec-session-rows':'sessions','sec-alert-rows':'alerts','sec-login-rows':'logins','sec-device-rows':'devices','sec-access-rows':'access','sec-db-copy':'databaseCopy','sec-db-status':'databaseStatus','sec-db-controls':'databaseControls'};
+   if(fields[nodeId])children=`{state.${fields[nodeId]}}`;
+   if(nodeId==='sec-search')attrs+=' value={state.search}';
+   if(nodeId==='sec-status')attrs+=' value={state.status} onChange={actions.status}';
+   if(n.attrs?.some(a=>a.name==='class'&&a.value==='card-hd')&&n.parentNode?.attrs?.some(a=>a.name==='id'&&a.value==='security-center'))children+='<button type="button" className="btn btn-sm compact-toggle" aria-expanded={!state.collapsed} onClick={actions.toggle}>{state.collapsed?"Expand":"Collapse"}</button>';
+  }
   if(n.tagName==='textarea'){return `<textarea${attrs} defaultValue={${json((n.childNodes||[]).map(x=>x.value||'').join(''))}}/>`;}
   return children?`<${n.tagName}${attrs}>${children}</${n.tagName}>`:`<${n.tagName}${attrs}/>`;
+ }
+ if(name==='users'){
+  function findSecurity(n){if(n.attrs?.some(a=>a.name==='id'&&a.value==='security-center'))return n;for(const child of n.childNodes||[]){const found=findSecurity(child);if(found)return found;}}
+  securityLayout=true;const securityMarkup=jsx(findSecurity(body));securityLayout=false;
+  fs.writeFileSync(`${out}/users-security-layout.jsx`,`// NewChanges security layout; all data and actions are owned by React.\nimport React from 'react';\nimport {siteText} from '../native/site-config.js';\nexport function SecurityLayout({state,actions}){return (${securityMarkup});}\n`);
  }
  const markup=body.childNodes.map(jsx).join('\n');
  let controllerSource=scripts.join('\n;\n');
@@ -105,7 +128,7 @@ for(const file of fs.readdirSync('public').filter(x=>x.endsWith('.html'))){
   controllerSource=controllerSource.slice(0,scheduleStart)+'function openScheduleReport(){showScheduleReport({me:window.__ME__||{},data:DATA,employerId:employerIdFromUrl(),period:periodFromUrl()});}\n'+controllerSource.slice(scheduleEnd);
  }
  const control=transform(controllerSource);
- const code=`// Ported from New Changes ${file}; keep source structure and CSS selectors intact.\nimport React from 'react';\n${name==='dashboard'?"import {showQuickActions,showScheduleReport} from '../native/DashboardDialogs.jsx';\n":''}import BrandEngine from '../lib/brand-engine.js';\nimport {renderMarkup,insertMarkup,registerAction,decodeAttribute,onReady,createMarkupElement} from './runtime.jsx';\nimport {siteText} from '../native/site-config.js';\nlet actions=[];\nexport function Page(){return <>${markup}</>;}\nlet started=false;\nexport function start(){if(started)return;started=true;\nactions=[${handlers.join(',\n')}];\n${control}\n}\n`;
+ const code=`// Ported from New Changes ${file}; keep source structure and CSS selectors intact.\nimport React from 'react';\n${name==='users'?"import {AddUser,UsersList,RevokedUsers} from '../native/UsersManagement.jsx';\nimport {SecurityCenter} from '../native/SecurityCenter.jsx';\n":''}${name==='dashboard'?"import {showQuickActions,showScheduleReport} from '../native/DashboardDialogs.jsx';\n":''}import BrandEngine from '../lib/brand-engine.js';\nimport {renderMarkup,insertMarkup,registerAction,decodeAttribute,onReady,createMarkupElement} from './runtime.jsx';\nimport {siteText} from '../native/site-config.js';\nlet actions=[];\nexport function Page(){return <>${markup}</>;}\nlet started=false;\nexport function start(){if(started)return;started=true;\nactions=[${handlers.join(',\n')}];\n${control}\n}\n`;
  fs.writeFileSync(`${out}/${name}.jsx`,code);
  const native=fs.existsSync(`frontend/src/native/${name}.jsx`);
  const staticPage=['home','404','privacy','terms','cookies','thank-you'].includes(name);
@@ -114,7 +137,9 @@ for(const file of fs.readdirSync('public').filter(x=>x.endsWith('.html'))){
   : staticPage
   ? `import React from 'react';\nimport {mountPage} from './mount.jsx';\nimport {Page} from './${name}.jsx';\nimport {Shared} from '../native/Shared.jsx';\nmountPage(()=> <Shared><Page/></Shared>,()=>{});\n`
   : `import React from 'react';\nimport {mountPage} from './mount.jsx';\nimport {Page,start} from './${name}.jsx';\nimport {PortalNavigation,installPortalNavigation} from '../native/PortalNavigation.jsx';\ninstallPortalNavigation();\nmountPage(()=> <><Page/><PortalNavigation/></>,start);\n`;
+ if(['dashboard','admin','users'].includes(name))entry="import {SourceStatus} from '../native/SourceStatus.jsx';\n"+entry.replace('<PortalNavigation/>','<PortalNavigation/><SourceStatus/>');
  if(name==='dashboard')entry="import {DashboardDialogs} from '../native/DashboardDialogs.jsx';\n"+entry.replace('<PortalNavigation/>','<PortalNavigation/><DashboardDialogs/>');
+ if(name==='users')entry="import {UsersProvider} from '../native/UsersManagement.jsx';\n"+entry.replace('<><Page/><PortalNavigation/><SourceStatus/></>','<UsersProvider><Page/><PortalNavigation/><SourceStatus/></UsersProvider>');
  fs.writeFileSync(`${out}/${name}.entry.jsx`,entry);
  let skeleton=source.replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi,'');
  skeleton=skeleton.replace(/<body([^>]*)>[\s\S]*<\/body>/i,`<body$1><div id="root" style="display:contents"></div><script type="module" src="/src/parity/${name}.entry.jsx"></script></body>`);
