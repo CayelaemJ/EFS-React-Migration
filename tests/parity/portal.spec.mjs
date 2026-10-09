@@ -81,7 +81,7 @@ for (const width of [1440, 390])
         await page.waitForTimeout(1800);
         await page.addStyleTag({
           content:
-            "*,*::before,*::after {transition:none!important;animation:none!important;caret-color:transparent!important;} #ent-progress,#welcome-splash{display:none!important;}",
+            "*,*::before,*::after {transition:none!important;animation:none!important;caret-color:transparent!important;} .reveal{opacity:1!important;transform:none!important;} #ent-progress,#welcome-splash{display:none!important;}",
         });
         await page.evaluate(async () => {
           await document.fonts.ready;
@@ -116,6 +116,27 @@ for (const width of [1440, 390])
       }
       const a = PNG.sync.read(await pages[0].screenshot({ fullPage: true }));
       const b = PNG.sync.read(await pages[1].screenshot({ fullPage: true }));
+      for (let i = 0; i < pages.length; i++) {
+        const layout = await pages[i]
+          .locator("[id],.dash-section,.card,.stat-strip")
+          .evaluateAll((nodes) =>
+            nodes.map((node) => {
+              const rect = node.getBoundingClientRect();
+              return {
+                id: node.id,
+                className: node.getAttribute("class"),
+                text: node.textContent?.slice(0, 80),
+                y: rect.y,
+                height: rect.height,
+                width: rect.width,
+              };
+            }),
+          );
+        fs.writeFileSync(
+          testInfo.outputPath(`after-layout-${i}.json`),
+          JSON.stringify(layout, null, 2),
+        );
+      }
       fs.writeFileSync(testInfo.outputPath("source.png"), PNG.sync.write(a));
       await testInfo.attach("source", {
         path: testInfo.outputPath("source.png"),
