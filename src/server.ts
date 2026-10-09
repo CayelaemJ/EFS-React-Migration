@@ -298,6 +298,14 @@ async function requireAdmin(req: FastifyRequest, reply: FastifyReply): Promise<A
   if (user.role !== "ADMIN" && user.role !== "SUPERADMIN") { reply.code(403).send({ error: "admin only" }); return null; }
   return user;
 }
+// Section governance is a privileged control-plane panel in the source UI.
+// Enforce that boundary for direct API requests as well as page visibility.
+async function requireSectionAdministrator(req: FastifyRequest, reply: FastifyReply): Promise<AuthUser | null> {
+  const user = await requireUser(req, reply);
+  if (!user) return null;
+  if (user.role !== "SUPERADMIN") { reply.code(403).send({ error: "access denied" }); return null; }
+  return user;
+}
 function redactAuditDetail(value: unknown): unknown {
   if (!value || typeof value !== "object") return value;
   if (Array.isArray(value)) return value.map(redactAuditDetail);
@@ -833,7 +841,7 @@ app.get<{ Querystring: { days?: string } }>("/api/admin/analytics/summary", asyn
 // section that isn't finished yet (e.g. "Voice of the employee") and to grant
 // specific people early access regardless of role.
 app.get("/api/admin/sections", async (req, reply) => {
-  if (!(await requireAdmin(req, reply))) return;
+  if (!(await requireSectionAdministrator(req, reply))) return;
   const sections = await listSections();
   return sections.map((s: any) => ({
     key: s.key, label: s.label, enabled: s.enabled,
@@ -844,7 +852,7 @@ app.get("/api/admin/sections", async (req, reply) => {
 app.patch<{ Params: { key: string }; Body: { enabled?: boolean; allowedRoles?: string[] } }>(
   "/api/admin/sections/:key",
   async (req, reply) => {
-    const admin = await requireAdmin(req, reply); if (!admin) return;
+    const admin = await requireSectionAdministrator(req, reply); if (!admin) return;
     try {
       const result = await updateSection(req.params.key, req.body || {});
       logAdminAction(admin, "section.update", "Updated section " + req.params.key, { targetType: "DashboardSection", targetId: req.params.key, detail: redactAuditDetail(req.body), impactCount: Array.isArray(req.body?.allowedRoles) ? req.body.allowedRoles.length : 1, context: requestSecurityContext(req) });
@@ -856,7 +864,7 @@ app.patch<{ Params: { key: string }; Body: { enabled?: boolean; allowedRoles?: s
 app.post<{ Params: { key: string }; Body: { userId: string } }>(
   "/api/admin/sections/:key/grant",
   async (req, reply) => {
-    const admin = await requireAdmin(req, reply); if (!admin) return;
+    const admin = await requireSectionAdministrator(req, reply); if (!admin) return;
     if (!req.body?.userId) return reply.code(400).send({ error: "userId required" });
     const result = await grantUserSection(req.body.userId, req.params.key);
     logAdminAction(admin, "section.grant", "Granted section " + req.params.key + " to user " + req.body.userId, { targetType: "DashboardSection", targetId: req.params.key, impactCount: 1, context: requestSecurityContext(req) });
@@ -866,7 +874,7 @@ app.post<{ Params: { key: string }; Body: { userId: string } }>(
 app.post<{ Params: { key: string }; Body: { userId: string } }>(
   "/api/admin/sections/:key/revoke",
   async (req, reply) => {
-    const admin = await requireAdmin(req, reply); if (!admin) return;
+    const admin = await requireSectionAdministrator(req, reply); if (!admin) return;
     if (!req.body?.userId) return reply.code(400).send({ error: "userId required" });
     const result = await revokeUserSection(req.body.userId, req.params.key);
     logAdminAction(admin, "section.revoke", "Revoked section " + req.params.key + " from user " + req.body.userId, { targetType: "DashboardSection", targetId: req.body.userId, impactCount: 1, context: requestSecurityContext(req) });
