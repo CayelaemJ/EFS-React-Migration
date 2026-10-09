@@ -1,3 +1,4 @@
+import { completedJobResponse } from "./services/jobResponses.js";
 // ════════════════════════════════════════════════════════════════════
 //  API SERVER (Fastify + TypeScript)
 //  Serves JSON shaped exactly like the frontend DATA / PORTFOLIO objects,
@@ -957,7 +958,7 @@ app.get<{ Params: { jobId: string } }>(
       };
     }
     if (job.status === "FAILED") return { status: "FAILED", error: job.error };
-    return { status: "DONE", ...job.result };
+    return completedJobResponse(job.result);
   },
 );
 
@@ -999,7 +1000,7 @@ app.get<{ Params: { jobId: string } }>(
       };
     }
     if (job.status === "FAILED") return { status: "FAILED", error: job.error };
-    return { status: "DONE", ...job.result };
+    return completedJobResponse(job.result);
   },
 );
 
@@ -1179,7 +1180,7 @@ app.get<{ Params: { jobId: string } }>(
       };
     }
     if (job.status === "FAILED") return { status: "FAILED", error: job.error };
-    return { status: "DONE", ...job.result };
+    return completedJobResponse(job.result);
   },
 );
 

@@ -23,6 +23,7 @@ jobs:
       - run: npm run check:security
       - run: npm run check:ui
       - run: npm run check:imports
+      - run: npm run test:job-contract
       - run: npm run check:scheduling
       - run: npm run check:daily-refresh
       - run: npm run test:score

@@ -2,7 +2,8 @@ import { test, expect } from "@playwright/test";
 import { PNG } from "pngjs";
 import pixelmatch from "pixelmatch";
 import fs from "node:fs";
-import { mockApi, me, users, dashboard } from "./fixtures.mjs";
+import { mockApi, me, users, dashboard, fixture } from "./fixtures.mjs";
+import { completedJobResponse } from "../../dist/services/jobResponses.js";
 const url = "http://127.0.0.1:4100";
 async function ready(page, path, overrides = {}) {
   await mockApi(page, overrides);
@@ -391,6 +392,252 @@ test("report selection and integration mode buttons", async ({ page }) => {
   );
   await page.locator("#source-tab-sql").click();
   await expect(page.locator("#integ-sql-host")).toBeVisible();
+});
+test("React report imports show background progress, validated state, commit and live history", async ({
+  page,
+}) => {
+  await ready(page, "/admin");
+  let uploadReads = 0,
+    commitReads = 0,
+    committed = false,
+    uploaded = false;
+  await page.route("**/api/admin/batches", (route) =>
+    route.fulfill({
+      json: [
+        {
+          id: "batch-1",
+          reportKey: "employers",
+          filename: "employers.csv",
+          rowCount: 2,
+          status: committed ? "COMMITTED" : "VALIDATED",
+          insertedCount: committed ? 2 : 0,
+          uploadedAt: "2026-10-09T08:00:00Z",
+          revertable: true,
+        },
+      ],
+    }),
+  );
+  await page.route("**/api/admin/reports/employers/upload", async (route) => {
+    uploaded =
+      route.request().method() === "POST" &&
+      route.request().postDataBuffer().toString().includes("employers.csv");
+    await route.fulfill({ status: 202, json: { jobId: "upload-1" } });
+  });
+  await page.route("**/api/admin/upload-jobs/upload-1", (route) =>
+    route.fulfill({
+      json:
+        ++uploadReads === 1
+          ? {
+              status: "RUNNING",
+              progress: 42,
+              phase: "VALIDATING",
+              message: "Validating employers",
+              detail: { validatedRows: 2 },
+            }
+          : {
+              status: "DONE",
+              result: {
+                status: "VALIDATED",
+                batchId: "batch-1",
+                rowCount: 2,
+                preview: [{ employer_ref: "example", name: "Example Ltd" }],
+              },
+            },
+    }),
+  );
+  await page.route("**/api/admin/batches/batch-1/commit", (route) =>
+    route.fulfill({ status: 202, json: { jobId: "commit-1" } }),
+  );
+  await page.route("**/api/admin/commit-jobs/commit-1", (route) => {
+    const running = ++commitReads === 1;
+    if (!running) committed = true;
+    return route.fulfill({
+      json: running
+        ? {
+            status: "RUNNING",
+            progress: 60,
+            phase: "COMMITTING",
+            message: "Writing live rows",
+            detail: { committedRows: 2 },
+          }
+        : {
+            status: "DONE",
+            result: { period: "2026-10", touchedEmployers: ["employer-1"] },
+          },
+    });
+  });
+  await page.locator("#rep-list .rep").first().click();
+  await page.locator("#file").setInputFiles({
+    name: "employers.csv",
+    mimeType: "text/csv",
+    buffer: Buffer.from("employer_ref,name\nexample,Example Ltd"),
+  });
+  await expect(page.locator("#result")).toContainText("42%");
+  await expect(page.locator("#result")).toContainText("Validated 2 rows");
+  expect(uploaded).toBe(true);
+  await expect(page.locator("#hist-body")).toContainText(
+    "VALIDATED · NOT LIVE",
+  );
+  await page.getByRole("button", { name: "Commit & recompute scores" }).click();
+  await expect(page.locator("#result")).toContainText("Processed live: 2");
+  await expect(page.locator("#result")).toContainText(
+    "Recomputed 1 employer dashboard(s)",
+  );
+  await expect(page.locator("#hist-body .st")).toHaveText("COMMITTED");
+  await expect(page.locator("#hist-body")).toContainText("+2 new");
+});
+test("React report upload retries the same file and renders validation errors as text", async ({
+  page,
+}) => {
+  await ready(page, "/admin");
+  let attempts = 0;
+  const dangerous = '<img src=x onerror="window.bad=1">';
+  await page.route("**/api/admin/reports/employers/upload", (route) =>
+    route.fulfill(
+      ++attempts === 1
+        ? { status: 400, json: { error: "The file could not be read" } }
+        : {
+            json: {
+              status: "INVALID",
+              errorCount: 1,
+              rowCount: 3,
+              missingColumns: ["employer_ref"],
+              errors: [
+                {
+                  row: 2,
+                  column: "name",
+                  value: dangerous,
+                  reason: "Invalid name",
+                },
+              ],
+            },
+          },
+    ),
+  );
+  await page.locator("#rep-list .rep").first().click();
+  const file = {
+    name: "employers.csv",
+    mimeType: "text/csv",
+    buffer: Buffer.from("name\nExample Ltd"),
+  };
+  await page.locator("#file").setInputFiles(file);
+  await expect(page.locator("#result")).toContainText(
+    "The file could not be read",
+  );
+  await page.locator("#file").setInputFiles(file);
+  await expect(page.locator("#result")).toContainText("Nothing was loaded");
+  await expect(page.locator("#result")).toContainText(
+    "Missing required columns: employer_ref",
+  );
+  await expect(page.locator("#result")).toContainText(dangerous);
+  await expect(page.locator("#result img")).toHaveCount(0);
+  expect(attempts).toBe(2);
+});
+test("React report manifest recovers from API failure without reloading the page", async ({
+  page,
+}) => {
+  await mockApi(page);
+  let attempts = 0;
+  await page.route("**/api/admin/reports", (route) =>
+    route.fulfill(
+      ++attempts === 1
+        ? { status: 503, json: { error: "Report contract unavailable" } }
+        : { json: fixture("http://localhost/api/admin/reports") },
+    ),
+  );
+  await page.goto(url + "/admin");
+  await expect(page.locator("#rep-list")).toContainText(
+    "Report contract unavailable",
+  );
+  await page
+    .locator("#rep-list")
+    .getByRole("button", { name: "Retry" })
+    .click();
+  await expect(page.locator("#rep-list .rep")).toHaveCount(10);
+  await page.locator("#rep-list .rep").first().press("Enter");
+  await expect(page.locator("#file")).toHaveAttribute(
+    "accept",
+    ".csv,.xlsx,.xls,.json",
+  );
+});
+test("React report jobs finish on the real backend envelope for automatic commits and errors", async ({
+  page,
+}) => {
+  await ready(page, "/admin");
+  let uploads = 0;
+  await page.route("**/api/admin/reports/employers/upload", (route) => {
+    uploads++;
+    return route.fulfill({ status: 202, json: { jobId: "job-" + uploads } });
+  });
+  await page.route("**/api/admin/upload-jobs/job-*", (route) =>
+    route.fulfill({
+      json: completedJobResponse(
+        uploads === 1
+          ? {
+              status: "COMMITTED",
+              batchId: "batch-1",
+              rowCount: 2,
+              period: "2026-10",
+              inserted: 2,
+              preview: [],
+            }
+          : {
+              status: "ERROR",
+              errorSummary: "Upload failed: database write unavailable",
+              rowCount: 0,
+              errors: [],
+              missingColumns: [],
+            },
+      ),
+    }),
+  );
+  await page.locator("#rep-list .rep").first().click();
+  const file = {
+    name: "employers.csv",
+    mimeType: "text/csv",
+    buffer: Buffer.from("employer_ref,name\nexample,Example Ltd"),
+  };
+  await page.locator("#file").setInputFiles(file);
+  await expect(page.locator("#result")).toContainText(
+    "Imported 2 rows successfully",
+  );
+  await expect(page.locator("#result")).toContainText("Inserted 2");
+  await expect(
+    page.getByRole("button", { name: "Commit & recompute scores" }),
+  ).toHaveCount(0);
+  await page.locator("#file").setInputFiles(file);
+  await expect(page.locator("#result")).toContainText(
+    "Upload failed: database write unavailable",
+  );
+  await expect(page.locator("#file")).toBeEnabled();
+  await expect(page.locator("#rep-list .rep")).toHaveCount(10);
+});
+test("Sync now completes with a partial outcome instead of polling indefinitely", async ({
+  page,
+}) => {
+  await ready(page, "/admin");
+  await page.locator("#integ-url").fill("https://source.example.invalid");
+  await page.route("**/api/admin/integration/sync", (route) =>
+    route.fulfill({ status: 202, json: { jobId: "sync-1" } }),
+  );
+  await page.route("**/api/admin/sync-jobs/sync-1", (route) =>
+    route.fulfill({
+      json: completedJobResponse({
+        status: "PARTIAL",
+        note: "One feed needs review",
+        summary: {
+          employees: { error: "Required employer reference missing" },
+        },
+      }),
+    }),
+  );
+  await page.getByRole("button", { name: "Sync now", exact: true }).click();
+  await expect(page.locator("#integ-result")).toContainText(
+    "PARTIAL: One feed needs review",
+  );
+  await expect(page.locator("#integ-result")).toContainText(
+    "Required employer reference missing",
+  );
 });
 test("sign-in validation and forgotten password request", async ({ page }) => {
   await ready(page, "/login");

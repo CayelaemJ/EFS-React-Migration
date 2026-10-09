@@ -81,6 +81,12 @@ for(const file of fs.readdirSync('public').filter(x=>x.endsWith('.html'))){
   if(n.nodeName==='#comment'||n.tagName==='script')return '';
   if(n.nodeName==='#text')return n.value?`{siteText(${json(n.value)})}`:'';
   if(!n.tagName)return '';
+  if(name==='admin'){
+   const id=n.attrs?.find(a=>a.name==='id')?.value;
+   if(id==='rep-list')return '<ReportPicker/>';
+   if(id==='hist-body')return '<ImportHistoryRows/>';
+   if(n.tagName==='div'&&n.attrs?.some(a=>a.name==='class'&&a.value==='card')&&n.childNodes?.some(child=>child.childNodes?.some(title=>title.attrs?.some(a=>a.name==='id'&&a.value==='rep-title'))))return '<ReportWorkspace/>';
+  }
   if(name==='users'){
    const id=n.attrs?.find(a=>a.name==='id')?.value;
    if(id==='security-center'&&!securityLayout)return '<SecurityCenter/>';
@@ -117,6 +123,21 @@ for(const file of fs.readdirSync('public').filter(x=>x.endsWith('.html'))){
  }
  const markup=body.childNodes.map(jsx).join('\n');
  let controllerSource=scripts.join('\n;\n');
+ if(name==='admin'){
+  const manifestStart=controllerSource.indexOf("  try{\n    const r=await fetch(`${API}/api/admin/reports`");
+  const manifestEnd=controllerSource.indexOf('  const optionalLoads=[',manifestStart);
+  if(manifestStart<0||manifestEnd<0)throw new Error('Missing report manifest migration boundary');
+  controllerSource=controllerSource.slice(0,manifestStart)+'  try{ MANIFEST=await initializeReports(value=>{MANIFEST=value;}); }catch(e){ return; }\n\n'+controllerSource.slice(manifestEnd);
+  const pickerStart=controllerSource.indexOf('function renderRepList(){');
+  const pickerEnd=controllerSource.indexOf('async function pollJob(',pickerStart);
+  if(pickerStart<0||pickerEnd<0)throw new Error('Missing report picker migration boundary');
+  controllerSource=controllerSource.slice(0,pickerStart)+controllerSource.slice(pickerEnd);
+  const uploadStart=controllerSource.indexOf('async function upload(file){');
+  const uploadEnd=controllerSource.indexOf('function installCompactCollapse(){',uploadStart);
+  if(uploadStart<0||uploadEnd<0)throw new Error('Missing import migration boundary');
+  controllerSource=controllerSource.slice(0,uploadStart)+'function loadHistory(){return refreshImportHistory();}\n\n'+controllerSource.slice(uploadEnd);
+  controllerSource=controllerSource.replace(/window\.setInterval\(\(\) => \{\n  if\(document\.visibilityState !== 'visible'\) return;\n  loadHistory\(\);\n\}, 1500\);/,'');
+ }
  if(name==='dashboard'){
   const quickStart=controllerSource.indexOf('function openQuickActions(){');
   const quickEnd=controllerSource.indexOf('/* rebuild DATA',quickStart);
@@ -130,6 +151,7 @@ for(const file of fs.readdirSync('public').filter(x=>x.endsWith('.html'))){
  const control=transform(controllerSource);
  const code=`// Ported from New Changes ${file}; keep source structure and CSS selectors intact.\nimport React from 'react';\n${name==='users'?"import {AddUser,UsersList,RevokedUsers} from '../native/UsersManagement.jsx';\nimport {SecurityCenter} from '../native/SecurityCenter.jsx';\n":''}${name==='dashboard'?"import {showQuickActions,showScheduleReport} from '../native/DashboardDialogs.jsx';\n":''}import BrandEngine from '../lib/brand-engine.js';\nimport {renderMarkup,insertMarkup,registerAction,decodeAttribute,onReady,createMarkupElement} from './runtime.jsx';\nimport {siteText} from '../native/site-config.js';\nlet actions=[];\nexport function Page(){return <>${markup}</>;}\nlet started=false;\nexport function start(){if(started)return;started=true;\nactions=[${handlers.join(',\n')}];\n${control}\n}\n`;
  fs.writeFileSync(`${out}/${name}.jsx`,code);
+ if(name==='admin')fs.writeFileSync(`${out}/${name}.jsx`,code.replace("import React from 'react';", "import React from 'react';\nimport {ReportPicker,ReportWorkspace,ImportHistoryRows,initializeReports,refreshImportHistory} from '../native/AdminReports.jsx';"));
  const native=fs.existsSync(`frontend/src/native/${name}.jsx`);
  const staticPage=['home','404','privacy','terms','cookies','thank-you'].includes(name);
  let entry=native
@@ -140,6 +162,7 @@ for(const file of fs.readdirSync('public').filter(x=>x.endsWith('.html'))){
  if(['dashboard','admin','users'].includes(name))entry="import {SourceStatus} from '../native/SourceStatus.jsx';\n"+entry.replace('<PortalNavigation/>','<PortalNavigation/><SourceStatus/>');
  if(name==='dashboard')entry="import {DashboardDialogs} from '../native/DashboardDialogs.jsx';\n"+entry.replace('<PortalNavigation/>','<PortalNavigation/><DashboardDialogs/>');
  if(name==='users')entry="import {UsersProvider} from '../native/UsersManagement.jsx';\n"+entry.replace('<><Page/><PortalNavigation/><SourceStatus/></>','<UsersProvider><Page/><PortalNavigation/><SourceStatus/></UsersProvider>');
+ if(name==='admin')entry="import {AdminReportsProvider} from '../native/AdminReports.jsx';\n"+entry.replace('<><Page/><PortalNavigation/><SourceStatus/></>','<AdminReportsProvider><Page/><PortalNavigation/><SourceStatus/></AdminReportsProvider>');
  fs.writeFileSync(`${out}/${name}.entry.jsx`,entry);
  let skeleton=source.replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi,'');
  skeleton=skeleton.replace(/<body([^>]*)>[\s\S]*<\/body>/i,`<body$1><div id="root" style="display:contents"></div><script type="module" src="/src/parity/${name}.entry.jsx"></script></body>`);
