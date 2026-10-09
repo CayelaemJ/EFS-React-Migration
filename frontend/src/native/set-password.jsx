@@ -1,0 +1,9 @@
+import React,{useEffect,useRef,useState} from 'react';
+import {Shared,postJSON} from './Shared.jsx';
+export function Page(){
+ const token=new URLSearchParams(location.search).get('token');
+ const [p1,setP1]=useState(''),[p2,setP2]=useState(''),[busy,setBusy]=useState(false),[success,setSuccess]=useState(false),[message,setMessage]=useState(token?'':'This link is missing its token. Ask your administrator to resend it.');const timer=useRef();
+ useEffect(()=>()=>clearTimeout(timer.current),[]);
+ async function submit(){if(!token||busy)return;setSuccess(false);if(p1.length<12||!/[A-Z]/.test(p1)||!/[a-z]/.test(p1)||!/[0-9]/.test(p1)){setMessage('Use at least 12 characters with upper-case, lower-case and a number.');return;}if(p1!==p2){setMessage('Passwords do not match.');return;}setBusy(true);setMessage('');try{await postJSON('/api/auth/set-password',{token,password:p1});setSuccess(true);setMessage('Password set! Redirecting to sign in…');timer.current=setTimeout(()=>location.href='/login',1600);}catch(e){setMessage(e.message);setBusy(false);}}
+ return <Shared><div className="card"><div className="logo"><img src="/static/the-fixer-logo.svg?v=6" className="efs-brand-logo" alt="The Fixer" style={{height:48,width:'auto'}}/></div><h1>Set your password</h1><div className="sub">Choose a password to activate your account</div><label htmlFor="p1">New password</label><input id="p1" type="password" placeholder="12+ characters, upper-case, lower-case and a number" value={p1} onChange={e=>setP1(e.target.value)}/><label htmlFor="p2">Confirm password</label><input id="p2" type="password" placeholder="re-enter password" value={p2} onChange={e=>setP2(e.target.value)}/><button id="btn" disabled={!token||busy} onClick={submit}>{busy&&!success?'Setting password…':'Set password & continue'}</button><div className={'msg '+(success?'ok':'err')} id="msg" role="alert" style={{display:message?'block':'none'}}>{message}</div></div></Shared>;
+}

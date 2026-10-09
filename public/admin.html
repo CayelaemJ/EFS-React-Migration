@@ -1,0 +1,2393 @@
+<!DOCTYPE html>
+<html lang="en" class="efs-default-brand">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="stylesheet" href="/static/portal-nav-v080.css?v=0.10.0">
+<script src="/static/safe.js?v=1"></script>
+<script src="/static/brand-engine.js?v=6"></script>
+<title>Administration Console | empower-fin</title>
+<meta name="description" content="Data imports, integrations, users and audit trail for the empower-fin Dashboard Portal.">
+<meta name="robots" content="noindex,nofollow">
+<link rel="canonical" href="{{BASE_URL}}/admin">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="empower-fin Dashboard Portal">
+<meta property="og:title" content="Administration Console | empower-fin">
+<meta property="og:description" content="Data imports, integrations, users and audit trail for the empower-fin Dashboard Portal.">
+<meta property="og:url" content="{{BASE_URL}}/admin">
+<meta property="og:image" content="{{BASE_URL}}/static/og-image.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="empower-fin Dashboard Portal: financial wellbeing, measured with rigour.">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Administration Console | empower-fin">
+<meta name="twitter:description" content="Data imports, integrations, users and audit trail for the empower-fin Dashboard Portal.">
+<meta name="twitter:image" content="{{BASE_URL}}/static/og-image.png">
+<meta name="theme-color" content="#17212b">
+<link rel="icon" href="/favicon.ico" sizes="48x48">
+<link rel="icon" type="image/png" sizes="32x32" href="/static/favicon-32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="/static/favicon-16.png">
+<link rel="apple-touch-icon" sizes="180x180" href="/static/apple-touch-icon.png">
+<link rel="manifest" href="/static/site.webmanifest">
+<style>.compact-collapse{float:right}.compact-collapsed .card-bd{display:none!important}.compact-collapsed .card-hd{border-bottom:0!important}.compact-toggle{margin-left:auto}
+  :root{
+    --blue:#7d2fa3;--blue-d:#682487;--brand-primary:#2b1b68;--ice:#eee8fb;--ice-2:#edf4fa;
+    --line:#d7cde9;--line-soft:#e8e3f1;--ink:#0f2438;--grey:#425466;--grey-l:#617486;
+    --green:#187a4d;--green-soft:#dff3e8;--amber:#9a5b00;--amber-soft:#fcedd4;
+    --red:#b5391f;--red-soft:#fbe4df;--white:#fff;--brand-soft:#eee8fb;
+    --chart-engagement:#3a93d2;--chart-cashflow:#1fa463;--chart-debt:#607486;
+    --chart-insurance:#8a4fc4;--chart-workforce:#4ea3da;--chart-low:#1fa463;
+    --chart-mid:#e8910c;--chart-high:#e0492f;
+    --shadow:0 1px 2px rgba(13,42,71,.04),0 8px 24px rgba(13,42,71,.06);
+    --radius:16px;--radius-sm:11px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:'Manrope',system-ui,sans-serif;color:var(--ink);
+    background:#f3f7fb;min-height:100vh;}
+  .wrap{max-width:1100px;margin:0 auto;padding:0 32px 96px;}
+  .topbar{position:sticky;top:0;z-index:40;background:rgba(243,247,251,.86);border-bottom:1px solid var(--line);}
+  .topbar-inner{max-width:1100px;margin:0 auto;padding:0 32px;height:68px;display:flex;align-items:center;gap:14px;}
+  .logo-text{font-weight:800;font-size:16px;letter-spacing:-.3px;color:var(--brand-primary);}
+  .logo-text .opt{color:var(--blue);}
+  .pill{font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--blue);background:var(--ice);border:1px solid var(--line);padding:5px 11px;border-radius:8px;}
+  .head{padding:44px 0 28px;}
+  .head .eyebrow{font-size:12px;font-weight:800;letter-spacing:.13em;text-transform:uppercase;color:var(--blue);margin-bottom:11px;}
+  .head h1{font-family:'Fraunces',serif;font-weight:600;font-size:36px;letter-spacing:-.6px;color:var(--brand-primary);}
+  .head p{margin-top:12px;font-size:14.5px;color:var(--grey);max-width:64ch;line-height:1.6;}
+  .grid{display:grid;grid-template-columns:300px 1fr;gap:26px;align-items:start;}
+  .card{background:var(--white);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);}
+  .card-hd{padding:22px 24px 14px;border-bottom:1px solid var(--line-soft);}
+  .card-hd h2{font-size:14.5px;font-weight:800;color:var(--brand-primary);letter-spacing:.01em;}
+  .card-hd .note{font-size:12px;color:var(--grey-l);margin-top:5px;line-height:1.5;}
+  .card-bd{padding:22px 24px 26px;}
+  .card-bd>*+*{margin-top:16px;} /* consistent vertical rhythm between fields/sections; .section-gap (below) still wins for explicit section breaks since it's more specific */
+  /* report list */
+  .rep{display:flex;flex-direction:column;gap:2px;padding:11px 13px;border-radius:var(--radius-sm);cursor:pointer;border:1px solid transparent;transition:.14s;}
+  .rep:hover{background:var(--ice-2);}
+  .rep.on{background:var(--ice);border-color:var(--line);}
+  .rep .step{font-size:10.5px;font-weight:800;color:var(--grey-l);letter-spacing:.05em;}
+  .rep .t{font-size:13.5px;font-weight:700;color:var(--ink);}
+  .btn{font-family:inherit;font-weight:700;font-size:13px;border-radius:11px;padding:10px 16px;cursor:pointer;border:1px solid var(--line);background:var(--white);color:var(--brand-primary);transition:.14s;display:inline-flex;align-items:center;gap:8px;}
+  .btn:hover{border-color:var(--blue);color:var(--blue);}
+  .btn-primary{background:var(--brand-primary);color:#fff;border-color:var(--brand-primary);}
+  .btn-primary:hover{background:var(--blue-d);color:#fff;}
+  .btn-green{background:var(--green);color:#fff;border-color:var(--green);}
+  .btn-ghost{background:none;box-shadow:none;}
+  .btn:disabled{opacity:.45;cursor:not-allowed;}
+  .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center;}
+  .muted{color:var(--grey);font-size:13px;line-height:1.55;}
+  .drop{margin-top:14px;border:2px dashed var(--line);border-radius:var(--radius);padding:30px;text-align:center;transition:.16s;cursor:pointer;background:var(--ice-2);}
+  .drop.over{border-color:var(--blue);background:var(--ice);}
+  .drop .big{font-size:14px;font-weight:700;color:var(--brand-primary);}
+  .drop .sm{font-size:12.5px;color:var(--grey-l);margin-top:5px;}
+  table{width:100%;border-collapse:collapse;font-size:12.5px;}
+  th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line-soft);}
+  th{font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--grey-l);font-weight:800;}
+  .tag{font-size:11px;font-weight:800;padding:3px 8px;border-radius:6px;display:inline-block;}
+  .tag.req{background:var(--amber-soft);color:var(--amber);}
+  .tag.opt{background:var(--ice);color:var(--grey);}
+  .banner{border-radius:var(--radius-sm);padding:13px 15px;font-size:13px;font-weight:600;margin-top:14px;display:flex;gap:9px;align-items:flex-start;}
+  .banner.ok{background:var(--green-soft);color:#137a47;}
+  .banner.err{background:var(--red-soft);color:#b5391f;}
+  .err-list{margin-top:12px;max-height:230px;overflow:auto;border:1px solid var(--line);border-radius:var(--radius-sm);}
+  .err-list td:first-child{font-weight:800;color:var(--red);white-space:nowrap;}
+  .hist td .st{font-size:11px;font-weight:800;padding:3px 9px;border-radius:6px;}
+  .st.COMMITTED{background:var(--green-soft);color:#137a47;}
+  .st.VALIDATED{background:var(--ice);color:var(--blue-d);}
+  .st.COMMITTING{background:var(--amber-soft);color:#8a5a10;}
+  .st.FAILED{background:var(--red-soft);color:#b5391f;}
+  .history-row-detail{display:block;margin-top:4px;font-size:10.5px;line-height:1.4;color:var(--grey);font-weight:600;}
+  .history-row-detail.live{color:#8a5a10;}
+  .job-progress-detail{margin-top:9px;font-size:11.5px;line-height:1.5;color:var(--grey);font-weight:600;}
+  .st.REVERTED{background:#f1f1f4;color:#777;}
+  .section-gap{margin-top:22px;}
+  .field-desc{color:var(--grey-l);}
+  code{background:var(--ice);padding:1px 6px;border-radius:5px;font-size:12px;}
+  .hidden{display:none;}
+  .partner-preview{display:flex;align-items:center;gap:12px;margin-top:12px;padding:12px 14px;border:1px solid var(--preview-line,var(--line));border-radius:12px;background:var(--preview-surface,var(--brand-primary));color:var(--preview-text,#fff);}
+  .partner-preview-logo{width:52px;height:52px;border-radius:12px;object-fit:contain;background:var(--preview-logo-bg,#fff);border:1px solid var(--preview-line,var(--line));padding:5px;flex:0 0 auto;}
+  .partner-preview-fallback{display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:800;color:var(--preview-on-accent,#fff);padding:0;background:var(--preview-accent)!important;}
+  .partner-preview-copy{min-width:0;}
+  .partner-preview-copy strong{display:block;font-size:14px;color:var(--preview-text,#fff);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .partner-preview-copy span{display:block;margin-top:3px;font-size:11.5px;color:var(--preview-muted,#d7dee5);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .partner-preview-badge{margin-left:auto;font-size:10px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--preview-accent,#fff);white-space:nowrap;}
+  .partner-preview-open{margin-top:12px;width:100%;justify-content:center;background:var(--brand-primary);color:#fff;border-color:transparent;}
+  .partner-preview-open:hover{color:#fff;border-color:transparent;box-shadow:0 10px 24px rgba(50,33,124,.2);}
+  .partner-card{animation:partner-card-in .45s both;}
+  .partner-card:nth-child(2){animation-delay:.05s}.partner-card:nth-child(3){animation-delay:.1s}.partner-card:nth-child(4){animation-delay:.15s}
+  @keyframes partner-card-in{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+  .client-preview-overlay{position:fixed;inset:0;z-index:200;background:rgba(15,36,56,.48);display:flex;align-items:center;justify-content:center;padding:18px;opacity:0;visibility:hidden;transition:opacity .25s ease,visibility .25s ease;}
+  .client-preview-overlay.is-open{opacity:1;visibility:visible;}
+  .client-preview-dialog{width:min(1080px,100%);max-height:min(820px,calc(100vh - 36px));overflow:auto;background:#f4f7fb;border:1px solid rgba(255,255,255,.7);border-radius:22px;box-shadow:0 28px 90px rgba(15,36,56,.3);transform:translateY(14px) scale(.985);transition:transform .3s cubic-bezier(.2,.8,.2,1);}
+  .client-preview-overlay.is-open .client-preview-dialog{transform:translateY(0) scale(1);}
+  .client-preview-toolbar{display:flex;align-items:center;gap:12px;padding:14px 18px;background:rgba(255,255,255,.88);border-bottom:1px solid var(--line);position:sticky;top:0;z-index:2;}
+  .client-preview-toolbar strong{font-size:13px;color:var(--brand-primary);flex:1;}
+  .client-preview-toolbar span{font-size:11px;font-weight:800;letter-spacing:.07em;text-transform:uppercase;color:var(--blue-d);background:var(--ice);padding:6px 9px;border-radius:7px;}
+  .client-preview-close{width:32px;height:32px;border-radius:9px;border:1px solid var(--line);background:#fff;color:var(--grey);font-size:20px;line-height:1;cursor:pointer;}
+  .client-preview-app{--preview-bg:#f6f4fb;--preview-surface:#fff;--preview-surface-2:#f3efff;--preview-logo-bg:#fff;--preview-navy:#32217c;--preview-blue:#b15be8;--preview-line:#e8e1f7;--preview-ink:#0f2438;--preview-muted:#5b6b7a;--preview-on-accent:#fff;background:var(--preview-bg);color:var(--preview-ink);font-family:Manrope,system-ui,sans-serif;}
+  .client-preview-app .cp-topbar{display:flex;align-items:center;gap:12px;padding:16px 28px;background:var(--preview-surface);border-bottom:1px solid var(--preview-line);}
+  .client-preview-app .cp-logo{width:34px;height:34px;border-radius:9px;object-fit:contain;background:var(--preview-logo-bg,#fff);border:1px solid var(--preview-line);padding:3px;}
+  .client-preview-app .cp-brand{font-weight:800;color:var(--preview-navy);font-size:14px;}
+  .client-preview-app .cp-user{margin-left:auto;width:32px;height:32px;border-radius:50%;display:grid;place-items:center;background:var(--preview-blue);color:var(--preview-on-accent);font-size:11px;font-weight:800;}
+  .client-preview-app .cp-body{padding:30px 28px 38px;}
+  .client-preview-app .cp-eyebrow{font-size:10px;font-weight:800;letter-spacing:.13em;text-transform:uppercase;color:var(--preview-blue);}
+  .client-preview-app h3{margin-top:7px;font:600 29px Fraunces,serif;color:var(--preview-navy);letter-spacing:-.4px;}
+  .client-preview-app .cp-sub{margin-top:7px;font-size:12.5px;color:var(--preview-muted);max-width:620px;line-height:1.5;}
+  .client-preview-app .cp-filters{display:flex;gap:8px;flex-wrap:wrap;margin-top:20px;}
+  .client-preview-app .cp-filter{padding:7px 10px;border:1px solid var(--preview-line);border-radius:8px;background:var(--preview-surface);color:var(--preview-muted);font-size:11px;font-weight:700;}
+  .client-preview-app .cp-filter.active{background:var(--preview-surface-2);color:var(--preview-navy);border-color:var(--preview-blue);}
+  .client-preview-app .cp-grid{display:grid;grid-template-columns:1.2fr .8fr;gap:14px;margin-top:18px;}
+  .client-preview-app .cp-card{background:var(--preview-surface);border:1px solid var(--preview-line);border-radius:14px;padding:17px;box-shadow:0 7px 20px rgba(15,36,56,.05);}
+  .client-preview-app .cp-card-wide{grid-column:span 2;}
+  .client-preview-app .cp-card-label{font-size:11px;font-weight:800;color:var(--preview-muted);text-transform:uppercase;letter-spacing:.05em;}
+  .client-preview-app .cp-score{display:flex;align-items:end;gap:10px;margin-top:13px;}
+  .client-preview-app .cp-score strong{font-size:42px;line-height:1;color:var(--preview-navy);}
+  .client-preview-app .cp-score span{font-size:11px;color:var(--preview-blue);font-weight:800;padding-bottom:5px;}
+  .client-preview-app .cp-bars{height:82px;display:flex;align-items:end;gap:7px;margin-top:16px;padding-bottom:3px;border-bottom:1px solid var(--preview-line);}
+  .client-preview-app .cp-bars i{display:block;flex:1;border-radius:5px 5px 2px 2px;background:var(--preview-blue);animation:cpBarIn .65s cubic-bezier(.2,.8,.2,1) both;transform-origin:bottom;}
+  @keyframes cpBarIn{from{transform:scaleY(0);opacity:.2}to{transform:scaleY(1);opacity:1}}
+  .client-preview-app .cp-kpis{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin-top:15px;}
+  .client-preview-app .cp-kpi{padding:11px;border-radius:10px;background:var(--preview-surface-2);}
+  .client-preview-app .cp-kpi strong{display:block;font-size:20px;color:var(--preview-navy);}
+  .client-preview-app .cp-kpi span{display:block;margin-top:3px;font-size:10px;color:var(--preview-muted);font-weight:700;}
+  .client-preview-app .cp-outcome{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--preview-line);font-size:12px;font-weight:700;color:var(--preview-navy);}
+  .client-preview-app .cp-outcome:last-child{border-bottom:0;}
+  .client-preview-app .cp-dot{width:9px;height:9px;border-radius:50%;background:var(--preview-blue);}
+  @media(max-width:700px){.client-preview-app .cp-grid{grid-template-columns:1fr}.client-preview-app .cp-card-wide{grid-column:span 1}.client-preview-app .cp-body{padding:24px 16px 30px}.client-preview-app .cp-topbar{padding:13px 16px}.client-preview-app h3{font-size:25px}.client-preview-toolbar span{display:none}}
+  @media(max-width:760px){.wrap{padding-left:16px;padding-right:16px}.grid{grid-template-columns:1fr}.topbar-inner{padding-left:16px;padding-right:16px}.head h1{font-size:29px}.partner-preview-badge{display:none}}
+
+  /* REAL DASHBOARD SNAPSHOT PREVIEW — mirrors the employer dashboard structure with synthetic data */
+  .client-preview-dialog{width:min(1380px,calc(100vw - 36px));max-height:calc(100vh - 36px);}
+  .client-preview-app{background:var(--preview-bg);color:var(--preview-ink);}
+  .client-preview-app .snap-shell{min-height:100%;background:var(--preview-bg);}
+  .client-preview-app .snap-topbar{display:flex;align-items:center;gap:12px;padding:12px 22px;background:var(--preview-navy);color:#fff;border-bottom:2px solid var(--preview-accent);}
+  .client-preview-app .snap-partner-logo{max-width:90px;max-height:30px;object-fit:contain;background:transparent;border:0;padding:0;}
+  .client-preview-app .snap-partner-fallback{font-size:13px;font-weight:900;letter-spacing:.03em;}
+  .client-preview-app .snap-spacer{flex:1;}
+  .client-preview-app .snap-nav{display:flex;gap:14px;font-size:9px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;opacity:.82;}
+  .client-preview-app .snap-avatar{width:28px;height:28px;border-radius:50%;display:grid;place-items:center;background:var(--preview-accent);color:var(--preview-on-accent);font-size:9px;font-weight:900;}
+  .client-preview-app .snap-body{padding:26px 24px 34px;}
+  .client-preview-app .snap-eyebrow{font-size:9px;font-weight:900;letter-spacing:.13em;text-transform:uppercase;color:var(--preview-blue);}
+  .client-preview-app .snap-head{display:flex;justify-content:space-between;gap:18px;align-items:flex-end;}
+  .client-preview-app .snap-head h3{margin:6px 0 0;font:600 28px Fraunces,serif;color:var(--preview-navy);}
+  .client-preview-app .snap-sub{margin-top:5px;color:var(--preview-muted);font-size:11px;max-width:680px;line-height:1.45;}
+  .client-preview-app .snap-actions{display:flex;gap:8px;}
+  .client-preview-app .snap-btn{padding:8px 11px;border:1px solid var(--preview-line);background:var(--preview-surface);color:var(--preview-navy);border-radius:7px;font-size:9px;font-weight:800;}
+  .client-preview-app .snap-btn.primary{background:var(--preview-blue);border-color:var(--preview-blue);color:var(--preview-on-accent);}
+  .client-preview-app .snap-period{display:flex;gap:15px;flex-wrap:wrap;margin-top:18px;padding:11px 13px;border-radius:9px;background:var(--preview-surface-2);font-size:9px;font-weight:750;color:var(--preview-navy);}
+  .client-preview-app .snap-banner{margin-top:12px;padding:10px 12px;border-radius:8px;background:#fff8e8;border:1px solid #efd49b;color:#7a5512;font-size:9px;line-height:1.4;}
+  .client-preview-app .snap-filterbar{display:flex;gap:7px;align-items:center;flex-wrap:wrap;margin-top:12px;padding:8px;border:1px solid var(--preview-line);border-radius:9px;background:var(--preview-surface);}
+  .client-preview-app .snap-chip{padding:7px 9px;border-radius:6px;background:var(--preview-surface-2);border:1px solid var(--preview-line);font-size:9px;font-weight:800;color:var(--preview-navy);}
+  .client-preview-app .snap-chip.partner{background:var(--preview-navy);border-color:var(--preview-navy);color:#fff;min-width:130px;}
+  .client-preview-app .snap-insight{display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center;margin-top:10px;}
+  .client-preview-app .snap-insight-copy{padding:11px 12px;border:1px solid var(--preview-line);border-radius:9px;background:var(--preview-surface);font-size:9px;line-height:1.45;color:var(--preview-navy);}
+  .client-preview-app .snap-impact{margin-top:12px;padding:14px;border-radius:12px;background:linear-gradient(120deg,var(--preview-navy),color-mix(in srgb,var(--preview-navy) 76%,var(--preview-blue)));color:#fff;}
+  .client-preview-app .snap-impact-head{display:flex;justify-content:space-between;gap:12px;align-items:center;}
+  .client-preview-app .snap-impact h4{margin:0;font:600 16px Fraunces,serif;}
+  .client-preview-app .snap-impact-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:0;margin-top:13px;border-top:1px solid rgba(255,255,255,.14);}
+  .client-preview-app .snap-impact-cell{padding:12px 10px;border-right:1px solid rgba(255,255,255,.12);}
+  .client-preview-app .snap-impact-cell:last-child{border-right:0;}
+  .client-preview-app .snap-impact-cell strong{display:block;font:600 18px Fraunces,serif;}
+  .client-preview-app .snap-impact-cell span{display:block;margin-top:3px;font-size:8px;opacity:.76;font-weight:700;}
+  .client-preview-app .snap-grid{display:grid;grid-template-columns:1.15fr .85fr;gap:12px;margin-top:12px;}
+  .client-preview-app .snap-card{background:var(--preview-surface);border:1px solid var(--preview-line);border-radius:11px;padding:13px;}
+  .client-preview-app .snap-card-title{font-size:9px;font-weight:900;letter-spacing:.05em;text-transform:uppercase;color:var(--preview-muted);}
+  .client-preview-app .snap-wellness{display:grid;grid-template-columns:150px 1fr;gap:18px;align-items:center;margin-top:12px;}
+  .client-preview-app .snap-score-ring{width:122px;height:122px;border-radius:50%;display:grid;place-items:center;margin:auto;background:conic-gradient(var(--preview-blue) 0 34%,var(--preview-surface-2) 34% 100%);position:relative;}
+  .client-preview-app .snap-score-ring:after{content:"";position:absolute;inset:12px;border-radius:50%;background:var(--preview-surface);}
+  .client-preview-app .snap-score-ring strong{position:relative;z-index:1;font:600 31px Fraunces,serif;color:var(--preview-navy);}
+  .client-preview-app .snap-drivers{display:grid;gap:9px;}
+  .client-preview-app .snap-driver{display:grid;grid-template-columns:120px 1fr 32px;gap:8px;align-items:center;font-size:8.5px;color:var(--preview-navy);}
+  .client-preview-app .snap-track{height:7px;border-radius:999px;background:var(--preview-surface-2);overflow:hidden;}
+  .client-preview-app .snap-fill{height:100%;border-radius:999px;background:var(--preview-blue);}
+  .client-preview-app .snap-kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:9px;margin-top:12px;}
+  .client-preview-app .snap-kpi{padding:12px;border:1px solid var(--preview-line);border-radius:9px;background:var(--preview-surface);}
+  .client-preview-app .snap-kpi strong{display:block;font:600 18px Fraunces,serif;color:var(--preview-navy);}
+  .client-preview-app .snap-kpi span{display:block;margin-top:3px;font-size:8px;color:var(--preview-muted);font-weight:700;}
+  .client-preview-app .snap-funnel{display:grid;gap:8px;margin-top:12px;}
+  .client-preview-app .snap-funnel-row{display:grid;grid-template-columns:120px 1fr 38px;gap:8px;align-items:center;font-size:8px;color:var(--preview-navy);}
+  .client-preview-app .snap-debtbar{display:flex;height:16px;margin-top:14px;border-radius:999px;overflow:hidden;background:var(--preview-surface-2);}
+  .client-preview-app .snap-seg:nth-child(1){background:var(--preview-navy)}
+  .client-preview-app .snap-seg:nth-child(2){background:var(--preview-blue)}
+  .client-preview-app .snap-seg:nth-child(3){background:color-mix(in srgb,var(--preview-blue) 60%,var(--preview-accent))}
+  .client-preview-app .snap-seg:nth-child(4){background:var(--preview-accent)}
+  .client-preview-app .snap-outcomes{display:grid;gap:7px;margin-top:12px;}
+  .client-preview-app .snap-outcome{display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--preview-line);font-size:8.5px;color:var(--preview-navy);}
+  .client-preview-app .snap-outcome:last-child{border-bottom:0;}
+  .client-preview-app .snap-dot{width:7px;height:7px;border-radius:50%;background:var(--preview-accent);}
+  .client-preview-app .snap-opps{display:grid;grid-template-columns:repeat(4,1fr);gap:9px;margin-top:12px;}
+  .client-preview-app .snap-opp{padding:11px;border:1px solid var(--preview-line);border-radius:9px;background:var(--preview-surface-2);}
+  .client-preview-app .snap-opp strong{display:block;font:600 16px Fraunces,serif;color:var(--preview-navy);}
+  .client-preview-app .snap-opp span{display:block;margin-top:3px;font-size:8px;color:var(--preview-muted);font-weight:700;}
+  .client-preview-app .snap-footnote{margin-top:12px;font-size:8px;color:var(--preview-muted);text-align:right;}
+  @media(max-width:900px){
+    .client-preview-app .snap-impact-grid{grid-template-columns:repeat(3,1fr)}
+    .client-preview-app .snap-grid{grid-template-columns:1fr}
+    .client-preview-app .snap-kpis,.client-preview-app .snap-opps{grid-template-columns:repeat(2,1fr)}
+  }
+  @media(max-width:620px){
+    .client-preview-app .snap-body{padding:20px 14px 28px}
+    .client-preview-app .snap-wellness{grid-template-columns:1fr}
+    .client-preview-app .snap-impact-grid{grid-template-columns:repeat(2,1fr)}
+    .client-preview-app .snap-kpis,.client-preview-app .snap-opps{grid-template-columns:1fr}
+    .client-preview-app .snap-nav{display:none}
+  }
+
+  .source-mode-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;max-width:820px;margin-bottom:16px;}
+  .source-mode-card{display:flex;align-items:flex-start;gap:12px;text-align:left;border:1px solid var(--line);background:#fff;border-radius:13px;padding:15px 16px;cursor:pointer;font-family:inherit;color:var(--ink);transition:.16s;}
+  .source-mode-card:hover{border-color:#cdb8f3;background:#fcfbff;}
+  .source-mode-card.on{border-color:var(--blue);background:var(--ice);}
+  .source-mode-icon{width:34px;height:34px;border-radius:10px;background:#f3efff;color:var(--blue-d);display:flex;align-items:center;justify-content:center;flex:0 0 auto;font-weight:800;}
+  .source-mode-card strong{display:block;font-size:13.5px;color:var(--brand-primary);}
+  .source-mode-card small{display:block;margin-top:3px;color:var(--grey-l);font-size:11.5px;line-height:1.4;font-weight:600;}
+  .integration-panel-title{font-size:13px;font-weight:800;color:var(--brand-primary);margin:2px 0 2px;grid-column:span 2;}
+  @media(max-width:720px){.source-mode-grid{grid-template-columns:1fr}.integration-two-col{grid-template-columns:1fr!important}.integration-two-col label[style*="grid-column:span 2"],.integration-two-col .settings-wide,.integration-panel-title{grid-column:span 1!important}}
+  /* Native React styles serialize differently from source HTML. Use stable
+     classes for responsive fields and theme overrides, not style substrings. */
+  html.portal-dark .settings-label{color:var(--grey)!important;}
+  html.portal-dark .settings-accent{color:var(--brand-primary)!important;}
+  html.portal-dark .settings-warning{color:#f2c46b!important;background:var(--amber-soft)!important;border-color:var(--dm-line)!important;}
+  html.portal-dark .settings-error{color:#ff9c8a!important;}
+  html.portal-dark .settings-success{color:#6fe3a6!important;}
+  html.portal-dark #mail-provider{background:var(--dm-surface)!important;}
+
+  /* ── welcome splash (shown briefly right after sign-in) ── */
+  #welcome-splash{position:fixed;inset:0;z-index:9999;display:flex;align-items:center;justify-content:center;background:#f3f7fb;background:radial-gradient(900px 520px at 50% -8%,color-mix(in srgb,var(--blue) 12%,transparent),transparent 62%),linear-gradient(160deg,color-mix(in srgb,var(--ice) 42%,#fff) 0%,color-mix(in srgb,var(--brand-soft) 68%,#f3f7fb) 100%);transition:opacity .45s ease, visibility .45s ease;}
+  #welcome-splash.hide{opacity:0;visibility:hidden;pointer-events:none;}
+  .welcome-splash-inner{text-align:center;padding:30px 36px;border:1px solid color-mix(in srgb,var(--line) 76%,transparent);border-radius:18px;background:color-mix(in srgb,#fff 88%,var(--ice));box-shadow:0 18px 55px rgba(15,36,56,.10);min-width:min(360px,calc(100vw - 36px));}
+  .welcome-splash-logo{height:40px;width:auto;max-width:220px;object-fit:contain;margin-bottom:22px;opacity:.98;}
+  .welcome-splash-spinner{width:32px;height:32px;border-radius:50%;border:3px solid var(--line);border-top-color:var(--blue);margin:0 auto 20px;animation:welcome-spin .8s linear infinite;}
+  @keyframes welcome-spin{to{transform:rotate(360deg);}}
+  .welcome-splash-greeting{font-family:'Fraunces',serif;font-weight:600;font-size:26px;color:var(--brand-primary);}
+  .welcome-splash-sub{margin-top:6px;font-size:13.5px;color:var(--grey);font-weight:600;}
+.security-stat{padding:14px;border:1px solid #d7cde9;border-radius:13px;background:#fff}.security-stat .k{font-size:9px;font-weight:850;letter-spacing:.08em;text-transform:uppercase;color:#617486}.security-stat .v{font-size:24px;font-weight:850;color:#2b1b68;margin-top:4px;font-variant-numeric:tabular-nums}@media(max-width:900px){#admin-security-summary{grid-template-columns:1fr 1fr!important}}@media(max-width:600px){#admin-security-summary{grid-template-columns:1fr!important}}.mlops-alert{display:none;margin:18px 0;border-color:#efc7bf;background:#fff}.mlops-alert.show{display:block}.mlops-alert .card-hd{display:flex;align-items:center;gap:12px}.mlops-alert .mlops-badge{font-size:10px;font-weight:850;letter-spacing:.08em;text-transform:uppercase;color:#b5391f;background:#fdecea;border:1px solid #f3c9c1;padding:5px 8px;border-radius:7px;white-space:nowrap}.mlops-alert .mlops-summary{font-size:12px;color:#5b6b7a;line-height:1.5}.mlops-alert .mlops-detail{display:none;margin-top:12px;padding:12px 14px;border:1px solid #f1d8d3;border-radius:10px;background:#fff8f7}.mlops-alert .mlops-detail.open{display:block}.mlops-alert .mlops-finding{padding:8px 0;border-bottom:1px solid #f3e2df;font-size:11.5px;line-height:1.5}.mlops-alert .mlops-finding:last-child{border-bottom:0}.mlops-alert .mlops-finding strong{color:#b5391f}.compliance-summary{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px}.compliance-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}.compliance-box{border:1px solid var(--line);border-radius:12px;padding:14px;background:#fff}.compliance-box-wide{grid-column:1/-1}.compliance-box h3{font-size:12px;color:var(--brand-primary);margin-bottom:5px}.compliance-box p{font-size:11.5px;color:var(--grey);line-height:1.5}.compliance-list{margin-top:10px;display:grid;gap:6px}.compliance-item{border:1px solid var(--line-soft);border-radius:8px;padding:9px;font-size:11px}.compliance-item strong{color:var(--brand-primary)}.compliance-item small{display:block;color:var(--grey);margin-top:3px}@media(max-width:900px){.compliance-summary{grid-template-columns:repeat(2,minmax(0,1fr))}.compliance-grid{grid-template-columns:1fr}}@media(max-width:600px){.compliance-summary{grid-template-columns:1fr}}
+
+  .ingestion-method-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;max-width:1000px;}
+  .ingestion-method{display:flex;align-items:flex-start;gap:12px;text-align:left;border:1px solid var(--line);background:#fff;border-radius:13px;padding:16px;cursor:pointer;font-family:inherit;color:var(--ink);transition:.16s;min-width:0;}
+  .ingestion-method:hover{border-color:#cdb8f3;background:#fcfbff;transform:translateY(-1px);}
+  .ingestion-method.on{border-color:var(--blue);background:var(--ice);}
+  .ingestion-method-icon{width:42px;height:42px;border-radius:11px;background:#f3efff;color:var(--blue-d);display:flex;align-items:center;justify-content:center;flex:0 0 auto;font-size:10px;font-weight:850;letter-spacing:.03em;}
+  .ingestion-method strong{display:block;font-size:13.5px;color:var(--brand-primary);}
+  .ingestion-method small{display:block;margin-top:5px;color:var(--grey-l);font-size:11.5px;line-height:1.45;font-weight:600;}
+  .job-progress{margin-top:14px;padding:13px 14px;border:1px solid var(--line);border-radius:11px;background:#fff;}
+  .job-progress-track{height:8px;background:#eeeafa;border-radius:999px;overflow:hidden;margin-top:9px;}
+  .job-progress-fill{height:100%;width:0;background:var(--brand-primary);border-radius:999px;transition:width .18s ease;}
+  .job-progress-meta{display:flex;justify-content:space-between;gap:12px;font-size:11px;color:var(--grey);margin-top:6px;}
+  .job-progress-meta strong{color:var(--brand-primary);}
+  .ingestion-note{margin-top:14px;padding:12px 14px;border-radius:10px;background:#f8f5ff;border:1px solid var(--line);color:#5b6b7a;font-size:12px;line-height:1.55;max-width:1000px;}
+  @media(max-width:820px){.ingestion-method-grid{grid-template-columns:1fr}.ingestion-method{width:100%}}
+</style>
+<link rel="stylesheet" href="/static/enterprise.css?v=2">
+  <link rel="stylesheet" href="/static/enterprise-v3.css?v=4">
+<link rel="stylesheet" href="/static/dark-theme-v2.css?v=6">
+<link rel="stylesheet" href="/static/the-fixer-brand.css?v=13">
+</head>
+<body data-portal-build="0.10.0">
+<div id="welcome-splash">
+  <div class="welcome-splash-inner">
+    <img id="welcome-splash-logo" class="welcome-splash-logo efs-brand-logo" src="/static/the-fixer-logo.svg?v=6" alt="The Fixer logo">
+    <div class="welcome-splash-spinner"></div>
+    <div class="welcome-splash-greeting" id="welcome-splash-greeting">Welcome</div>
+    <div class="welcome-splash-sub" id="welcome-splash-sub">The Fixer is getting things ready…</div>
+  </div>
+</div>
+<script>setTimeout(function(){var e=document.getElementById('welcome-splash');if(e)e.classList.add('hide');},4500);</script>
+<div class="topbar"><div class="topbar-inner">
+  <img src="/static/the-fixer-logo.svg?v=6" class="efs-brand-logo" alt="The Fixer" style="height:30px;width:auto;">
+  <span class="pill">Administration</span>
+  <div id="portal-nav" style="margin-left:auto;"></div>
+  <div id="portal-account"></div>
+</div></div>
+
+<div class="wrap">
+  <div class="head">
+    <div class="eyebrow">Feed the system</div>
+    <h1>Data Centre</h1>
+    <p>Bring approved data into EFS Optimise from files, APIs or SQL. File uploads support CSV, Excel and JSON. Every import is validated against a governed feed contract before it reaches the live reporting model.</p>
+  </div>
+
+  <section id="admin-security-strip" class="card" style="margin:18px 0;border-color:#d7cde9;">
+    <div class="card-hd"><div><h2>Security centre</h2><div class="note">Live access activity and high-impact admin changes</div></div><a class="btn btn-sm" href="/users">Open Users &amp; Security</a></div>
+    <div class="card-bd">
+      <div id="admin-security-summary" style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;">
+        <div class="security-stat"><div class="k">Live sessions</div><div class="v" id="admin-sec-live">-</div></div>
+        <div class="security-stat"><div class="k">Failed logins 24h</div><div class="v" id="admin-sec-failed">-</div></div>
+        <div class="security-stat"><div class="k">Open alerts</div><div class="v" id="admin-sec-alerts">-</div></div>
+        <div class="security-stat"><div class="k">Successful logins 24h</div><div class="v" id="admin-sec-success">-</div></div>
+      </div>
+      <div id="admin-sec-copy" style="margin-top:10px;font-size:12px;color:#617486;">Loading security posture...</div>
+    </div>
+  </section>
+  <section id="admin-compliance-strip" class="card" style="margin:18px 0;border-color:#d7cde9;">
+    <div class="card-hd">
+      <div><h2>POPIA &amp; Data Governance</h2><div class="note">Operational controls for South African privacy, access, retention, operators and security compromises</div></div>
+      <button class="btn btn-sm" type="button" onclick="openCompliancePanel()">Open compliance controls</button>
+    </div>
+    <div class="card-bd">
+      <div id="compliance-summary" class="compliance-summary">
+        <div class="security-stat"><div class="k">Processing activities</div><div class="v" id="comp-activities">-</div></div>
+        <div class="security-stat"><div class="k">Cross-border activities</div><div class="v" id="comp-crossborder">-</div></div>
+        <div class="security-stat"><div class="k">Open data requests</div><div class="v" id="comp-requests">-</div></div>
+        <div class="security-stat"><div class="k">Open security incidents</div><div class="v" id="comp-incidents">-</div></div>
+        <div class="security-stat"><div class="k">Governance gaps</div><div class="v" id="comp-gaps">-</div></div>
+      </div>
+      <div id="comp-status" style="margin-top:10px;font-size:12px;color:#617486;">Loading compliance controls...</div>
+      <div id="compliance-panel" style="display:none;margin-top:16px;">
+        <div class="compliance-grid">
+          <div class="compliance-box"><h3>Processing register</h3><p>Every material processing activity should have a purpose, lawful basis, party role, data categories, retention approach and privacy-impact review.</p><div id="comp-activities-list" class="compliance-list"></div></div>
+          <div class="compliance-box"><h3>Operators &amp; cross-border vendors</h3><p>Foreign or outsourced processing must have an identified provider, transfer basis and contractual/security review before approval.</p><div id="comp-vendors-list" class="compliance-list"></div></div>
+          <div class="compliance-box"><h3>Data subject requests</h3><p>Record access, correction, deletion, objection and consent-withdrawal requests, verify identity and track the workflow to closure.</p><div id="comp-requests-list" class="compliance-list"></div></div>
+          <div class="compliance-box"><h3>Retention &amp; deletion</h3><p>Retention is purpose-driven. Policies are recorded before automated deletion is enabled, with legal holds preventing disposal.</p><div id="comp-retention-list" class="compliance-list"></div></div>
+          <div class="compliance-box compliance-box-wide"><h3>Security compromise register</h3><p>Suspected compromises are recorded as incidents so investigation, containment, Information Officer escalation and POPIA notification steps are not lost in ordinary security alerts.</p><div id="comp-incidents-list" class="compliance-list"></div></div>
+        </div>
+      </div>
+    </div>
+  </section>
+  <section id="admin-mlops-alert" class="card mlops-alert" aria-live="assertive">
+    <div class="card-hd">
+      <div style="flex:1"><h2>MLOps data-quality alert</h2><div class="note" id="mlops-alert-summary">An incoming dataset has been blocked before reaching live tables.</div></div>
+      <span class="mlops-badge" id="mlops-alert-badge">ACTION REQUIRED</span>
+      <button class="btn btn-sm" type="button" onclick="toggleMLOpsAlert()">Review</button>
+    </div>
+    <div class="card-bd"><div id="mlops-alert-detail" class="mlops-detail"></div></div>
+  </section>
+  <section id="data-centre" class="card section-gap">
+    <div class="card-hd">
+      <div><h2>Data ingestion</h2><div class="note">Choose how you want to bring data into EFS Optimise. These are complementary options, not fallbacks.</div></div>
+    </div>
+    <div class="card-bd">
+      <div class="ingestion-method-grid">
+        <button class="ingestion-method on" type="button" onclick="document.getElementById('file-ingestion').scrollIntoView({behavior:'smooth',block:'start'})">
+          <span class="ingestion-method-icon">FILE</span>
+          <span><strong>Upload a file</strong><small>CSV, Excel (.xlsx/.xls) or JSON, up to 50 MB. Preview, validate and import.</small></span>
+        </button>
+        <button class="ingestion-method" type="button" onclick="document.getElementById('live-integration').scrollIntoView({behavior:'smooth',block:'start'});setIntegMode('API')">
+          <span class="ingestion-method-icon">API</span>
+          <span><strong>Connect an API</strong><small>Pull the governed feeds from HTTPS endpoints using private bearer-token authentication.</small></span>
+        </button>
+        <button class="ingestion-method" type="button" onclick="document.getElementById('live-integration').scrollIntoView({behavior:'smooth',block:'start'});setIntegMode('SQL')">
+          <span class="ingestion-method-icon">SQL</span>
+          <span><strong>Connect a database</strong><small>Use approved read-only PostgreSQL, SQL Server, MySQL or MariaDB views.</small></span>
+        </button>
+      </div>
+      <div class="ingestion-note"><strong>Governed by design:</strong> files, API records and SQL feeds enter the same validation and import pipeline. Heavy analytics can remain on an approved read replica without moving arbitrary source data into PostgreSQL.</div>
+    </div>
+  </section>
+
+  <div class="grid">
+    <!-- left: report picker -->
+    <div class="card">
+      <div class="card-hd"><h2>Reports</h2><div class="note">In load order</div></div>
+      <div class="card-bd" id="rep-list"></div>
+    </div>
+
+    <!-- right: working area -->
+    <div id="file-ingestion">
+
+    <div id="client-preview-overlay" class="client-preview-overlay" role="dialog" aria-modal="true" aria-labelledby="client-preview-title" onclick="closeClientPreview(event)">
+      <div class="client-preview-dialog" onclick="event.stopPropagation()">
+        <div class="client-preview-toolbar">
+          <strong id="client-preview-title">Client dashboard preview</strong>
+          <span>Preview only</span>
+          <button class="client-preview-close" type="button" aria-label="Close preview" onclick="closeClientPreview()">&times;</button>
+        </div>
+        <div id="client-preview-app" class="client-preview-app"></div>
+      </div>
+    </div>
+      <div class="card">
+        <div class="card-hd"><h2 id="rep-title">Select a report</h2><div class="note" id="rep-note">Choose a report on the left to begin.</div></div>
+        <div class="card-bd" id="work">
+          <p class="muted">Pick a report to see its format, download a template, and upload a file.</p>
+        </div>
+      </div>
+
+      <div class="card section-gap" id="enterprise-operations-card">
+        <div class="card-hd"><div><h2>Enterprise Operations &amp; Data Architecture</h2><div class="note">See where data is processed, how fresh it is, and which analytics are allowed to run against the source database</div></div><button class="btn btn-sm" type="button" onclick="loadEnterpriseOperations()">Refresh</button></div>
+        <div class="card-bd">
+          <div id="enterprise-ops-summary" class="compliance-summary">
+            <div class="security-stat"><div class="k">Data quality</div><div class="v" id="ops-quality">-</div></div>
+            <div class="security-stat"><div class="k">Source</div><div class="v" id="ops-source" style="font-size:16px;">-</div></div>
+            <div class="security-stat"><div class="k">Analytics store</div><div class="v" id="ops-store" style="font-size:16px;">-</div></div>
+            <div class="security-stat"><div class="k">Data freshness</div><div class="v" id="ops-freshness" style="font-size:16px;">-</div></div>
+            <div class="security-stat"><div class="k">Open imports</div><div class="v" id="ops-imports">-</div></div>
+          </div>
+          <div id="ops-architecture" style="margin-top:14px;padding:14px;border:1px solid var(--line);border-radius:12px;background:#fff;font-size:12px;color:#617486;line-height:1.55;"></div>
+          <div style="margin-top:14px;overflow:auto;">
+            <table><thead><tr><th>Feed</th><th>Workload</th><th>Execution</th><th>Source view</th><th>Replica</th><th>Enabled</th><th>Reason</th></tr></thead><tbody id="ops-routes"><tr><td colspan="7" class="muted">Loading routes...</td></tr></tbody></table>
+          </div>
+          <div id="ops-quality-detail" style="margin-top:14px;"></div>
+        </div>
+      </div>
+
+      <!-- import history -->
+      <div class="card section-gap">
+        <div class="card-hd"><h2>Import history</h2><div class="note">Live updates every 1.5s · Rows show validated totals and how many changes have actually reached live tables</div></div>
+        <div class="card-bd" style="padding:6px 8px 12px;">
+          <table class="hist"><thead><tr><th>Report</th><th>File</th><th>Rows</th><th>Status</th><th>When</th><th>Download</th><th></th></tr></thead>
+          <tbody id="hist-body"><tr><td colspan="7" class="muted" style="padding:14px;">No imports yet.</td></tr></tbody></table>
+        </div>
+      </div>
+
+      <!-- live integration (API or direct SQL) -->
+      <div class="card section-gap" id="live-integration">
+        <div class="card-hd"><h2>Live Data Integration</h2><div class="note">Connect the same governed feeds through an API or approved read-only SQL views</div></div>
+        <div class="card-bd">
+          <div id="integ-status" class="banner ok" style="display:none;margin-bottom:14px;"></div>
+
+          <input id="integ-mode" type="hidden" value="API">
+          <div class="source-mode-grid" role="tablist" aria-label="Integration source">
+            <button class="source-mode-card on" id="source-tab-api" type="button" role="tab" aria-selected="true" onclick="setIntegMode('API')">
+              <span class="source-mode-icon">API</span>
+              <span><strong>API integration</strong><small>Pull the 10 contracted feeds from HTTPS endpoints using bearer-token authentication.</small></span>
+            </button>
+            <button class="source-mode-card" id="source-tab-sql" type="button" role="tab" aria-selected="false" onclick="setIntegMode('SQL')">
+              <span class="source-mode-icon">DB</span>
+              <span><strong>Database integration</strong><small>Connect directly to approved read-only PostgreSQL, SQL Server, MySQL or MariaDB views.</small></span>
+            </button>
+          </div>
+          <div style="max-width:820px;margin-bottom:14px;">
+            <label style="display:block;font-size:12.5px;font-weight:700;color:#5b6b7a;max-width:390px;">Heartbeat reconciliation every (hours)
+              <input id="integ-hours" type="number" min="1" value="24" style="display:block;width:100%;margin-top:5px;font:inherit;font-weight:500;padding:9px 12px;border:1px solid #e8e1f7;border-radius:9px;">
+            </label>
+            <div id="integ-change-mode" class="muted" style="margin-top:7px;max-width:820px;">SQL sources also use indexed change detection between heartbeat runs.</div>
+          </div>
+
+          <div id="integ-api-panel" class="integration-two-col" style="margin-top:14px;display:grid;grid-template-columns:1fr 1fr;gap:14px;max-width:820px;">
+            <div class="integration-panel-title">API connection</div>
+            <label style="grid-column:span 2;font-size:12.5px;font-weight:700;color:#5b6b7a;">Provider API base URL
+              <input id="integ-url" placeholder="https://your-provider.example.com" style="display:block;width:100%;margin-top:5px;font:inherit;font-weight:500;padding:9px 12px;border:1px solid #e8e1f7;border-radius:9px;">
+            </label>
+            <label style="grid-column:span 2;font-size:12.5px;font-weight:700;color:#5b6b7a;">Bearer token (kept private)
+              <input id="integ-token" type="password" placeholder="leave blank to keep existing" style="display:block;width:100%;margin-top:5px;font:inherit;font-weight:500;padding:9px 12px;border:1px solid #e8e1f7;border-radius:9px;">
+            </label>
+          </div>
+
+          <div id="integ-env-override" style="display:none;margin-bottom:12px;padding:10px 14px;border-radius:9px;background:var(--amber-soft);border:1px solid var(--amber);color:#7a4a00;font-size:12.5px;font-weight:600;line-height:1.5;"></div>
+          <div id="integ-sql-panel" class="integration-two-col" style="margin-top:14px;display:none;grid-template-columns:1fr 1fr;gap:14px;max-width:820px;">
+            <div class="integration-panel-title">Database connection (Direct SQL)</div>
+            <label style="font-size:12.5px;font-weight:700;color:#5b6b7a;">SQL platform
+              <select id="integ-sql-dialect" onchange="setSqlPortDefault()" style="display:block;width:100%;margin-top:5px;font:inherit;font-weight:500;padding:9px 12px;border:1px solid #e8e1f7;border-radius:9px;background:#fff;">
+                <option value="POSTGRESQL">PostgreSQL</option>
+                <option value="MSSQL">Microsoft SQL Server</option>
+                <option value="MYSQL">MySQL / MariaDB</option>
+              </select>
+            </label>
+            <label style="font-size:12.5px;font-weight:700;color:#5b6b7a;">Port
+              <input id="integ-sql-port" type="number" min="1" max="65535" placeholder="5432" style="display:block;width:100%;margin-top:5px;font:inherit;font-weight:500;padding:9px 12px;border:1px solid #e8e1f7;border-radius:9px;">
+            </label>
+            <label style="font-size:12.5px;font-weight:700;color:#5b6b7a;">Host
+              <input id="integ-sql-host" placeholder="db.example.internal" style="display:block;width:100%;margin-top:5px;font:inherit;font-weight:500;padding:9px 12px;border:1px solid #e8e1f7;border-radius:9px;">
+            </label>
+            <label style="font-size:12.5px;font-weight:700;color:#5b6b7a;">Database / catalog
+              <input id="integ-sql-database" placeholder="empowerfin_source" style="display:block;width:100%;margin-top:5px;font:inherit;font-weight:500;padding:9px 12px;border:1px solid #e8e1f7;border-radius:9px;">
+            </label>
+            <label style="font-size:12.5px;font-weight:700;color:#5b6b7a;">Schema (optional)
+              <input id="integ-sql-schema" placeholder="public or dbo" style="display:block;width:100%;margin-top:5px;font:inherit;font-weight:500;padding:9px 12px;border:1px solid #e8e1f7;border-radius:9px;">
+            </label>
+            <label style="font-size:12.5px;font-weight:700;color:#5b6b7a;">Canonical view prefix
+              <input id="integ-sql-prefix" value="v_" placeholder="v_" style="display:block;width:100%;margin-top:5px;font:inherit;font-weight:500;padding:9px 12px;border:1px solid #e8e1f7;border-radius:9px;">
+            </label>
+            <label style="font-size:12.5px;font-weight:700;color:#5b6b7a;">Read-only username
+              <input id="integ-sql-user" autocomplete="off" placeholder="empowerfin_reader" style="display:block;width:100%;margin-top:5px;font:inherit;font-weight:500;padding:9px 12px;border:1px solid #e8e1f7;border-radius:9px;">
+            </label>
+            <label style="font-size:12.5px;font-weight:700;color:#5b6b7a;">Password (kept private)
+              <input id="integ-sql-password" type="password" autocomplete="new-password" placeholder="leave blank to keep existing" style="display:block;width:100%;margin-top:5px;font:inherit;font-weight:500;padding:9px 12px;border:1px solid #e8e1f7;border-radius:9px;">
+            </label>
+            <label style="font-size:12.5px;font-weight:700;color:#5b6b7a;">Query timeout (ms)
+              <input id="integ-sql-timeout" type="number" min="1000" value="60000" style="display:block;width:100%;margin-top:5px;font:inherit;font-weight:500;padding:9px 12px;border:1px solid #e8e1f7;border-radius:9px;">
+            </label>
+            <label style="font-size:12.5px;font-weight:700;color:#5b6b7a;">Max changed rows / feed / sync
+              <input id="integ-sql-maxrows" type="number" min="1" value="250000" style="display:block;width:100%;margin-top:5px;font:inherit;font-weight:500;padding:9px 12px;border:1px solid #e8e1f7;border-radius:9px;">
+            </label>
+            <label style="display:flex;align-items:center;gap:9px;font-size:13px;font-weight:700;color:#32217c;cursor:pointer;">
+              <input id="integ-sql-ssl" type="checkbox" checked style="width:17px;height:17px;"> Require encrypted SQL connection
+            </label>
+            <label style="display:flex;align-items:center;gap:9px;font-size:13px;font-weight:700;color:#32217c;cursor:pointer;">
+              <input id="integ-sql-trust" type="checkbox" style="width:17px;height:17px;"> Trust server certificate (only when approved)
+            </label>
+            <div style="grid-column:span 2;margin-top:4px;padding:12px;border:1px solid #e8e1f7;border-radius:10px;background:#fff;">
+              <div style="font-size:12.5px;font-weight:800;color:var(--brand-primary);margin-bottom:8px;">Optional source analytics read replica</div>
+              <div class="integration-two-col" style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+                <label style="font-size:12px;font-weight:700;color:#5b6b7a;">Replica host
+                  <input id="integ-replica-host" placeholder="mysql-replica.internal" style="display:block;width:100%;margin-top:5px;font:inherit;padding:9px 12px;border:1px solid #e8e1f7;border-radius:9px;">
+                </label>
+                <label style="font-size:12px;font-weight:700;color:#5b6b7a;">Replica port
+                  <input id="integ-replica-port" type="number" min="1" max="65535" placeholder="3306" style="display:block;width:100%;margin-top:5px;font:inherit;padding:9px 12px;border:1px solid #e8e1f7;border-radius:9px;">
+                </label>
+                <label style="font-size:12px;font-weight:700;color:#5b6b7a;">Replica database
+                  <input id="integ-replica-database" placeholder="same database if blank" style="display:block;width:100%;margin-top:5px;font:inherit;padding:9px 12px;border:1px solid #e8e1f7;border-radius:9px;">
+                </label>
+                <label style="font-size:12px;font-weight:700;color:#5b6b7a;">Replica username
+                  <input id="integ-replica-user" autocomplete="off" placeholder="analytics_reader" style="display:block;width:100%;margin-top:5px;font:inherit;padding:9px 12px;border:1px solid #e8e1f7;border-radius:9px;">
+                </label>
+                <label style="font-size:12px;font-weight:700;color:#5b6b7a;">Maximum replica lag (seconds)
+                  <input id="integ-replica-lag" type="number" min="0" max="86400" value="60" style="display:block;width:100%;margin-top:5px;font:inherit;padding:9px 12px;border:1px solid #e8e1f7;border-radius:9px;">
+                </label>
+              </div>
+              <div style="display:flex;gap:18px;flex-wrap:wrap;margin-top:10px;">
+                <label style="display:flex;align-items:center;gap:8px;font-size:12px;font-weight:700;color:#32217c;cursor:pointer;"><input id="integ-replica-ssl" type="checkbox" checked style="width:17px;height:17px;"> Require encrypted replica connection</label>
+                <label style="display:flex;align-items:center;gap:8px;font-size:12px;font-weight:700;color:#32217c;cursor:pointer;"><input id="integ-replica-trust" type="checkbox" style="width:17px;height:17px;"> Trust replica certificate</label>
+              </div>
+              <div style="font-size:11px;color:#8497a7;margin-top:8px;">Replica credentials stay in the server environment. Set SOURCE_SQL_REPLICA_PASSWORD for the read-only replica account. The portal never exposes that secret to the browser.</div>
+            </div>
+            <div style="grid-column:span 2;font-size:12px;color:#8497a7;line-height:1.5;">SQL mode expects 10 read-only canonical views named <b>v_employers</b>, <b>v_workforce_snapshots</b>, … <b>v_salary_advances</b> (or the configured prefix). The connection test checks every view and its contracted columns.</div>
+          </div>
+
+          <div style="margin-top:16px;padding:14px;border:1px solid var(--line);border-radius:12px;background:#fbfaff;max-width:820px;">
+            <div style="font-size:13px;font-weight:800;color:var(--brand-primary);">Analytics query placement</div>
+            <div style="font-size:11.5px;color:#617486;line-height:1.5;margin-top:4px;">Do not run heavy dashboard workloads on a production MySQL primary. Use source-side reporting views or a read replica for approved aggregations, then keep the portal's governed read model in PostgreSQL.</div>
+            <div class="integration-two-col" style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:10px;">
+              <label style="font-size:12px;font-weight:700;color:#5b6b7a;">Default analytics mode
+                <select id="integ-analytics-mode" style="display:block;width:100%;margin-top:5px;font:inherit;padding:9px 12px;border:1px solid #e8e1f7;border-radius:9px;background:#fff;">
+                  <option value="POSTGRES_READ_MODEL">PostgreSQL read model</option>
+                  <option value="SOURCE_AGGREGATES">Source-side aggregates</option>
+                  <option value="HYBRID">Hybrid, per feed</option>
+                </select>
+              </label>
+              <label style="display:flex;align-items:center;gap:9px;font-size:12px;font-weight:700;color:#32217c;cursor:pointer;padding-top:20px;">
+                <input id="integ-source-analytics" type="checkbox" style="width:17px;height:17px;"> Allow approved source analytics
+              </label>
+            </div>
+            <label style="display:flex;align-items:center;gap:9px;font-size:12px;font-weight:700;color:#32217c;cursor:pointer;margin-top:10px;">
+              <input id="integ-source-replica" type="checkbox" style="width:17px;height:17px;"> Source analytics must use a read replica
+            </label>
+            <div id="integ-analytics-note" style="font-size:11px;color:#8497a7;margin-top:8px;">Read-only is enforced by the server. Arbitrary SQL is never accepted from the browser.</div>
+          </div>
+
+          <label style="margin-top:16px;display:flex;align-items:center;gap:9px;font-size:13px;font-weight:700;color:#32217c;cursor:pointer;">
+            <input id="integ-enabled" type="checkbox" style="width:17px;height:17px;"> Enable automatic scheduled sync
+          </label>
+
+          <div style="margin-top:16px;display:flex;gap:8px;flex-wrap:wrap;">
+            <button class="btn" onclick="saveInteg()">Save settings</button>
+            <button class="btn btn-ghost" onclick="testInteg()">Test source</button>
+            <button class="btn" style="background:#2B1D73;color:#fff;border-color:#2B1D73;" onclick="syncNow()">Sync now</button>
+            <button id="btn-refresh-now" class="btn btn-ghost" onclick="refreshNow(this)" title="Run the full governed purge, authoritative reload, snapshot rebuild and publish cycle now">Refresh now</button>
+          </div>
+          <div class="muted" style="margin-top:8px;max-width:820px;line-height:1.5;"><b>Sync now</b> applies incremental source changes. <b>Refresh now</b> runs the full purge-and-reload cycle; dashboard users keep seeing the last successful published data until the new refresh completes successfully.</div>
+          <div id="integ-result" style="margin-top:12px;"></div>
+          <div style="margin-top:18px;">
+            <div style="font-size:12.5px;font-weight:700;color:#5b6b7a;margin-bottom:8px;">Recent syncs</div>
+            <table class="hist"><tbody id="integ-logs"><tr><td class="muted" style="padding:10px;">No syncs yet.</td></tr></tbody></table>
+          </div>
+        </div>
+      </div>
+
+      <!-- system email and scheduled reporting -->
+      <div class="card section-gap" id="email-settings-card">
+        <div class="card-hd"><h2>System Email &amp; Scheduled Reports</h2><div class="note">SMTP or Resend delivery used by scheduled employer reports</div></div>
+        <div class="card-bd">
+          <div id="mail-status" class="banner ok" style="display:none;margin-bottom:14px;"></div>
+          <div class="integration-two-col" style="display:grid;grid-template-columns:1fr 1fr;gap:14px;max-width:820px;">
+            <div class="integration-panel-title">Delivery provider</div>
+            <label style="font-size:12.5px;font-weight:700;color:#5b6b7a;">Provider
+              <select id="mail-provider" style="display:block;width:100%;margin-top:5px;font:inherit;font-weight:500;padding:9px 12px;border:1px solid #e8e1f7;border-radius:9px;background:#fff;">
+                <option value="smtp">SMTP</option><option value="resend">Resend API</option>
+              </select>
+            </label>
+            <div class="muted" style="align-self:end;padding-bottom:9px;">Choose the delivery service used for invites, resets, alerts and scheduled reports.</div>
+            <div class="integration-panel-title">SMTP connection <span class="muted" style="font-weight:500;">(leave blank when using Resend)</span></div>
+            <label style="font-size:12.5px;font-weight:700;color:#5b6b7a;">SMTP host
+              <input id="mail-host" placeholder="smtp.office365.com" style="display:block;width:100%;margin-top:5px;font:inherit;font-weight:500;padding:9px 12px;border:1px solid #e8e1f7;border-radius:9px;">
+            </label>
+            <label style="font-size:12.5px;font-weight:700;color:#5b6b7a;">Port
+              <input id="mail-port" type="number" min="1" max="65535" value="587" style="display:block;width:100%;margin-top:5px;font:inherit;font-weight:500;padding:9px 12px;border:1px solid #e8e1f7;border-radius:9px;">
+            </label>
+            <label style="font-size:12.5px;font-weight:700;color:#5b6b7a;">SMTP username
+              <input id="mail-user" autocomplete="off" placeholder="reports@company.com" style="display:block;width:100%;margin-top:5px;font:inherit;font-weight:500;padding:9px 12px;border:1px solid #e8e1f7;border-radius:9px;">
+            </label>
+            <label style="font-size:12.5px;font-weight:700;color:#5b6b7a;">SMTP password
+              <input id="mail-password" type="password" autocomplete="new-password" placeholder="leave blank to keep existing" style="display:block;width:100%;margin-top:5px;font:inherit;font-weight:500;padding:9px 12px;border:1px solid #e8e1f7;border-radius:9px;">
+            </label>
+            <label style="font-size:12.5px;font-weight:700;color:#5b6b7a;">From name
+              <input id="mail-from-name" value="empower-fin Dashboard Portal" style="display:block;width:100%;margin-top:5px;font:inherit;font-weight:500;padding:9px 12px;border:1px solid #e8e1f7;border-radius:9px;">
+            </label>
+            <label style="font-size:12.5px;font-weight:700;color:#5b6b7a;">From email
+              <input id="mail-from-email" type="email" placeholder="reports@company.com" style="display:block;width:100%;margin-top:5px;font:inherit;font-weight:500;padding:9px 12px;border:1px solid #e8e1f7;border-radius:9px;">
+            </label>
+            <label style="font-size:12.5px;font-weight:700;color:#5b6b7a;">Reply-to (optional)
+              <input id="mail-reply-to" type="email" placeholder="support@company.com" style="display:block;width:100%;margin-top:5px;font:inherit;font-weight:500;padding:9px 12px;border:1px solid #e8e1f7;border-radius:9px;">
+            </label>
+            <label style="font-size:12.5px;font-weight:700;color:#5b6b7a;">Default report timezone
+              <input id="mail-timezone" value="Africa/Johannesburg" placeholder="Africa/Johannesburg" style="display:block;width:100%;margin-top:5px;font:inherit;font-weight:500;padding:9px 12px;border:1px solid #e8e1f7;border-radius:9px;">
+            </label>
+            <label style="grid-column:span 2;font-size:12.5px;font-weight:700;color:#5b6b7a;">Portal public URL (optional)
+              <input id="mail-portal-url" placeholder="https://dashboard.example.com" style="display:block;width:100%;margin-top:5px;font:inherit;font-weight:500;padding:9px 12px;border:1px solid #e8e1f7;border-radius:9px;">
+            </label>
+            <div class="integration-panel-title">Resend API <span class="muted" style="font-weight:500;">(optional managed delivery)</span></div>
+            <label style="font-size:12.5px;font-weight:700;color:#5b6b7a;">Resend API key
+              <input id="mail-resend-key" type="password" autocomplete="new-password" placeholder="leave blank to keep existing" style="display:block;width:100%;margin-top:5px;font:inherit;font-weight:500;padding:9px 12px;border:1px solid #e8e1f7;border-radius:9px;">
+            </label>
+            <label style="font-size:12.5px;font-weight:700;color:#5b6b7a;">Resend From email
+              <input id="mail-resend-from" type="email" placeholder="reports@verified-domain.com" style="display:block;width:100%;margin-top:5px;font:inherit;font-weight:500;padding:9px 12px;border:1px solid #e8e1f7;border-radius:9px;">
+            </label>
+            <label style="display:flex;align-items:center;gap:9px;font-size:13px;font-weight:700;color:#32217c;cursor:pointer;"><input id="mail-secure" type="checkbox" style="width:17px;height:17px;"> TLS from connection start (normally port 465)</label>
+            <label style="display:flex;align-items:center;gap:9px;font-size:13px;font-weight:700;color:#32217c;cursor:pointer;"><input id="mail-require-tls" type="checkbox" checked style="width:17px;height:17px;"> Require TLS / STARTTLS</label>
+            <label style="display:flex;align-items:center;gap:9px;font-size:13px;font-weight:700;color:#32217c;cursor:pointer;"><input id="mail-reject-unauth" type="checkbox" checked style="width:17px;height:17px;"> Validate SMTP certificate</label>
+          </div>
+          <div style="margin-top:16px;display:flex;gap:8px;flex-wrap:wrap;align-items:end;max-width:820px;">
+            <button class="btn" onclick="saveEmailSettings()">Save email settings</button>
+            <label style="font-size:12px;font-weight:700;color:#5b6b7a;">Test recipient
+              <input id="mail-test-recipient" type="email" placeholder="you@company.com" style="display:block;width:240px;margin-top:4px;font:inherit;font-weight:500;padding:9px 12px;border:1px solid #e8e1f7;border-radius:9px;">
+            </label>
+            <button class="btn btn-ghost" onclick="testEmailSettings()">Send test email</button>
+          </div>
+          <div id="mail-result" style="margin-top:12px;"></div>
+
+          <div style="margin-top:24px;font-size:12.5px;font-weight:800;color:#32217c;">Scheduled reports</div>
+          <div style="overflow:auto;margin-top:8px;"><table class="hist"><thead><tr><th>Report</th><th>User</th><th>Frequency</th><th>Next send</th><th>Status</th></tr></thead><tbody id="mail-schedules"><tr><td colspan="5" class="muted" style="padding:10px;">No schedules yet.</td></tr></tbody></table></div>
+          <div style="margin-top:20px;font-size:12.5px;font-weight:800;color:#32217c;">Recent email deliveries</div>
+          <div style="overflow:auto;margin-top:8px;"><table class="hist"><thead><tr><th>When</th><th>Report</th><th>Status</th><th>Recipients</th></tr></thead><tbody id="mail-deliveries"><tr><td colspan="4" class="muted" style="padding:10px;">No deliveries yet.</td></tr></tbody></table></div>
+        </div>
+      </div>
+
+      <!-- admin audit log -->
+      <div class="card section-gap">
+        <div class="card-hd"><h2>Admin Audit Log</h2><div class="note">Top 5 most critical admin changes · full history remains available in the CSV export</div></div>
+        <div class="card-bd">
+          <div style="overflow:auto;"><table class="hist"><thead><tr><th>When</th><th>Admin</th><th>Action</th><th>Details</th></tr></thead><tbody id="audit-rows"><tr><td colspan="4" class="muted" style="padding:10px;">Loading…</td></tr></tbody></table></div>
+          <div class="row" style="justify-content:space-between;margin-top:14px;">
+            <span class="muted">Audit events continue recording without display limits.</span>
+            <a class="btn btn-primary" href="/api/admin/audit-log.csv" download>Download all logs (CSV)</a>
+          </div>
+        </div>
+      </div>
+
+      <!-- automations -->
+      <div class="card section-gap">
+        <div class="card-hd"><h2>Automations</h2><div class="note">Alerts, auto-cleanup and digests — uses the SMTP settings above</div></div>
+        <div class="card-bd">
+          <div id="auto-status" class="banner ok" style="display:none;margin-bottom:14px;"></div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;max-width:820px;" class="integration-two-col">
+            <label style="grid-column:span 2;font-size:12.5px;font-weight:700;color:#5b6b7a;">Admin alert emails (comma-separated)
+              <input id="auto-alert-emails" placeholder="admin1@company.com, admin2@company.com" style="display:block;width:100%;margin-top:5px;font:inherit;font-weight:500;padding:9px 12px;border:1px solid #e8e1f7;border-radius:9px;">
+            </label>
+            <label style="grid-column:span 2;font-size:12.5px;font-weight:700;color:#5b6b7a;">Slack webhook URL (optional)
+              <input id="auto-slack-webhook" placeholder="https://hooks.slack.com/services/…" style="display:block;width:100%;margin-top:5px;font:inherit;font-weight:500;padding:9px 12px;border:1px solid #e8e1f7;border-radius:9px;">
+            </label>
+            <label style="font-size:12.5px;font-weight:700;color:#5b6b7a;">Auto-deactivate after inactive for (days, blank = off)
+              <input id="auto-stale-days" type="number" min="7" max="3650" placeholder="e.g. 180" style="display:block;width:100%;margin-top:5px;font:inherit;font-weight:500;padding:9px 12px;border:1px solid #e8e1f7;border-radius:9px;">
+            </label>
+            <div></div>
+            <label style="display:flex;align-items:center;gap:9px;font-size:13px;font-weight:700;color:#32217c;cursor:pointer;"><input id="auto-digest-enabled" type="checkbox" style="width:17px;height:17px;"> Weekly engagement digest to admin alert emails</label>
+            <label style="display:flex;align-items:center;gap:9px;font-size:13px;font-weight:700;color:#32217c;cursor:pointer;"><input id="auto-score-enabled" type="checkbox" checked style="width:17px;height:17px;"> Email employer users when their score changes</label>
+            <label style="display:flex;align-items:flex-start;gap:9px;font-size:13px;font-weight:700;color:#7a5512;cursor:pointer;background:#fff8e8;border:1px solid #efd49b;border-radius:9px;padding:10px 12px;"><input id="synthetic-data-mode" type="checkbox" style="width:17px;height:17px;margin-top:1px;flex:0 0 auto;"> <span><strong>Mark all portal data as synthetic test data</strong><br><span style="font-weight:500;">When enabled, dashboards and portal views display a persistent warning that the figures are synthetic test data and must not be treated as factual information.</span></span></label>
+          </div>
+          <div style="margin-top:16px;display:flex;gap:8px;flex-wrap:wrap;">
+            <button class="btn" onclick="saveAutomations()">Save automation settings</button>
+            <button class="btn btn-ghost" onclick="runAutomationNow('stale')">Run stale-account check now</button>
+            <button class="btn btn-ghost" onclick="runAutomationNow('digest')">Send digest now</button>
+            <button class="btn btn-ghost" onclick="runAutomationNow('test')">Send test alert</button>
+          </div>
+          <div id="auto-result" style="margin-top:12px;"></div>
+        </div>
+      </div>
+
+      <!-- client reach & engagement -->
+      <div class="card section-gap">
+        <div class="card-hd"><h2>Client Reach &amp; Engagement</h2><div class="note">How many people are signing in and using the portal · last <span id="eng-window">30</span> days</div></div>
+        <div class="card-bd">
+          <div style="display:flex;gap:8px;margin-bottom:16px;">
+            <select id="eng-days" onchange="loadEngagement()" style="font:inherit;padding:8px 12px;border:1px solid #e8e1f7;border-radius:9px;">
+              <option value="7">Last 7 days</option>
+              <option value="30" selected>Last 30 days</option>
+              <option value="90">Last 90 days</option>
+            </select>
+          </div>
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:20px;" id="eng-stats">
+            <div class="muted">Loading…</div>
+          </div>
+          <div style="display:grid;grid-template-columns:1.1fr .9fr;gap:20px;align-items:start;" class="eng-grid">
+            <div>
+              <div style="font-size:12.5px;font-weight:800;color:#32217c;margin-bottom:8px;">Logins per day</div>
+              <div id="eng-trend" style="display:flex;align-items:flex-end;gap:2px;height:90px;border-bottom:1px solid #e8e1f7;padding-bottom:2px;"></div>
+            </div>
+            <div>
+              <div style="font-size:12.5px;font-weight:800;color:#32217c;margin-bottom:8px;">Most-viewed pages</div>
+              <div id="eng-pages"></div>
+            </div>
+          </div>
+          <div style="margin-top:22px;font-size:12.5px;font-weight:800;color:#32217c;">Most engaged users</div>
+          <div style="overflow:auto;margin-top:8px;"><table class="hist"><thead><tr><th>User</th><th>Logins</th><th>Pageviews</th><th>Avg. scroll depth</th></tr></thead><tbody id="eng-users"><tr><td colspan="4" class="muted" style="padding:10px;">Loading…</td></tr></tbody></table></div>
+        </div>
+      </div>
+      <style>@media(max-width:820px){.eng-grid{grid-template-columns:1fr!important;}}</style>
+
+      <!-- channel partners (white-label) -->
+      <div class="card section-gap" id="channel-partners-card">
+        <div class="card-hd"><h2>Channel Partners</h2><button class="btn btn-sm" type="button" onclick="toggleChannelPartners()">Collapse</button><div class="note">White-label branding · each partner's users see their colours, logo &amp; name</div></div>
+        <div class="card-bd">
+          <div style="display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap;">
+            <input id="pt-new-name" placeholder="New partner name (e.g. Acme Financial)" style="flex:1;min-width:220px;font:inherit;padding:9px 12px;border:1px solid #e8e1f7;border-radius:9px;">
+            <label class="btn btn-ghost" style="font-size:12.5px;padding:9px 14px;cursor:pointer;" title="Optional — colours are auto-detected from it">
+              <span id="pt-new-logo-label">+ Logo (optional)</span>
+              <input id="pt-new-logo" type="file" accept="image/png,image/jpeg" style="display:none;" onchange="onNewPartnerLogoPicked(this)">
+            </label>
+            <button class="btn" onclick="createPartner()">Add partner</button>
+          </div>
+          <div style="margin-bottom:16px;">
+            <div class="note" style="margin:0 0 8px;font-size:12px;color:#8497a7;">Or start from a test client preset (dummy placeholder logo &amp; approximate brand colours, for demo/testing only):</div>
+            <div id="pt-presets" style="display:flex;gap:8px;flex-wrap:wrap;"></div>
+          </div>
+          <div id="pt-list"></div>
+        </div>
+      </div>
+
+      <!-- dashboard section permissions -->
+      <div class="card section-gap">
+        <div class="card-hd"><h2>Dashboard Sections</h2><div class="note">Hide sections that aren't ready yet, and control which roles (or specific people) can see each one</div></div>
+        <div class="card-bd">
+          <div id="sec-list"></div>
+        </div>
+      </div>
+
+      <!-- danger zone: full reset -->
+      <div class="card section-gap" style="border-color:#f3c9c0;">
+        <div class="card-hd" style="border-bottom-color:#fbe4df;"><h2 style="color:#b5391f;">Danger zone</h2><div class="note">Authoritative reset and rebuild from the connected source</div></div>
+        <div class="card-bd">
+          <p class="muted" style="margin-bottom:14px;"><b>Reset always reloads.</b> The connected API/SQL database becomes the source of truth: prior cursors, import history, MLOps decisions and stale-write comparisons are ignored for this rebuild. The current published dashboard stays visible until all 10 feeds have been rebuilt successfully. User logins, access, branding and separately sourced chat history are kept.</p>
+          <button class="btn" id="reset-btn" style="border-color:#e0492f;color:#b5391f;" onclick="openReset()">Reset &amp; rebuild from source…</button>
+          <div id="reset-area" style="display:none;margin-top:16px;padding:16px;border:1px solid #f3c9c0;border-radius:11px;background:#fdf5f3;">
+            <div style="font-weight:700;color:#b5391f;font-size:13.5px;margin-bottom:8px;">Are you sure? This cannot be undone.</div>
+            <div class="muted" style="margin-bottom:10px;">Type <b>RESET</b> below to confirm.</div>
+            <input id="reset-confirm" placeholder="type RESET" style="font-family:inherit;font-size:13.5px;padding:9px 12px;border:1px solid #e0492f;border-radius:9px;width:160px;">
+            <button class="btn" style="background:#e0492f;color:#fff;border-color:#e0492f;margin-left:8px;" onclick="doReset()">Reset &amp; rebuild</button>
+            <button class="btn btn-ghost" style="margin-left:4px;" onclick="$('#reset-area').style.display='none'">Cancel</button>
+            <div class="muted" style="margin-top:12px;">This cannot leave the portal as an intentionally empty dataset: the reset and source rewrite are one authoritative operation.</div>
+            <div class="banner" id="reset-msg" style="display:none;margin-top:12px;"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="/static/engagement-v1.js?v=1" defer></script>
+<script src="/static/portal-nav-v080.js?v=0.10.0"></script>
+<script>
+/* ── Admin console. Talks to the import API. Set API base if served elsewhere. ── */
+const API = ""; // same origin
+let MANIFEST = null, CURRENT = null, LAST_BATCH = null;
+const AdminBrandTheme = window.BrandEngine ? BrandEngine.themeController() : null;
+const DEFAULT_PORTAL_BRAND = {accentColor:'0FC79B',primaryColor:'0FC79B',navyColor:'2B1D73'};
+function applyAdminBrandTheme(){
+  if(!AdminBrandTheme) return;
+  // Administration always uses the canonical empower-fin palette. Partner
+  // branding belongs in client previews and client dashboards, never the control plane.
+  AdminBrandTheme.set({brand:DEFAULT_PORTAL_BRAND,light:null});
+}
+
+const $ = s => document.querySelector(s);
+const esc = value => String(value ?? '').replace(/[&<>"']/g, ch => ({
+  '&':'&amp;',
+  '<':'&lt;',
+  '>':'&gt;',
+  '"':'&quot;',
+  "'":'&#39;'
+}[ch]));
+const fmtDate = d => d ? new Date(d).toLocaleString('en-ZA',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'}) : '—';
+
+// brief "Hi <name>" splash right after sign-in — once per browser tab session
+function handleWelcomeSplash(me){
+  const el=document.getElementById('welcome-splash');
+  if(!el) return;
+  let already=false;
+  try{ already = sessionStorage.getItem('ef_splash_shown')==='1'; }catch(_){}
+  if(already){ el.classList.add('hide'); return; }
+  const greet=document.getElementById('welcome-splash-greeting');
+  const first=(me.name||'').trim().split(/\s+/)[0]||'there';
+  const hour=new Date().getHours();
+  const daypart=hour<12?'Good morning':hour<18?'Good afternoon':'Good evening';
+  if(greet) greet.textContent=daypart+', '+first+' \uD83D\uDC4B';
+  const sub=document.getElementById('welcome-splash-sub');
+  if(sub) sub.textContent='The Fixer hopes you have a good day.';
+  const logo=document.getElementById('welcome-splash-logo');
+  const privileged=['ADMIN','SUPERADMIN'].includes(String(me?.role||'').toUpperCase());
+  if(logo){
+    if(privileged){
+      logo.src=document.documentElement.classList.contains('portal-dark')
+        ? '/static/the-fixer-logo-reversed.svg?v=1'
+        : '/static/the-fixer-logo.svg?v=6';
+      logo.removeAttribute('data-custom-logo');
+    }else if(me.theme && me.theme.logoDataUrl){
+      logo.src=me.theme.logoDataUrl;
+      logo.setAttribute('data-custom-logo','1');
+    }
+  }
+  try{
+    sessionStorage.setItem('ef_splash_shown','1');
+    sessionStorage.removeItem('ef_fresh_login');
+  }catch(_){}
+  setTimeout(()=>el.classList.add('hide'), 1400);
+}
+
+function addNav(me){
+  if(window.EmpowerPortalNav){
+    window.EmpowerPortalNav.render({me,navSelector:'#portal-nav',accountSelector:'#portal-account',active:'admin'});
+  }
+}
+// ── live data integration (API or direct SQL) ──
+function setIntegMode(mode){
+  mode=String(mode||'API').toUpperCase()==='SQL'?'SQL':'API';
+  $('#integ-mode').value=mode;
+  $('#integ-api-panel').style.display = mode === 'API' ? 'grid' : 'none';
+  $('#integ-sql-panel').style.display = mode === 'SQL' ? 'grid' : 'none';
+  const api=$('#source-tab-api'), sql=$('#source-tab-sql');
+  if(api){ api.classList.toggle('on',mode==='API'); api.setAttribute('aria-selected',String(mode==='API')); }
+  if(sql){ sql.classList.toggle('on',mode==='SQL'); sql.setAttribute('aria-selected',String(mode==='SQL')); }
+}
+function toggleIntegMode(){ setIntegMode($('#integ-mode')?.value || 'API'); }
+function setSqlPortDefault(force=false){
+  const dialect = $('#integ-sql-dialect').value;
+  const field = $('#integ-sql-port');
+  if(!force && field.value) return;
+  field.value = dialect === 'MSSQL' ? '1433' : dialect === 'MYSQL' ? '3306' : '5432';
+}
+async function loadInteg(){
+  try{
+    const c = await fetch(`${API}/api/admin/integration`).then(r=>r.json());
+    setIntegMode((c.effectiveSourceMode || c.sourceMode || 'API').toUpperCase());
+    $('#integ-url').value = c.baseUrl || '';
+    $('#integ-hours').value = c.scheduleHours || 1;
+    $('#integ-enabled').checked = !!c.enabled;
+    if(c.hasToken) $('#integ-token').placeholder = c.apiTokenFromEnvironment ? '•••••• (provided by SOURCE_API_TOKEN)' : '•••••• (saved — leave blank to keep)';
+
+    $('#integ-sql-dialect').value = (c.sqlDialect || 'POSTGRESQL').toUpperCase();
+    $('#integ-sql-host').value = c.sqlHost || '';
+    $('#integ-sql-port').value = c.sqlPort || '';
+    if(!$('#integ-sql-port').value) setSqlPortDefault(true);
+    $('#integ-sql-database').value = c.sqlDatabase || '';
+    $('#integ-sql-schema').value = c.sqlSchema || '';
+    $('#integ-sql-user').value = c.sqlUsername || '';
+    $('#integ-sql-prefix').value = c.sqlViewPrefix || 'v_';
+    $('#integ-sql-timeout').value = c.sqlQueryTimeoutMs || 60000;
+    $('#integ-sql-maxrows').value = c.sqlMaxRowsPerReport || 250000;
+    $('#integ-sql-ssl').checked = c.sqlSsl !== false;
+    $('#integ-sql-trust').checked = !!c.sqlTrustServerCertificate;
+    $('#integ-analytics-mode').value = c.analyticsMode || 'POSTGRES_READ_MODEL';
+    $('#integ-source-analytics').checked = !!c.sourceAnalyticsEnabled;
+    $('#integ-source-replica').checked = !!c.sourceAnalyticsUseReplica;
+    $('#integ-replica-host').value = c.sourceAnalyticsReplicaHost || '';
+    $('#integ-replica-port').value = c.sourceAnalyticsReplicaPort || (c.sqlDialect==='MYSQL' ? 3306 : c.sqlPort || '');
+    $('#integ-replica-database').value = c.sourceAnalyticsReplicaDatabase || '';
+    $('#integ-replica-user').value = c.sourceAnalyticsReplicaUsername || '';
+    $('#integ-replica-lag').value = c.sourceAnalyticsReplicaMaxLagSeconds ?? 60;
+    $('#integ-replica-ssl').checked = c.sourceAnalyticsReplicaSsl !== false;
+    $('#integ-replica-trust').checked = !!c.sourceAnalyticsReplicaTrustServerCertificate;
+    if(c.hasSqlPassword) $('#integ-sql-password').placeholder = c.sqlPasswordFromEnvironment ? '•••••• (provided by SOURCE_SQL_PASSWORD)' : '•••••• (saved — leave blank to keep)';
+
+    const envBox = $('#integ-env-override');
+    if(envBox){
+      if(Array.isArray(c.envOverrides) && c.envOverrides.length){
+        envBox.style.display='block';
+        envBox.innerHTML = '⚠ These fields are locked by environment variables on the app service and will always win over whatever is set below, no matter what you save here: '
+          + c.envOverrides.map(o=>`<b>${esc(o.label)}</b> = "${esc(o.value)}" (${esc(o.envName)})`).join(', ') + '.';
+      } else {
+        envBox.style.display='none';
+        envBox.innerHTML = '';
+      }
+    }
+
+    const s = $('#integ-status');
+    const changeMode=$('#integ-change-mode');
+    if(changeMode){
+      changeMode.textContent = c.changeDetectionSupported
+        ? `Live SQL change detection is active every ${Number(c.sourceChangePollSeconds||30).toLocaleString('en-ZA')}s using indexed source_updated_at watermarks. Bulk writes process up to ${Number(c.syncBulkChunkSize||20000).toLocaleString('en-ZA')} rows per database call. The hourly setting above remains a safety reconciliation.`
+        : 'This source does not expose a portable SQL watermark, so the heartbeat schedule above controls automatic reconciliation.';
+    }
+    const configuredText = c.configured ? 'configured' : 'incomplete';
+    if(c.lastSyncAt){
+      const when = new Date(c.lastSyncAt).toLocaleString('en-ZA');
+      const lastGood = c.lastSuccessfulSyncAt ? new Date(c.lastSuccessfulSyncAt).toLocaleString('en-ZA') : 'none yet';
+      const failureStates=['FAILED','PARTIAL','FULL_REFRESH_FAILED','FULL_REFRESH_PRECHECK_FAILED'];
+      const rebuilding=c.lastSyncStatus==='REBUILDING';
+      s.style.display='block';
+      s.className = 'banner ' + (c.lastSyncStatus==='OK'?'ok':failureStates.includes(c.lastSyncStatus)?'err':'');
+      const reason=c.lastSyncNote||'No refresh reason was recorded.';
+      const watcher=c.changeDetectionEnabled?` · Change watch: every ${c.sourceChangePollSeconds||30}s`:'';
+      s.textContent = `${c.effectiveSourceMode || c.sourceMode || 'API'} source · ${configuredText}${watcher} · Last attempt: ${c.lastSyncStatus||'UNKNOWN'} · ${when} · Last successful: ${lastGood} · ${rebuilding?'Refresh status':'Refresh reason'}: ${reason}`;
+    }else{
+      s.style.display='block';
+      s.className = 'banner ' + (c.configured?'ok':'');
+      const watcher=c.changeDetectionEnabled?` Change watch runs every ${c.sourceChangePollSeconds||30}s.`:'';
+      s.textContent = `${c.effectiveSourceMode || c.sourceMode || 'API'} source · ${configuredText}. No sync has run yet.${watcher}`;
+    }
+    loadIntegLogs();
+  }catch(e){}
+}
+function integrationDraft(){
+  const mode = ($('#integ-mode').value || 'API').toUpperCase();
+  const body = {
+    sourceMode: mode,
+    baseUrl: $('#integ-url').value.trim(),
+    scheduleHours: parseInt($('#integ-hours').value)||1,
+    enabled: $('#integ-enabled').checked,
+    sqlDialect: $('#integ-sql-dialect').value,
+    sqlHost: $('#integ-sql-host').value.trim(),
+    sqlPort: parseInt($('#integ-sql-port').value)||null,
+    sqlDatabase: $('#integ-sql-database').value.trim(),
+    sqlSchema: $('#integ-sql-schema').value.trim(),
+    sqlUsername: $('#integ-sql-user').value.trim(),
+    sqlViewPrefix: $('#integ-sql-prefix').value.trim() || 'v_',
+    sqlQueryTimeoutMs: parseInt($('#integ-sql-timeout').value)||60000,
+    sqlMaxRowsPerReport: parseInt($('#integ-sql-maxrows').value)||250000,
+    sqlSsl: $('#integ-sql-ssl').checked,
+    sqlTrustServerCertificate: $('#integ-sql-trust').checked,
+    analyticsMode: $('#integ-analytics-mode').value,
+    sourceAnalyticsEnabled: $('#integ-source-analytics').checked,
+    sourceAnalyticsReadOnly: true,
+    sourceAnalyticsUseReplica: $('#integ-source-replica').checked,
+    sourceAnalyticsReplicaEnabled: $('#integ-source-replica').checked,
+    sourceAnalyticsReplicaHost: $('#integ-replica-host').value.trim(),
+    sourceAnalyticsReplicaPort: parseInt($('#integ-replica-port').value)||null,
+    sourceAnalyticsReplicaDatabase: $('#integ-replica-database').value.trim(),
+    sourceAnalyticsReplicaUsername: $('#integ-replica-user').value.trim(),
+    sourceAnalyticsReplicaMaxLagSeconds: parseInt($('#integ-replica-lag').value)||60,
+    sourceAnalyticsReplicaSsl: $('#integ-replica-ssl').checked,
+    sourceAnalyticsReplicaTrustServerCertificate: $('#integ-replica-trust').checked,
+  };
+  const tok = $('#integ-token').value.trim(); if(tok) body.authToken = tok;
+  const sqlPassword = $('#integ-sql-password').value.trim(); if(sqlPassword) body.sqlPassword = sqlPassword;
+  return body;
+}
+async function saveInteg(){
+  const body=integrationDraft();
+  const mode=body.sourceMode;
+  $('#integ-result').innerHTML = '<div class="banner ok">Saving…</div>';
+  try{
+    const r = await fetch(`${API}/api/admin/integration`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+    const d = await r.json();
+    if(!r.ok) throw new Error(d.error || 'save failed');
+    $('#integ-token').value=''; $('#integ-sql-password').value='';
+    $('#integ-result').innerHTML = `<div class="banner ok">✓ ${mode==='SQL'?'Database':'API'} integration settings saved.</div>`;
+    loadInteg();
+  }catch(e){ $('#integ-result').innerHTML = `<div class="banner err">✕ ${esc(e.message)}</div>`; }
+}
+async function testInteg(){
+  const body=integrationDraft();
+  const label=body.sourceMode==='SQL'?'database':'API';
+  $('#integ-result').innerHTML = `<div class="banner ok">Testing ${label} connection and contract…</div>`;
+  try{
+    const r = await fetch(`${API}/api/admin/integration/test`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+    const d = await r.json();
+    $('#integ-result').innerHTML = d.ok ? `<div class="banner ok">✓ ${esc(d.note)}</div>` : `<div class="banner err">✕ ${esc(d.error)}</div>`;
+  }catch(e){ $('#integ-result').innerHTML = `<div class="banner err">✕ ${esc(e.message)}</div>`; }
+}
+async function syncNow(){
+  const mode = ($('#integ-mode').value || 'API').toUpperCase();
+  $('#integ-result').innerHTML = `<div class="banner ok">Saving settings…</div>`;
+  try{
+    const saveBody = integrationDraft();
+    const saveResp = await fetch(`${API}/api/admin/integration`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(saveBody)});
+    const saved = await saveResp.json();
+    if(!saveResp.ok) throw new Error(saved.error || 'Could not save settings before syncing');
+    $('#integ-token').value=''; $('#integ-sql-password').value='';
+  }catch(e){ $('#integ-result').innerHTML = `<div class="banner err">✕ ${esc(e.message)}</div>`; return; }
+
+  try{
+    const r = await fetch(`${API}/api/admin/integration/sync`,{method:'POST'});
+    const d = await r.json();
+    if(!r.ok || d.error){ $('#integ-result').innerHTML = `<div class="banner err">✕ ${esc(d.error||'sync failed to start')}</div>`; return; }
+
+    const result = await pollJob(
+      `${API}/api/admin/sync-jobs/${d.jobId}`,
+      `Syncing all reports from ${mode}`,
+      () => { loadHistory(); },
+      '#integ-result'
+    );
+
+    const rows = Object.entries(result.summary||{}).map(([k,v])=>{
+      const txt = v.error
+        ? `<span style="color:#b5391f">${esc(v.error)}</span>`
+        : v.errorCount
+          ? `<span style="color:#b5391f">${esc(v.errorCount)} validation error(s)</span>`
+          : (()=>{ const h=Number(v.historyRows||0), s=Number(v.staleSkipped||0); return `${Number(v.committed||0).toLocaleString('en-ZA')} processed · +${Number(v.inserted||0).toLocaleString('en-ZA')} new · ~${Number(v.updated||0).toLocaleString('en-ZA')} updated · -${Number(v.deleted||0).toLocaleString('en-ZA')} deleted${h>0?` · ${h.toLocaleString('en-ZA')} dated history observation(s)`:s>0?` · ${s.toLocaleString('en-ZA')} stale skipped`:''}${v.authoritativeOverwrite?' · authoritative overwrite':''}`; })();
+      return `<tr><td style="font-weight:700">${esc(k)}</td><td>${txt}</td></tr>`;
+    }).join('');
+    const cls = result.status==='OK'?'ok':result.status==='FAILED'?'err':'ok';
+    $('#integ-result').innerHTML = `<div class="banner ${cls}">${esc(result.status)}: ${esc(result.note)}</div><table class="hist" style="margin-top:8px"><tbody>${rows}</tbody></table>`;
+    await Promise.allSettled([loadHistory(),loadInteg(),loadIntegLogs()]);
+  }catch(e){
+    $('#integ-result').innerHTML = `<div class="banner err">✕ ${esc(e.message)}</div>`;
+  }
+}
+async function refreshNow(btn){
+  if(!confirm('Run an authoritative full refresh now?\n\nThe connected source will be treated as truth. Previous cursors, MLOps decisions and stale-write comparisons will not gate this rebuild. All 10 feeds are read from the beginning, the source-derived model is rewritten, and a new dashboard is published only after the full rebuild succeeds.\n\nDashboard users continue seeing the last successful published dashboard while this runs.')) return;
+  const original=btn?.textContent||'Refresh now';
+  if(btn){ btn.disabled=true; btn.textContent='Refreshing…'; }
+  $('#integ-result').innerHTML = '<div class="banner ok">Saving settings and preflighting the source…</div>';
+  try{
+    const saveBody=integrationDraft();
+    const saveResp=await fetch(`${API}/api/admin/integration`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(saveBody)});
+    const saved=await saveResp.json().catch(()=>({}));
+    if(!saveResp.ok) throw new Error(saved.error||'Could not save settings before refresh');
+    $('#integ-token').value=''; $('#integ-sql-password').value='';
+
+    $('#integ-result').innerHTML = '<div class="banner ok">Full refresh started. The last successful dashboard remains published while source data is rebuilt…</div>';
+    const r=await fetch(`${API}/api/admin/integration/refresh`,{method:'POST'});
+    const d=await r.json().catch(()=>({}));
+    if(!r.ok || !d.ok) throw new Error(d.error||d.note||'Full refresh failed');
+    if(d.status==='ALREADY_RUNNING'){
+      $('#integ-result').innerHTML = '<div class="banner ok">A full refresh is already running on another application instance. The last successful dashboard remains visible until it publishes.</div>';
+      return;
+    }
+    const detail=[
+      d.purgedRows!=null ? `${Number(d.purgedRows).toLocaleString('en-ZA')} source rows purged` : null,
+      d.overwrittenRows!=null ? `${Number(d.overwrittenRows).toLocaleString('en-ZA')} rows committed` : null,
+      d.publishedDashboards!=null ? `${Number(d.publishedDashboards).toLocaleString('en-ZA')} dashboard snapshot${Number(d.publishedDashboards)===1?'':'s'} published` : null,
+    ].filter(Boolean).join(' · ');
+    $('#integ-result').innerHTML = `<div class="banner ok">✓ Full refresh completed and published.${detail?' '+esc(detail)+'.':''}</div>`;
+  }catch(e){
+    $('#integ-result').innerHTML = `<div class="banner err">✕ Refresh did not publish a new dashboard. The last successful dashboard remains visible. Reason: ${esc(e.message)}</div>`;
+  }finally{
+    if(btn){ btn.disabled=false; btn.textContent=original; }
+    loadInteg();
+    loadIntegLogs();
+  }
+}
+
+function syncLogFailureDetail(log){
+  const summary=log?.summary||{};
+  const order=Array.isArray(MANIFEST?.loadOrder)?MANIFEST.loadOrder:[];
+  for(let i=0;i<order.length;i++){
+    const key=order[i], item=summary?.[key];
+    if(item?.error){
+      const rep=MANIFEST?.reports?.find(r=>r.key===key);
+      return `STEP ${i+1} ${rep?.title||key}: ${item.error}`;
+    }
+  }
+  if(summary?.source?.error) return `Source connection: ${summary.source.error}`;
+  return '';
+}
+function syncLogBlockedDetail(log){
+  const summary=log?.summary||{};
+  const order=Array.isArray(MANIFEST?.loadOrder)?MANIFEST.loadOrder:[];
+  return order.map((key,i)=>{
+    const item=summary?.[key];
+    if(item?.status!=='BLOCKED') return null;
+    const rep=MANIFEST?.reports?.find(r=>r.key===key);
+    return `STEP ${i+1} ${rep?.title||key}`;
+  }).filter(Boolean).join(', ');
+}
+
+async function loadIntegLogs(){
+  try{
+    const logs = await fetch(`${API}/api/admin/integration/logs`).then(r=>r.json());
+    const tb = $('#integ-logs');
+    if(!logs.length){ tb.innerHTML = '<tr><td class="muted" style="padding:10px;">No syncs yet.</td></tr>'; return; }
+    tb.innerHTML = logs.map(l=>{
+      const when = new Date(l.startedAt).toLocaleString('en-ZA');
+      const badge = l.status==='OK'?'#1fa463':l.status==='FAILED'?'#e0492f':'#e8910c';
+      const failure=syncLogFailureDetail(l);
+      const blocked=syncLogBlockedDetail(l);
+      const detail=[l.note||'',failure?('Failure: '+failure):'',blocked?('Blocked downstream: '+blocked):''].filter(Boolean).join(' · ');
+      return `<tr><td>${when}</td><td>${esc(l.trigger)}</td><td><span style="color:${badge};font-weight:700">${esc(l.status)}</span></td><td class="muted">${esc(detail)}</td></tr>`;
+    }).join('');
+    const latest=logs[0];
+    const latestFailure=syncLogFailureDetail(latest);
+    if(latestFailure && ['PARTIAL','FAILED'].includes(String(latest?.status||''))){
+      const s=$('#integ-status');
+      if(s && !s.textContent.includes(latestFailure)) s.textContent += ` · Failed feed: ${latestFailure}`;
+    }
+  }catch(e){}
+}
+
+
+// ── system email / SMTP and scheduled reports ──
+function emailDraft(){
+  const body={
+    emailProvider: $('#mail-provider').value,
+    smtpHost: $('#mail-host').value.trim(),
+    smtpPort: parseInt($('#mail-port').value)||587,
+    smtpSecure: $('#mail-secure').checked,
+    smtpRequireTls: $('#mail-require-tls').checked,
+    smtpRejectUnauthorized: $('#mail-reject-unauth').checked,
+    smtpUsername: $('#mail-user').value.trim(),
+    fromName: $('#mail-from-name').value.trim(),
+    fromEmail: $('#mail-from-email').value.trim(),
+    replyTo: $('#mail-reply-to').value.trim(),
+    defaultTimezone: $('#mail-timezone').value.trim()||'Africa/Johannesburg',
+    portalBaseUrl: $('#mail-portal-url').value.trim(),
+    resendFromEmail: $('#mail-resend-from').value.trim(),
+  };
+  const password=$('#mail-password').value.trim(); if(password) body.smtpPassword=password;
+  const resendKey=$('#mail-resend-key').value.trim(); if(resendKey) body.resendApiKey=resendKey;
+  return body;
+}
+async function loadEmailSettings(){
+  try{
+    const r=await fetch(`${API}/api/admin/email-settings`); const c=await r.json(); if(!r.ok) throw new Error(c.error||'Could not load email settings');
+    $('#mail-provider').value=c.emailProvider||'smtp'; $('#mail-host').value=c.smtpHost||''; $('#mail-port').value=c.smtpPort||587; $('#mail-user').value=c.smtpUsername||'';
+    $('#mail-from-name').value=c.fromName||'empower-fin Dashboard Portal'; $('#mail-from-email').value=c.fromEmail||''; $('#mail-reply-to').value=c.replyTo||'';
+    $('#mail-timezone').value=c.defaultTimezone||'Africa/Johannesburg'; $('#mail-portal-url').value=c.portalBaseUrl||''; $('#mail-resend-from').value=c.resendFromEmail||'';
+    $('#mail-secure').checked=!!c.smtpSecure; $('#mail-require-tls').checked=c.smtpRequireTls!==false; $('#mail-reject-unauth').checked=c.smtpRejectUnauthorized!==false;
+    if(c.hasPassword) $('#mail-password').placeholder=c.passwordFromEnvironment?'•••••• (provided by SMTP_PASSWORD)':'•••••• (saved — leave blank to keep)';
+    const st=$('#mail-status'); st.style.display='block'; st.className='banner '+(c.configured?'ok':'');
+    const provider=c.emailProvider==='resend'?'Resend API':'SMTP';
+    st.textContent=c.configured?`${provider} is configured for scheduled report delivery.`:`${provider} setup is incomplete. Scheduled reports cannot send until the required fields are configured.`;
+    if(c.lastTestAt) st.textContent+=` Last test: ${c.lastTestStatus||'—'} · ${fmtDate(c.lastTestAt)}${c.lastTestNote?' — '+c.lastTestNote:''}`;
+    $('#auto-alert-emails').value=c.alertEmails||''; $('#auto-slack-webhook').value=c.alertSlackWebhookUrl||'';
+    $('#auto-stale-days').value=c.staleDeactivateDays||''; $('#auto-digest-enabled').checked=!!c.digestEnabled;
+    $('#auto-score-enabled').checked=c.scoreChangeAlertsEnabled!==false;
+    $('#synthetic-data-mode').checked=!!c.syntheticDataMode;
+    const as=$('#auto-status'); as.style.display='block'; as.className='banner ok';
+    let asText=`Automations use the ${provider} settings above to send.`;
+    if(c.lastStaleCheckAt) asText+=` Last stale-account check: ${fmtDate(c.lastStaleCheckAt)}.`;
+    if(c.lastDigestSentAt) asText+=` Last digest sent: ${fmtDate(c.lastDigestSentAt)}.`;
+    as.textContent=asText;
+    loadScheduledReportsAdmin(); loadEmailDeliveries();
+  }catch(e){ $('#mail-result').innerHTML=`<div class="banner err">✕ ${esc(e.message)}</div>`; }
+}
+async function saveEmailSettings(){
+  $('#mail-result').innerHTML='<div class="banner ok">Saving email settings…</div>';
+  try{
+    const r=await fetch(`${API}/api/admin/email-settings`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(emailDraft())});
+    const d=await r.json(); if(!r.ok) throw new Error(d.error||'Save failed');
+    $('#mail-password').value=''; $('#mail-result').innerHTML='<div class="banner ok">✓ Email settings saved.</div>'; loadEmailSettings();
+  }catch(e){ $('#mail-result').innerHTML=`<div class="banner err">✕ ${esc(e.message)}</div>`; }
+}
+async function testEmailSettings(){
+  const recipient=$('#mail-test-recipient').value.trim();
+  $('#mail-result').innerHTML='<div class="banner ok">Testing email delivery and sending a test email…</div>';
+  try{
+    const body={...emailDraft(),recipient};
+    const r=await fetch(`${API}/api/admin/email-settings/test`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)}); const d=await r.json();
+    if(!r.ok) throw new Error(d.error||'Email test failed');
+    $('#mail-result').innerHTML=`<div class="banner ok">✓ Test email sent to ${esc(d.recipient)}.</div>`; loadEmailSettings();
+  }catch(e){ $('#mail-result').innerHTML=`<div class="banner err">✕ ${esc(e.message)}</div>`; }
+}
+
+// ── automations ──
+async function saveAutomations(){
+  $('#auto-result').innerHTML='<div class="banner ok">Saving…</div>';
+  try{
+    const body={
+      alertEmails: $('#auto-alert-emails').value.trim(),
+      alertSlackWebhookUrl: $('#auto-slack-webhook').value.trim(),
+      staleDeactivateDays: $('#auto-stale-days').value ? parseInt($('#auto-stale-days').value) : null,
+      digestEnabled: $('#auto-digest-enabled').checked,
+      scoreChangeAlertsEnabled: $('#auto-score-enabled').checked,
+      syntheticDataMode: $('#synthetic-data-mode').checked,
+    };
+    const r=await fetch(`${API}/api/admin/email-settings`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+    const d=await r.json(); if(!r.ok) throw new Error(d.error||'Save failed');
+    $('#auto-result').innerHTML='<div class="banner ok">✓ Automation settings saved.</div>'; loadEmailSettings();
+  }catch(e){ $('#auto-result').innerHTML=`<div class="banner err">✕ ${esc(e.message)}</div>`; }
+}
+async function runAutomationNow(kind){
+  $('#auto-result').innerHTML='<div class="banner ok">Running…</div>';
+  try{
+    const r=await fetch(`${API}/api/admin/automations/run`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({kind})});
+    const d=await r.json(); if(!r.ok) throw new Error(d.error||'Could not run');
+    $('#auto-result').innerHTML=`<div class="banner ok">✓ ${esc(d.message||'Done.')}</div>`; loadEmailSettings();
+  }catch(e){ $('#auto-result').innerHTML=`<div class="banner err">✕ ${esc(e.message)}</div>`; }
+}
+function scheduleFreqLabel(s){
+  if(s.frequency==='ONCE') return 'Once';
+  if(s.frequency==='DAILY') return `Daily · ${s.sendTime}`;
+  if(s.frequency==='WEEKLY') return `Weekly · ${['','Mon','Tue','Wed','Thu','Fri','Sat','Sun'][s.dayOfWeek]||''} ${s.sendTime}`;
+  if(s.frequency==='MONTHLY') return `Monthly · day ${s.dayOfMonth} · ${s.sendTime}`;
+  return s.frequency;
+}
+async function loadScheduledReportsAdmin(){
+  const tb=$('#mail-schedules'); if(!tb) return;
+  try{
+    const r=await fetch(`${API}/api/admin/report-schedules`); const rows=await r.json(); if(!r.ok) throw new Error(rows.error||'Could not load schedules');
+    if(!rows.length){ tb.innerHTML='<tr><td colspan="5" class="muted" style="padding:10px;">No schedules yet.</td></tr>'; return; }
+    tb.innerHTML=rows.map(s=>`<tr><td><strong>${esc(s.name)}</strong><div class="muted">${esc(s.employer?.name||'')}</div></td><td>${esc(s.user?.name||'')}<div class="muted">${esc(s.user?.email||'')}</div></td><td>${scheduleFreqLabel(s)}</td><td>${s.active?fmtDate(s.nextRunAt):'Paused'}</td><td><span style="font-weight:800;color:${s.lastStatus==='FAILED'?'#b5391f':'#137a47'}">${s.active?'ACTIVE':'PAUSED'}</span>${s.lastStatus?`<div class="muted">last: ${esc(s.lastStatus)}</div>`:''}</td></tr>`).join('');
+  }catch(e){ tb.innerHTML=`<tr><td colspan="5" class="muted" style="padding:10px;color:#b5391f;">${esc(e.message)}</td></tr>`; }
+}
+async function loadEmailDeliveries(){
+  const tb=$('#mail-deliveries'); if(!tb) return;
+  try{
+    const r=await fetch(`${API}/api/admin/report-deliveries`); const rows=await r.json(); if(!r.ok) throw new Error(rows.error||'Could not load deliveries');
+    if(!rows.length){ tb.innerHTML='<tr><td colspan="4" class="muted" style="padding:10px;">No deliveries yet.</td></tr>'; return; }
+    tb.innerHTML=rows.map(x=>`<tr><td>${fmtDate(x.sentAt)}</td><td>${x.schedule?.name||x.subject||'Scheduled report'}<div class="muted">${esc(x.schedule?.employer?.name||'')}</div></td><td style="font-weight:800;color:${x.status==='SENT'?'#137a47':'#b5391f'}">${esc(x.status)}</td><td class="muted">${Array.isArray(x.recipients)?x.recipients.join(', '):''}${x.error?`<div style="color:#b5391f">${esc(x.error)}</div>`:''}</td></tr>`).join('');
+  }catch(e){ tb.innerHTML=`<tr><td colspan="4" class="muted" style="padding:10px;color:#b5391f;">${esc(e.message)}</td></tr>`; }
+}
+
+// ── admin audit log ──
+async function loadAuditLog(){
+  const rows=$('#audit-rows'); if(!rows) return;
+  try{
+    const log=await fetch(`${API}/api/admin/audit-log?limit=200`).then(r=>r.json());
+     const criticalRank={
+       "user.delete":0,"user.revoke":0,"user.update":1,"user.create":2,
+       "partner.delete":0,"partner.update":1,"partner.create":2,
+       "security.alert.resolve":1,"section.update":2
+     };
+     const ranked=(Array.isArray(log)?log:[]).slice().sort((a,b)=>{
+       const ar=criticalRank[a.action]??3, br=criticalRank[b.action]??3;
+       return ar-br || new Date(b.createdAt||0)-new Date(a.createdAt||0);
+     }).slice(0,5);
+    if(!ranked.length){ rows.innerHTML='<tr><td colspan="4" class="muted" style="padding:10px;">No admin changes recorded yet.</td></tr>'; return; }
+    rows.innerHTML=ranked.map(l=>`<tr>
+      <td class="muted" style="white-space:nowrap;">${fmtDate(l.createdAt)}</td>
+      <td><b>${esc(l.actorName)}</b><div class="muted">${esc(l.actorEmail)}</div></td>
+      <td><span class="tag">${esc(l.action)}</span></td>
+      <td>${esc(l.summary)}</td>
+    </tr>`).join('');
+  }catch(e){ rows.innerHTML=`<tr><td colspan="4" style="padding:10px;color:#b5391f;">Could not load the audit log.</td></tr>`; }
+}
+
+// ── client reach & engagement ──
+async function loadEngagement(){
+  const days=$('#eng-days')?.value || 30;
+  const statsEl=$('#eng-stats'), trendEl=$('#eng-trend'), pagesEl=$('#eng-pages'), usersEl=$('#eng-users'), winEl=$('#eng-window');
+  if(winEl) winEl.textContent=days;
+  try{
+    const s=await fetch(`${API}/api/admin/analytics/summary?days=${days}`).then(r=>r.json());
+    const stat=(label,value)=>`<div style="background:#f7fafd;border:1px solid #e8e1f7;border-radius:12px;padding:12px 14px;"><div style="font-size:22px;font-weight:800;color:#32217c;">${value}</div><div style="font-size:11.5px;font-weight:700;color:#8497a7;margin-top:2px;">${label}</div></div>`;
+    const fmtDuration=(s)=> s==null ? '—' : (s<60 ? s+'s' : Math.round(s/60)+'m '+(s%60)+'s');
+    statsEl.innerHTML = [
+      stat('Active accounts', s.activeAccountCount),
+      stat('Signed in this window', s.uniqueSignedInUsers),
+      stat('Total logins', s.totalLogins),
+      stat('Pageviews', s.totalPageviews),
+      stat('Tracked interactions', s.totalInteractions),
+      stat('Avg. scroll depth', s.avgScrollDepth+'%'),
+      stat('Avg. time on page', fmtDuration(s.avgSessionSeconds)),
+    ].join('');
+    const max=Math.max(1,...s.trend.map(t=>t.logins));
+    trendEl.innerHTML=s.trend.map(t=>`<div title="${esc(t.date)}: ${esc(t.logins)} login(s)" style="flex:1;min-width:2px;background:#b15be8;border-radius:3px 3px 0 0;height:${Math.max(3,Math.round((t.logins/max)*100))}%;"></div>`).join('');
+    pagesEl.innerHTML = s.topPages.length
+      ? s.topPages.map(p=>`<div style="display:flex;justify-content:space-between;font-size:12.5px;padding:5px 0;border-bottom:1px solid #f7f4ff;"><span class="muted">${esc(p.path)}</span><b style="color:#32217c;">${esc(p.views)}</b></div>`).join('')
+      : '<div class="muted" style="font-size:12.5px;">No pageviews recorded yet.</div>';
+    usersEl.innerHTML = s.byUser.length
+      ? s.byUser.map(u=>`<tr><td><b>${esc(u.name)}</b><div class="muted">${esc(u.email)}</div></td><td>${esc(u.logins)}</td><td>${esc(u.pageviews)}</td><td>${u.avgScrollDepth!==null?u.avgScrollDepth+'%':'—'}</td></tr>`).join('')
+      : '<tr><td colspan="4" class="muted" style="padding:10px;">No engagement recorded yet in this window.</td></tr>';
+  }catch(e){
+    statsEl.innerHTML = `<div class="muted">Could not load engagement data.</div>`;
+  }
+}
+
+// ── channel partners (white-label) ──
+let PARTNERS=[], ALL_USERS=[], ALL_EMP=[];
+async function loadPartners(){
+  try{
+    PARTNERS = await fetch(`${API}/api/admin/partners`).then(r=>r.json());
+    ALL_USERS = await fetch(`${API}/api/users`, {credentials: 'include'}).then(r=>r.json()).catch(()=>[]);
+    const _me = await fetch(`${API}/api/auth/me`).then(r=>r.json()).catch(()=>({employers:[]}));
+    ALL_EMP = _me.employers || [];
+    renderPartners();
+  }catch(e){}
+}
+let PT_NEW_LOGO_DATAURL=null;
+function onNewPartnerLogoPicked(input){
+  const f=input.files[0]; if(!f) return;
+  if(f.size>500000){ showToast('Please use a logo under 500KB.','err'); input.value=''; PT_NEW_LOGO_DATAURL=null; document.getElementById('pt-new-logo-label').textContent='+ Logo (optional)'; return; }
+  const reader=new FileReader();
+  reader.onload=()=>{ PT_NEW_LOGO_DATAURL=reader.result; document.getElementById('pt-new-logo-label').textContent='✓ '+f.name; };
+  reader.readAsDataURL(f);
+}
+async function createPartner(){
+  const name=$('#pt-new-name').value.trim(); if(!name) return;
+  const created=await apiOk(`${API}/api/admin/partners`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name})}).then(r=>r.json());
+  if(PT_NEW_LOGO_DATAURL && created?.id){
+    const detected=await extractColorsFromImage(PT_NEW_LOGO_DATAURL);
+    const payload=detected
+      ? { logoDataUrl:PT_NEW_LOGO_DATAURL, primaryColor:detected.primaryColor, accentColor:detected.accentColor, navyColor:detected.navyColor }
+      : { logoDataUrl:PT_NEW_LOGO_DATAURL };
+    await apiOk(`${API}/api/admin/partners/${created.id}`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
+    if(detected) await observeBrandLearning(detected, (detected.confidence||0) >= 0.70);
+    showToast(detected ? `${name} added. ${brandSummary(detected)}` : `${name} added.`,'ok');
+  } else {
+    showToast(`${name} added.`,'ok');
+  }
+  $('#pt-new-name').value=''; $('#pt-new-logo').value=''; PT_NEW_LOGO_DATAURL=null;
+  document.getElementById('pt-new-logo-label').textContent='+ Logo (optional)';
+  loadPartners();
+}
+
+// ── dummy test-client presets ──
+// Generates a placeholder badge logo (initials on a colour swatch) rather than
+// any real brand artwork — safe to use for testing white-label branding
+// end-to-end (colours, name, logo swap) before a client supplies real assets.
+// fetch wrapper for admin mutations: surfaces the server's message instead of pretending success
+async function apiOk(url,opts){
+  const r=await fetch(url,opts);
+  if(!r.ok){ let m='Request failed ('+r.status+')'; try{ m=(await r.json()).error||m; }catch(_){} showToast(m,'err'); throw new Error(m); }
+  return r;
+}
+function dummyLogoDataUrl(initials,bg,fg){
+  fg=fg||'#ffffff';
+  const svg=`<svg xmlns="http://www.w3.org/2000/svg" width="160" height="160"><rect width="160" height="160" rx="32" fill="${bg}"/><text x="80" y="98" font-family="Manrope,Arial,sans-serif" font-size="58" font-weight="800" fill="${fg}" text-anchor="middle">${initials}</text></svg>`;
+  return 'data:image/svg+xml;base64,'+btoa(svg);
+}
+const PARTNER_PRESETS=[
+  { name:'FNB (test)', initials:'FNB', primaryColor:'003C64', accentColor:'00A651', navyColor:'003C64', tagline:'First National Bank — test client' },
+  { name:'ABSA (test)', initials:'AB', primaryColor:'A6192E', accentColor:'DC1928', navyColor:'6E0E1B', tagline:'Absa — test client' },
+  { name:'Capitec (test)', initials:'CB', primaryColor:'004B87', accentColor:'E4002B', navyColor:'002B4D', tagline:'Capitec Bank — test client' },
+  { name:'Standard Bank (test)', initials:'SB', primaryColor:'0033A0', accentColor:'1F63D6', navyColor:'001F5C', tagline:'Standard Bank — test client' },
+  { name:'Nedbank (test)', initials:'NB', primaryColor:'00703C', accentColor:'00A651', navyColor:'003D22', tagline:'Nedbank — test client' },
+];
+function renderPresets(){
+  const wrap=$('#pt-presets'); if(!wrap) return;
+  wrap.innerHTML=PARTNER_PRESETS.map((p,i)=>`<button type="button" class="btn btn-ghost" style="border-color:#${esc(p.accentColor)};color:#${esc(p.primaryColor)};font-size:12px;" onclick="addPresetPartner(${i})">+ ${esc(p.name)}</button>`).join('');
+}
+async function addPresetPartner(i){
+  const preset=PARTNER_PRESETS[i]; if(!preset) return;
+  const created=await apiOk(`${API}/api/admin/partners`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:preset.name})}).then(r=>r.json());
+  const logo=dummyLogoDataUrl(preset.initials,'#'+preset.accentColor);
+  await apiOk(`${API}/api/admin/partners/${created.id}`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({
+    primaryColor:preset.primaryColor, accentColor:preset.accentColor, navyColor:preset.navyColor,
+    tagline:preset.tagline, logoDataUrl:logo,
+  })});
+  loadPartners();
+}
+
+function renderPartners(){
+  const wrap=$('#pt-list');
+  if(!PARTNERS.length){ wrap.innerHTML='<p class="muted">No partners yet. Add one above.</p>'; return; }
+  wrap.innerHTML = PARTNERS.map(p=>{
+    const pc=p.primaryColor?('#'+p.primaryColor):'#32217C', ac=p.accentColor?('#'+p.accentColor):'#B15BE8', nv=p.navyColor?('#'+p.navyColor):'#32217C';
+    const logo = p.logoDataUrl
+      ? `<img class="partner-preview-logo" src="${p.logoDataUrl}" alt="${esc(p.displayName||p.name)} logo">`
+      : `<div class="partner-preview-logo partner-preview-fallback" style="background:${ac};">${(p.displayName||p.name||'?').slice(0,2).toUpperCase()}</div>`;
+    const pv=partnerPreviewTokens(p);
+    return `<div class="card partner-card" style="margin-bottom:16px;padding:20px;border:1px solid #e8e1f7;">
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px;">
+        <div style="width:34px;height:34px;border-radius:8px;background:${pc};box-shadow:inset 0 0 0 1px rgba(255,255,255,.35);"></div>
+        <div style="font-weight:800;font-size:15px;color:#32217c;flex:1;">${esc(p.name)}</div>
+        <span class="muted" style="font-size:12px;">${esc(p._count.users)} users · ${esc(p._count.employers)} employers · /p/${esc(p.slug)}</span>
+      </div>
+      <div class="partner-preview" style="${pv.style}">
+        ${logo}
+        <div class="partner-preview-copy"><strong>${esc(p.displayName||p.name)}</strong><span>${esc(p.tagline||'Your branded portal preview')}</span></div>
+        <span class="partner-preview-badge">Live preview</span>
+      </div>
+      <button class="btn partner-preview-open" type="button" onclick="openClientPreview('${esc(p.id)}')">View client dashboard</button>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr) 2fr;gap:12px;align-items:end;margin-top:16px;">
+        <label style="font-size:11.5px;font-weight:700;color:#5b6b7a;">Primary<input type="color" value="${pc}" onchange="editPartner('${esc(p.id)}','primaryColor',this.value)" style="display:block;width:100%;height:34px;border:1px solid #e8e1f7;border-radius:7px;margin-top:4px;"></label>
+        <label style="font-size:11.5px;font-weight:700;color:#5b6b7a;">Accent<input type="color" value="${ac}" onchange="editPartner('${esc(p.id)}','accentColor',this.value)" style="display:block;width:100%;height:34px;border:1px solid #e8e1f7;border-radius:7px;margin-top:4px;"></label>
+        <label style="font-size:11.5px;font-weight:700;color:#5b6b7a;">Navy<input type="color" value="${nv}" onchange="editPartner('${esc(p.id)}','navyColor',this.value)" style="display:block;width:100%;height:34px;border:1px solid #e8e1f7;border-radius:7px;margin-top:4px;"></label>
+        <label style="font-size:11.5px;font-weight:700;color:#5b6b7a;">Display name<input value="${esc(p.displayName||'')}" onchange="editPartner('${esc(p.id)}','displayName',this.value)" style="display:block;width:100%;padding:7px 10px;border:1px solid #e8e1f7;border-radius:7px;margin-top:4px;font:inherit;"></label>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px;align-items:end;">
+        <label style="font-size:11.5px;font-weight:700;color:#5b6b7a;">Tagline (optional)<input value="${esc(p.tagline||'')}" onchange="editPartner('${esc(p.id)}','tagline',this.value)" style="display:block;width:100%;padding:7px 10px;border:1px solid #e8e1f7;border-radius:7px;margin-top:4px;font:inherit;"></label>
+        <label style="font-size:11.5px;font-weight:700;color:#5b6b7a;">Logo (PNG)<input type="file" accept="image/png,image/jpeg" onchange="uploadPartnerLogo('${esc(p.id)}',this)" style="display:block;margin-top:4px;font-size:12px;"></label>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr auto;gap:10px;margin-top:12px;align-items:center;">
+        <select id="pt-u-${esc(p.id)}" style="font:inherit;padding:7px 10px;border:1px solid #e8e1f7;border-radius:7px;"><option value="">Assign a user…</option>${ALL_USERS.map(u=>`<option value="${esc(u.id)}">${u.name||u.email}</option>`).join('')}</select>
+        <select id="pt-e-${esc(p.id)}" style="font:inherit;padding:7px 10px;border:1px solid #e8e1f7;border-radius:7px;"><option value="">Assign an employer…</option>${(ALL_EMP||[]).map(e=>`<option value="${e.id||e.employerId}">${e.name||e.employer}</option>`).join('')}</select>
+        <button class="btn btn-ghost" onclick="assignToPartner('${esc(p.id)}')">Assign</button>
+      </div>
+      <div style="margin-top:10px;text-align:right;"><button class="btn btn-ghost" style="color:#b5391f;font-size:12px;" onclick="deletePartner('${esc(p.id)}','${p.name.replace(/'/g,"")}')">Delete partner</button></div>
+    </div>`;
+  }).join('');
+}
+function previewHex(value,fallback){ return '#'+String(value||fallback).replace(/^#/,''); }
+function partnerBrand(p){
+  return {
+    accentColor:String(p?.accentColor||p?.primaryColor||'B15BE8').replace(/^#/,''),
+    primaryColor:String(p?.primaryColor||p?.accentColor||'32217C').replace(/^#/,''),
+    navyColor:String(p?.navyColor||p?.primaryColor||'32217C').replace(/^#/,''),
+  };
+}
+function readableOn(background, preferred){
+  if(!window.BrandEngine) return '#ffffff';
+  const bg=String(background||'#17212b').replace(/^#/,'');
+  const pref=String(preferred||'FFFFFF').replace(/^#/,'');
+  return '#'+BrandEngine.ensureContrast(pref,bg,4.5);
+}
+function partnerPreviewTokens(p){
+  const brand=partnerBrand(p);
+  if(!window.BrandEngine){
+    const surface=previewHex(brand.navyColor,'32217C');
+    return {style:`--preview-surface:${surface};--preview-text:#fff;--preview-muted:#d7dee5;--preview-accent:${previewHex(brand.accentColor,'B15BE8')};--preview-on-accent:#fff;--preview-line:rgba(255,255,255,.24);--preview-logo-bg:#fff;`};
+  }
+  const t=BrandEngine.themeTokens(brand,'dark');
+  const surface=t['--bar-bg'];
+  const accent=readableOn(surface,brand.accentColor);
+  const text=readableOn(surface,t['--brand-primary']);
+  const muted=readableOn(surface,t['--grey']);
+  const onAccent=BrandEngine.contrast('FFFFFF',accent.replace(/^#/,''))>=4.5?'#fff':'#0b0f19';
+  return {style:`--preview-surface:${surface};--preview-text:${text};--preview-muted:${muted};--preview-accent:${accent};--preview-on-accent:${onAccent};--preview-line:${t['--dm-line']};--preview-logo-bg:#fff;`};
+}
+function applyClientPreviewTheme(p){
+  const app=$('#client-preview-app'); if(!app) return;
+  const brand=partnerBrand(p);
+  const dark=document.documentElement.classList.contains('portal-dark');
+  const t=window.BrandEngine ? BrandEngine.themeTokens(brand,dark?'dark':'light') : null;
+  const surface=t?.['--white'] || '#fff';
+  const accent=t?.['--blue'] || previewHex(brand.accentColor,'B15BE8');
+  const onAccent=window.BrandEngine && BrandEngine.contrast('FFFFFF',accent.replace(/^#/,''))<4.5 ? '#0b0f19' : '#fff';
+  app.style.setProperty('--preview-bg',t?.['--dm-bg']||t?.['--ent-paper']||'#f6f4fb');
+  app.style.setProperty('--preview-surface',surface);
+  app.style.setProperty('--preview-surface-2',t?.['--ice']||'#f3efff');
+  app.style.setProperty('--preview-navy',t?.['--brand-primary']||previewHex(brand.navyColor,'32217C'));
+  app.style.setProperty('--preview-blue',accent);
+  app.style.setProperty('--preview-line',t?.['--line']||'#e8e1f7');
+  app.style.setProperty('--preview-ink',t?.['--ink']||'#0f2438');
+  app.style.setProperty('--preview-muted',t?.['--grey']||'#5b6b7a');
+  app.style.setProperty('--preview-on-accent',onAccent);
+  app.style.setProperty('--preview-logo-bg','#fff');
+}
+function previewLogo(p){
+  return p.logoDataUrl
+    ? `<img class="cp-logo" src="${p.logoDataUrl}" alt="${esc(p.displayName||p.name)} logo">`
+    : `<div class="cp-logo" style="display:grid;place-items:center;background:${previewHex(p.accentColor,'B15BE8')};color:#fff;font-size:11px;font-weight:800;">${(p.displayName||p.name||'?').slice(0,2).toUpperCase()}</div>`;
+}
+function openClientPreview(id){
+  const p=PARTNERS.find(x=>String(x.id)===String(id)); if(!p) return;
+  const app=$('#client-preview-app'); if(!app) return;
+  const name=esc(p.displayName||p.name||'Partner');
+  const partnerLabel=esc(p.displayName||p.name||'Partner');
+  const logo=p.logoDataUrl
+    ? `<img class="snap-partner-logo" src="${p.logoDataUrl}" alt="${partnerLabel} logo">`
+    : `<span class="snap-partner-fallback">${partnerLabel.slice(0,3).toUpperCase()}</span>`;
+
+  const score=72, enrolled=1284, monthly='R 184k', debt='R 63k', challenged=31, better=486, satisfaction='4.4/5';
+  const drivers=[
+    ['Engagement',68],['Cashflow relief',61],['Debt risk',54],['Insurance efficiency',73]
+  ];
+  const funnel=[
+    ['Eligible workforce',1284],['Enrolled',876],['Activated',644],['Completed a fix',486],['Advocates',219]
+  ];
+
+  app.innerHTML=`
+    <div class="snap-shell">
+      <div class="snap-topbar">
+        ${logo}
+        <span class="snap-spacer"></span>
+        <div class="snap-nav"><span>Dashboard</span><span>Reports</span><span>Support</span></div>
+        <span class="snap-avatar">AD</span>
+      </div>
+
+      <div class="snap-body">
+        <div class="snap-head">
+          <div>
+            <div class="snap-eyebrow">Employer insights · financial wellbeing programme</div>
+            <h3>${name} workforce dashboard</h3>
+            <div class="snap-sub">${esc(p.tagline||'How the financial wellbeing programme is landing across your workforce, who is using it, the outcomes achieved and how employees rate the service.')}</div>
+          </div>
+          <div class="snap-actions"><button class="snap-btn">Schedule report</button><button class="snap-btn primary">Export PDF</button></div>
+        </div>
+
+        <div class="snap-period"><span>October 2026 (month to date)</span><span>18 newly enrolled</span><span>12 fixes completed</span><span>R 184k/mo savings</span><span>38 wage advances</span></div>
+        <div class="snap-banner"><b>Synthetic preview data.</b> This preview mirrors the live employer dashboard structure but uses safe dummy figures only.</div>
+
+        <div class="snap-filterbar">
+          <span class="snap-chip partner">${partnerLabel}</span>
+          <span class="snap-chip">Latest available period</span>
+          <span class="snap-chip">All regions</span>
+          <span class="snap-chip">All income bands</span>
+          <span class="snap-chip">${enrolled.toLocaleString()} enrolled</span>
+        </div>
+
+        <div class="snap-insight">
+          <div class="snap-insight-copy"><b>EXECUTIVE INSIGHT</b><br>Financial wellbeing score is ${score}/100, up 4 points versus the previous period. Monthly cash freed up is ${monthly}. Debt interventions and completed fixes continue to trend positively.</div>
+          <div class="snap-actions"><button class="snap-btn">Save view</button><button class="snap-btn">Quick actions</button></div>
+        </div>
+
+        <section class="snap-impact">
+          <div class="snap-impact-head"><h4>Financial wellbeing impact summary</h4><span class="snap-btn" style="background:#fff;color:var(--preview-navy);border:0">At a glance</span></div>
+          <div class="snap-impact-grid">
+            <div class="snap-impact-cell"><strong>${enrolled.toLocaleString()}</strong><span>employees enrolled</span></div>
+            <div class="snap-impact-cell"><strong>${monthly}</strong><span>monthly cashflow restored</span></div>
+            <div class="snap-impact-cell"><strong>${debt}</strong><span>debt under intervention</span></div>
+            <div class="snap-impact-cell"><strong>${challenged}</strong><span>prescribed debts challenged</span></div>
+            <div class="snap-impact-cell"><strong>${better}</strong><span>employees better off</span></div>
+            <div class="snap-impact-cell"><strong>${satisfaction}</strong><span>employee satisfaction</span></div>
+          </div>
+        </section>
+
+        <div class="snap-grid">
+          <section class="snap-card">
+            <div class="snap-card-title">Workforce financial wellness score</div>
+            <div class="snap-wellness">
+              <div class="snap-score-ring"><strong>${score}</strong></div>
+              <div class="snap-drivers">
+                ${drivers.map(([label,val])=>`<div class="snap-driver"><span>${label}</span><div class="snap-track"><div class="snap-fill" style="width:${val}%"></div></div><b>${val}</b></div>`).join('')}
+              </div>
+            </div>
+          </section>
+
+          <section class="snap-card">
+            <div class="snap-card-title">Engagement funnel</div>
+            <div class="snap-funnel">
+              ${funnel.map(([label,val],i)=>`<div class="snap-funnel-row"><span>${label}</span><div class="snap-track"><div class="snap-fill" style="width:${Math.max(18,100-i*18)}%"></div></div><b>${val}</b></div>`).join('')}
+            </div>
+          </section>
+        </div>
+
+        <div class="snap-kpis">
+          <div class="snap-kpi"><strong>68%</strong><span>programme activation</span></div>
+          <div class="snap-kpi"><strong>486</strong><span>employees better off</span></div>
+          <div class="snap-kpi"><strong>R 63k</strong><span>debt under active intervention</span></div>
+          <div class="snap-kpi"><strong>4.4/5</strong><span>employee satisfaction</span></div>
+        </div>
+
+        <div class="snap-grid">
+          <section class="snap-card">
+            <div class="snap-card-title">Debt pressure profile</div>
+            <div class="snap-debtbar"><span class="snap-seg" style="width:32%"></span><span class="snap-seg" style="width:28%"></span><span class="snap-seg" style="width:23%"></span><span class="snap-seg" style="width:17%"></span></div>
+            <div class="snap-outcomes">
+              <div class="snap-outcome"><i class="snap-dot"></i>High-interest unsecured debt <b style="margin-left:auto">32%</b></div>
+              <div class="snap-outcome"><i class="snap-dot"></i>Short-term credit exposure <b style="margin-left:auto">28%</b></div>
+              <div class="snap-outcome"><i class="snap-dot"></i>Collections / arrears <b style="margin-left:auto">23%</b></div>
+              <div class="snap-outcome"><i class="snap-dot"></i>Other observed pressure <b style="margin-left:auto">17%</b></div>
+            </div>
+          </section>
+
+          <section class="snap-card">
+            <div class="snap-card-title">Outcomes achieved</div>
+            <div class="snap-outcomes">
+              <div class="snap-outcome"><i class="snap-dot"></i>Debt pressure reduced <b style="margin-left:auto">486</b></div>
+              <div class="snap-outcome"><i class="snap-dot"></i>Policies optimised <b style="margin-left:auto">219</b></div>
+              <div class="snap-outcome"><i class="snap-dot"></i>Employees better off <b style="margin-left:auto">74%</b></div>
+              <div class="snap-outcome"><i class="snap-dot"></i>Positive service rating <b style="margin-left:auto">88%</b></div>
+            </div>
+          </section>
+        </div>
+
+        <section class="snap-card" style="margin-top:12px">
+          <div class="snap-card-title">Next best opportunities</div>
+          <div class="snap-opps">
+            <div class="snap-opp"><strong>R 28k</strong><span>debt restructuring opportunity</span></div>
+            <div class="snap-opp"><strong>143</strong><span>employees to re-engage</span></div>
+            <div class="snap-opp"><strong>R 17k</strong><span>insurance optimisation value</span></div>
+            <div class="snap-opp"><strong>92</strong><span>employees ready for next action</span></div>
+          </div>
+        </section>
+
+        <div class="snap-footnote">Synthetic dummy snapshot · structure mirrors the live employer dashboard</div>
+      </div>
+    </div>`;
+
+  app.dataset.partnerId=String(p.id);
+  applyClientPreviewTheme(p);
+  $('#client-preview-title').textContent=`${name} · dashboard preview`;
+  $('#client-preview-overlay').classList.add('is-open');
+  document.body.style.overflow='hidden';
+}
+
+function closeClientPreview(event){
+  if(event && event.target!==$('#client-preview-overlay')) return;
+  $('#client-preview-overlay').classList.remove('is-open');
+  const app=$('#client-preview-app'); if(app) delete app.dataset.partnerId;
+  document.body.style.overflow='';
+}
+if(typeof MutationObserver!=='undefined'){
+  new MutationObserver(()=>{
+    const overlay=$('#client-preview-overlay'), app=$('#client-preview-app');
+    if(!overlay?.classList.contains('is-open') || !app?.dataset.partnerId) return;
+    const p=PARTNERS.find(x=>x.id===app.dataset.partnerId);
+    if(p) applyClientPreviewTheme(p);
+  }).observe(document.documentElement,{attributes:true,attributeFilter:['class']});
+}
+document.addEventListener('keydown',event=>{ if(event.key==='Escape' && $('#client-preview-overlay').classList.contains('is-open')) closeClientPreview(); });
+async function editPartner(id,field,value){
+  if(field.endsWith('Color')) value=value.replace(/^#/,'');
+  await apiOk('/api/admin/partners/'+id,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({[field]:value})});
+  if(field.endsWith('Color')){
+    try{
+      await fetch('/api/admin/brand-learning/correction',{method:'POST',headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({engineVersion:window.BrandEngine?.VERSION||'1.1.0',palette:[{hex:value,share:1,role:'manual-correction'}]})});
+    }catch(_){}
+  }
+  loadPartners();
+}
+
+// ── colour extraction from an uploaded logo ──
+// Samples the logo's pixels on an offscreen canvas, ignores near-white/near-black/
+// low-saturation background pixels, and picks a brand palette from what's left:
+//   accent  = the most vivid (highest-saturation) colour found
+//   primary = the darkest genuinely-colourful tone (falls back to a darkened accent)
+//   navy    = primary pushed further toward near-black, for the deep/navy slot
+function rgbToHsl(r,g,b){
+  r/=255; g/=255; b/=255;
+  const max=Math.max(r,g,b), min=Math.min(r,g,b);
+  let h=0,s=0; const l=(max+min)/2;
+  const d=max-min;
+  if(d!==0){
+    s=d/(1-Math.abs(2*l-1));
+    switch(max){
+      case r: h=60*(((g-b)/d)%6); break;
+      case g: h=60*((b-r)/d+2); break;
+      default: h=60*((r-g)/d+4);
+    }
+  }
+  if(h<0) h+=360;
+  return [h,s,l];
+}
+function hslToHex(h,s,l){
+  const c=(1-Math.abs(2*l-1))*s, x=c*(1-Math.abs((h/60)%2-1)), m=l-c/2;
+  let r=0,g=0,b=0;
+  if(h<60){r=c;g=x;} else if(h<120){r=x;g=c;} else if(h<180){g=c;b=x;}
+  else if(h<240){g=x;b=c;} else if(h<300){r=x;b=c;} else {r=c;b=x;}
+  const toHex=v=>Math.max(0,Math.min(255,Math.round((v+m)*255)));
+  return [toHex(r),toHex(g),toHex(b)].map(v=>v.toString(16).padStart(2,'0')).join('');
+}
+/* Brand colour detection: real-pixel, perceptual (OKLab) hue-bucket analysis in brand-engine.js.
+   Runs entirely in the browser, no network calls. Returns hex values in the shape the API stores. */
+let BRAND_LEARNING_PROFILE=null;
+async function loadBrandLearningProfile(){
+  try{
+    BRAND_LEARNING_PROFILE=await fetch('/api/admin/brand-learning/profile',{cache:'no-store'}).then(r=>r.ok?r.json():null);
+  }catch(_){ BRAND_LEARNING_PROFILE=null; }
+  return BRAND_LEARNING_PROFILE;
+}
+async function observeBrandLearning(detected, accepted){
+  if(!detected) return;
+  try{
+    await fetch('/api/admin/brand-learning/observe',{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        engineVersion:window.BrandEngine?.VERSION||'1.1.0',
+        palette:Array.isArray(detected.palette)?detected.palette:[],
+        confidence:Number(detected.confidence||0),
+        accepted:Boolean(accepted)
+      })
+    });
+  }catch(_){}
+}
+async function extractColorsFromImage(dataUrl){
+  if(!window.BrandEngine) return null;
+  if(!BRAND_LEARNING_PROFILE) await loadBrandLearningProfile();
+  const r=await BrandEngine.extractFromImage(dataUrl,256,BRAND_LEARNING_PROFILE);
+  if(!r) return null;
+  window.__lastBrandDetection=r;
+  return r;
+}
+function brandSummary(r){
+  if(!r) return '';
+  const pct=Math.round((r.confidence||0)*100);
+  const head=`Detected accent #${r.accentColor}, secondary #${r.primaryColor}, brand bar #${r.navyColor} (${pct}% confidence).`;
+  return r.warnings&&r.warnings.length ? head+' '+r.warnings[0] : head;
+}
+function uploadPartnerLogo(id,input){
+  const f=input.files[0]; if(!f) return;
+  if(f.size>500000){ showToast('Please use a logo under 500KB.','err'); input.value=''; return; }
+  const reader=new FileReader();
+  reader.onload=async()=>{
+    const logoDataUrl=reader.result;
+    const detected=await extractColorsFromImage(logoDataUrl);
+    const payload=detected
+      ? {
+          logoDataUrl,
+          primaryColor:detected.primaryColor,
+          accentColor:detected.accentColor,
+          navyColor:detected.navyColor,
+          brandEngineVersion:window.BrandEngine?.VERSION || '1.1.0',
+          brandDetectionStatus:(detected.confidence||0) >= 0.70 ? 'AUTO_ACCEPTED' : 'NEEDS_REVIEW',
+          brandDetectionConfidence:Number(detected.confidence||0),
+          brandDetectionWarnings:Array.isArray(detected.warnings) ? detected.warnings : [],
+          brandDetectionDiagnostics:detected.diagnostics || {},
+          brandDetectedPalette:Array.isArray(detected.palette) ? detected.palette : []
+        }
+      : { logoDataUrl };
+    await apiOk(`${API}/api/admin/partners/${id}`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
+    if(detected) await observeBrandLearning(detected, (detected.confidence||0) >= 0.70);
+    showToast(detected ? 'Logo saved. '+brandSummary(detected)+' The recognizer has learned from this upload.' : 'Logo saved. No colours could be detected from this image.','ok');
+    loadPartners();
+  };
+  reader.readAsDataURL(f);
+}
+// Lightweight, non-blocking replacement for alert() so an automatic colour
+// detection doesn't interrupt the admin with a modal dialog.
+function showToast(message,kind){
+  let el=document.getElementById('admin-toast');
+  if(!el){
+    el=document.createElement('div');
+    el.id='admin-toast';
+    el.style.cssText='position:fixed;bottom:22px;left:50%;transform:translateX(-50%) translateY(12px);z-index:9999;padding:12px 18px;border-radius:11px;font:600 13px/1.4 Manrope,system-ui,sans-serif;box-shadow:0 12px 28px rgba(20,10,50,.18);opacity:0;transition:opacity .18s,transform .18s;max-width:min(86vw,420px);text-align:center;';
+    document.body.appendChild(el);
+  }
+  el.textContent=message;
+  el.style.background = kind==='err' ? '#fdecea' : '#eafaf1';
+  el.style.color = kind==='err' ? '#b5391f' : '#137a47';
+  el.style.border = kind==='err' ? '1px solid #f3c2ba' : '1px solid #b7e8cc';
+  clearTimeout(el._hideTimer);
+  requestAnimationFrame(()=>{ el.style.opacity='1'; el.style.transform='translateX(-50%) translateY(0)'; });
+  el._hideTimer=setTimeout(()=>{ el.style.opacity='0'; el.style.transform='translateX(-50%) translateY(12px)'; },3600);
+}
+async function assignToPartner(id){
+  const uid=$('#pt-u-'+id).value, eid=$('#pt-e-'+id).value;
+  if(uid) await fetch(`${API}/api/admin/partners/${id}/assign`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({userId:uid})});
+  if(eid) await fetch(`${API}/api/admin/partners/${id}/assign`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({employerId:eid})});
+  loadPartners();
+}
+async function deletePartner(id,name){
+  if(!confirm(`Delete partner "${name}"? Its users and employers stay, but lose this branding.`)) return;
+  await fetch(`${API}/api/admin/partners/${id}`,{method:'DELETE'});
+  loadPartners();
+}
+
+// ── dashboard section permissions ──
+const ROLE_LABEL = { ADMIN:'Admin', EMPLOYER_MANAGER:'Employer Manager', PORTFOLIO_MANAGER:'Portfolio Manager', VIEWER:'Viewer' };
+let SECTIONS=[];
+async function loadSections(){
+  try{
+    SECTIONS = await fetch(`${API}/api/admin/sections`).then(r=>r.json());
+    if(!ALL_USERS.length) ALL_USERS = await fetch(`${API}/api/users`, {credentials: 'include'}).then(r=>r.json()).catch(()=>[]);
+    renderSections();
+  }catch(e){}
+}
+function renderSections(){
+  const wrap=$('#sec-list'); if(!wrap) return;
+  if(!SECTIONS.length){ wrap.innerHTML='<p class="muted">No dashboard sections found.</p>'; return; }
+  wrap.innerHTML = SECTIONS.map(s=>{
+    const roleChecks = Object.keys(ROLE_LABEL).map(r=>
+      `<label style="font-size:12px;font-weight:700;color:#5b6b7a;display:inline-flex;align-items:center;gap:5px;margin-right:14px;">
+        <input type="checkbox" ${s.allowedRoles.includes(r)?'checked':''} onchange="toggleSectionRole('${esc(s.key)}','${r}',this.checked)"> ${ROLE_LABEL[r]}
+      </label>`).join('');
+    const overrides = s.overrides.length
+      ? s.overrides.map(o=>`<span class="tag opt" style="margin:2px 4px 2px 0;">${o.name||o.email} <a href="#" onclick="revokeSection('${esc(s.key)}','${esc(o.userId)}');return false;" style="color:#b5391f;text-decoration:none;margin-left:4px;">✕</a></span>`).join('')
+      : '<span class="muted">None</span>';
+    return `<div style="border:1px solid #e8e1f7;border-radius:11px;padding:14px 16px;margin-bottom:12px;">
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:8px;">
+        <label style="display:inline-flex;align-items:center;gap:8px;font-weight:800;font-size:13.5px;color:#32217c;flex:1;">
+          <input type="checkbox" ${s.enabled?'checked':''} onchange="toggleSectionEnabled('${esc(s.key)}',this.checked)"> ${esc(s.label)}
+        </label>
+        <span class="muted" style="font-size:11.5px;">${s.enabled?'Visible':'Hidden from everyone (except admins and explicit grants below)'}</span>
+      </div>
+      <div style="margin:8px 0;">${roleChecks}</div>
+      <div style="margin-top:10px;">
+        <div style="font-size:11px;font-weight:800;color:#8497a7;text-transform:uppercase;letter-spacing:.04em;margin-bottom:6px;">Extra access for specific people</div>
+        <div style="margin-bottom:8px;">${overrides}</div>
+        <div style="display:flex;gap:8px;">
+          <select id="sec-u-${esc(s.key)}" style="font:inherit;padding:7px 10px;border:1px solid #e8e1f7;border-radius:7px;flex:1;"><option value="">Grant access to…</option>${ALL_USERS.map(u=>`<option value="${esc(u.id)}">${u.name||u.email}</option>`).join('')}</select>
+          <button class="btn btn-ghost" onclick="grantSection('${esc(s.key)}')">Grant</button>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+async function toggleSectionEnabled(key,enabled){
+  await fetch(`${API}/api/admin/sections/${key}`,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({enabled})});
+  loadSections();
+}
+async function toggleSectionRole(key,role,checked){
+  const section = SECTIONS.find(s=>s.key===key); if(!section) return;
+  const roles = new Set(section.allowedRoles);
+  if(checked) roles.add(role); else roles.delete(role);
+  await fetch(`${API}/api/admin/sections/${key}`,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({allowedRoles:[...roles]})});
+  loadSections();
+}
+async function grantSection(key){
+  const userId=$('#sec-u-'+key).value; if(!userId) return;
+  await fetch(`${API}/api/admin/sections/${key}/grant`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({userId})});
+  loadSections();
+}
+async function revokeSection(key,userId){
+  await fetch(`${API}/api/admin/sections/${key}/revoke`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({userId})});
+  loadSections();
+}
+
+
+// ── danger zone: full reset ──
+function openReset(){
+  const area=$('#reset-area');
+  const input=$('#reset-confirm');
+  const msg=$('#reset-msg');
+  if(!area || !input || !msg) return;
+  area.style.display='block';
+  input.value='';
+  msg.style.display='none';
+  msg.textContent='';
+  input.focus();
+}
+async function doReset(){
+  const input=$('#reset-confirm');
+  const msg=$('#reset-msg');
+  if(!input || !msg) return;
+  if(input.value.trim()!=='RESET'){
+    msg.className='banner err';
+    msg.style.display='block';
+    msg.textContent='Please type RESET exactly to confirm.';
+    return;
+  }
+  if(!confirm('Reset the source-derived reporting model and rebuild it immediately from the connected source? The last successful dashboard remains published until all 10 feeds complete.')) return;
+  msg.className='banner ok';
+  msg.style.display='block';
+  msg.textContent='Preflighting source, then resetting and rewriting all 10 feeds from the authoritative database…';
+  try{
+    const r=await fetch(`${API}/api/admin/reset-all`,{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({confirm:'RESET'})
+    });
+    let d={};
+    try{ d=await r.json(); }catch(_){ }
+    if(!r.ok || !d.ok) throw new Error(d.error || d.note || `Reset & rebuild failed (HTTP ${r.status})`);
+    const cleared=Object.values(d.cleared||{}).reduce((sum,value)=>sum+(Number(value)||0),0);
+    const loaded=Number(d.overwrittenRows||0);
+    input.value='';
+    const resultArea=$('#result'); if(resultArea) resultArea.innerHTML='';
+    msg.className='banner ok';
+    msg.textContent=`✓ Authoritative rebuild published. Cleared ${cleared.toLocaleString('en-ZA')} source-derived rows and accepted ${loaded.toLocaleString('en-ZA')} rows from the connected source. Previous cursors/MLOps/staleness did not gate this rebuild.`;
+    await Promise.allSettled([loadHistory(),loadInteg(),loadIntegLogs(),loadMLOpsAlert()]);
+  }catch(e){
+    msg.className='banner err';
+    msg.textContent=`✕ Reset & rebuild did not publish. The last successful dashboard remains visible. Reason: ${e.message}`;
+  }
+}
+
+async function boot(){
+  installCompactCollapse();
+  // Require an authenticated admin, then load the report contract independently
+  // from the rest of the optional administration panels. A failure elsewhere
+  // must never remove the report selector or its upload controls.
+  let me=null;
+  try{
+    const r=await fetch('/api/auth/me',{cache:'no-store'});
+    if(!r.ok){ location.href='/login'; return; }
+    me=await r.json();
+  }catch(e){
+    location.href='/login';
+    return;
+  }
+  if(!me.modules.admin){ location.href='/dashboard'; return; }
+  applyAdminBrandTheme();
+
+  const isSuperAdmin = me.role === 'SUPERADMIN';
+  const posture = document.getElementById('role-posture');
+  if(posture){
+    document.getElementById('role-posture-title').textContent = isSuperAdmin ? 'Super Admin control plane' : 'Operational administration';
+    document.getElementById('role-posture-copy').textContent = isSuperAdmin
+      ? 'Full platform control: role governance, security operations, integrations, MLOps governance, dashboard permissions and high-impact system controls.'
+      : 'Day-to-day administration: users, employers, partners, reporting, operational settings and live dashboard integrations. Privileged control-plane functions are intentionally hidden.';
+    document.getElementById('role-posture-badge').textContent = isSuperAdmin ? 'Super Admin' : 'Admin';
+    posture.querySelector('[data-role-avatar]').textContent = isSuperAdmin ? 'S' : 'A';
+  }
+
+  if(!isSuperAdmin){
+    const privilegedHeadings = new Set(['Security centre','MLOps data-quality alert','Dashboard Sections','Danger zone']);
+    document.querySelectorAll('h2').forEach(h=>{
+      const title=h.textContent.trim();
+      if(!privilegedHeadings.has(title)) return;
+      const card=h.closest('.card');
+      if(card) card.style.display='none';
+    });
+  }
+
+  handleWelcomeSplash(me);
+  addNav(me);
+
+  try{
+    const r=await fetch(`${API}/api/admin/reports`,{cache:'no-store'});
+    let data={};
+    try{ data=await r.json(); }catch(_){}
+    if(!r.ok) throw new Error(data.error || `Reports API returned HTTP ${r.status}`);
+    if(!Array.isArray(data.loadOrder) || !Array.isArray(data.reports)){
+      throw new Error('Reports API returned an invalid report manifest');
+    }
+    MANIFEST=data;
+    renderRepList();
+  }catch(e){
+    console.error('Could not load report manifest:',e);
+    $('#rep-list').innerHTML = `<p class="muted">Could not load the report list: ${esc(e.message)}. Please refresh the page.</p>`;
+    return;
+  }
+
+  const optionalLoads=[
+    ['history',loadHistory],
+    ['integration',loadInteg],
+    ['email',loadEmailSettings],
+    ['partners',loadPartners],
+    ['sections',loadSections],
+    ['engagement',loadEngagement],
+    ['presets',renderPresets],
+    ['audit',loadAuditLog],
+    ['security',loadAdminSecuritySummary],
+    ['compliance',loadComplianceSummary],
+    ['enterprise',loadEnterpriseOperations],
+    ['mlops',loadMLOpsAlert]
+  ];
+  await Promise.allSettled(optionalLoads.map(async ([name,fn])=>{
+    try{ await fn(); }catch(e){ console.error(`Admin panel ${name} failed:`,e); }
+  }));
+}
+function renderRepList(){
+  const order = MANIFEST.loadOrder;
+  $('#rep-list').innerHTML = order.map((key,i)=>{
+    const rep = MANIFEST.reports.find(r=>r.key===key);
+    return `<div class="rep" data-key="${key}" onclick="selectReport('${key}')">
+      <span class="step">STEP ${i+1}</span><span class="t">${esc(rep.title)}</span></div>`;
+  }).join('');
+}
+
+function selectReport(key){
+  CURRENT = MANIFEST.reports.find(r=>r.key===key);
+  document.querySelectorAll('.rep').forEach(el=>el.classList.toggle('on',el.dataset.key===key));
+  $('#rep-title').textContent = CURRENT.title;
+  $('#rep-note').textContent = CURRENT.description;
+
+  const fields = CURRENT.fields.map(f=>`<tr>
+    <td><strong>${esc(f.name)}</strong>${f.unit?` <code>${esc(f.unit)}</code>`:''}</td>
+    <td>${esc(f.type)}</td>
+    <td>${f.required?'<span class="tag req">required</span>':'<span class="tag opt">optional</span>'}</td>
+    <td class="field-desc">${esc(f.description)}${f.allowed?`<br><code>${f.allowed.join(' · ')}</code>`:''}</td>
+  </tr>`).join('');
+
+  $('#work').innerHTML = `
+    <div class="row">
+      <button class="btn" onclick="dl('csv')">↓ CSV template</button>
+      <button class="btn" onclick="dl('xlsx')">↓ Excel template</button>
+      <span class="muted">Natural key: <code>${CURRENT.naturalKey.join(' + ')}</code></span>
+    </div>
+    <div class="drop" id="drop" onclick="$('#file').click()">
+      <div class="big">Drop a file here or click to browse</div>
+      <div class="sm">CSV, Excel (.xlsx or .xls) or JSON · up to 50 MB</div>
+      <input id="file" type="file" class="hidden" accept=".csv,.xlsx,.xls,.json" onchange="upload(this.files[0])">
+    </div>
+    <div id="result"></div>
+    <details class="section-gap"><summary class="muted" style="cursor:pointer;font-weight:700;">View format (${CURRENT.fields.length} columns)</summary>
+      <table style="margin-top:10px;"><thead><tr><th>Column</th><th>Type</th><th>Req</th><th>Description</th></tr></thead><tbody>${fields}</tbody></table>
+    </details>`;
+  wireDrop();
+}
+
+function dl(fmt){ window.location = `${API}/api/admin/reports/${CURRENT.key}/template?fmt=${fmt}`; }
+
+function wireDrop(){
+  const d = $('#drop');
+  ['dragenter','dragover'].forEach(ev=>d.addEventListener(ev,e=>{e.preventDefault();d.classList.add('over');}));
+  ['dragleave','drop'].forEach(ev=>d.addEventListener(ev,e=>{e.preventDefault();d.classList.remove('over');}));
+  d.addEventListener('drop',e=>{ if(e.dataTransfer.files[0]) upload(e.dataTransfer.files[0]); });
+}
+
+async function pollJob(url, label, onProgress=null, target='#result'){
+  const started = Date.now();
+  const jobId = url.split('/').pop();
+  let settled = false;
+  let source = null;
+  let fallbackTimer = null;
+
+  const showProgress = (payload={}) => {
+    const progress=payload.progress ?? 0;
+    const phase=payload.phase ?? 'PROCESSING';
+    const message=payload.message || label;
+    const detail=payload.detail || {};
+    const pct = Math.max(0, Math.min(100, Number(progress||0)));
+    const host=document.querySelector(target);
+    if(!host) return;
+    const pieces=[];
+    if(detail.reportKey) pieces.push(`Feed ${esc(detail.reportKey)}${detail.feedIndex&&detail.feedCount?` · ${esc(detail.feedIndex)}/${esc(detail.feedCount)}`:''}`);
+    if(detail.sourceTotalRows!=null) pieces.push(`Source view: ${Number(detail.sourceTotalRows).toLocaleString('en-ZA')} rows`);
+    if(detail.pulledRows!=null) pieces.push(`Pulled: ${Number(detail.pulledRows).toLocaleString('en-ZA')}`);
+    if(detail.validatedRows!=null) pieces.push(`Validated: ${Number(detail.validatedRows).toLocaleString('en-ZA')}`);
+    if(detail.committedRows!=null) pieces.push(`Processed live: ${Number(detail.committedRows).toLocaleString('en-ZA')}`);
+    if(detail.inserted!=null||detail.updated!=null||detail.deleted!=null){
+      const mutations=`+${Number(detail.inserted||0).toLocaleString('en-ZA')} new · ~${Number(detail.updated||0).toLocaleString('en-ZA')} updated · -${Number(detail.deleted||0).toLocaleString('en-ZA')} deleted`;
+      const history=Number(detail.historyRows||0);
+      pieces.push(history>0 ? `${mutations} · ${history.toLocaleString('en-ZA')} dated history observation(s)` : `${mutations}${Number(detail.skipped||0)>0?` · ${Number(detail.skipped).toLocaleString('en-ZA')} stale skipped`:''}`);
+    }
+    host.innerHTML = `<div class="job-progress">
+      <strong>${esc(message)}</strong>
+      <div class="job-progress-track"><div class="job-progress-fill" style="width:${pct}%"></div></div>
+      <div class="job-progress-meta"><span>${esc(phase)}</span><strong>${pct}%</strong></div>
+      ${pieces.length?`<div class="job-progress-detail">${pieces.map(esc).join(' · ')}</div>`:''}
+    </div>`;
+  };
+
+  const readState = async () => {
+    const r = await fetch(url, { cache: 'no-store' });
+    const d = await r.json().catch(() => null);
+    if(!r.ok || !d) throw new Error(d?.error || `${label} status check failed: HTTP ${r.status}`);
+    return d;
+  };
+
+  const finishState = async (d) => {
+    if(d.status === 'DONE') return d.result || d;
+    if(d.status === 'FAILED') throw new Error(d.error || `${label} failed`);
+    showProgress(d);
+    if(onProgress) onProgress(d);
+    return null;
+  };
+
+  const fallbackPoll = async () => {
+    while(Date.now() - started < 30 * 60 * 1000){
+      const state=await readState();
+      const done=await finishState(state);
+      if(done) return done;
+      await new Promise(resolve => setTimeout(resolve, 1500));
+    }
+    throw new Error(`${label} is still running after 30 minutes. Import history continues to update automatically.`);
+  };
+
+  if(window.EventSource && jobId){
+    try{
+      source = new EventSource(`${API}/api/admin/events?jobId=${encodeURIComponent(jobId)}`);
+      const result = await new Promise((resolve, reject) => {
+        const finish = (fn, value) => {
+          if(settled) return;
+          settled = true;
+          try{ source && source.close(); }catch(_){}
+          fn(value);
+        };
+        source.addEventListener('job.progress', async event => {
+          try{
+            const p = JSON.parse(event.data || '{}');
+            showProgress(p);
+            if(onProgress) onProgress(p);
+            if(p.status === 'DONE' || p.status === 'FAILED'){
+              try{
+                const finalState=await readState();
+                const final=await finishState(finalState);
+                if(final) finish(resolve, final);
+              }catch(e){ finish(reject, e); }
+            }
+          }catch(e){ finish(reject, e); }
+        });
+        source.onerror = () => {
+          if(settled) return;
+          try{ source.close(); }catch(_){}
+          finish(reject, new Error('live progress stream unavailable'));
+        };
+        fallbackTimer = setTimeout(() => finish(reject, new Error('live progress stream timed out')), 8000);
+      });
+      clearTimeout(fallbackTimer);
+      return result;
+    }catch(_){
+      clearTimeout(fallbackTimer);
+      if(!settled) try{ source && source.close(); }catch(_){}
+    }
+  }
+
+  return fallbackPoll();
+}
+
+async function upload(file){
+  if(!file) return;
+  $('#result').innerHTML = `<div class="job-progress">
+    <strong>Uploading <span>${esc(file.name)}</span></strong>
+    <div class="job-progress-track"><div id="upload-progress-fill" class="job-progress-fill"></div></div>
+    <div class="job-progress-meta"><span id="upload-progress-label">Preparing upload…</span><strong id="upload-progress-value">0%</strong></div>
+  </div>`;
+
+  const fd = new FormData();
+  fd.append('file', file);
+
+  try{
+    const res = await new Promise((resolve, reject) => {
+      const xhr = new XMLHttpRequest();
+      xhr.open('POST', `${API}/api/admin/reports/${CURRENT.key}/upload`, true);
+      xhr.withCredentials = true;
+      xhr.timeout = 5 * 60 * 1000;
+
+      xhr.upload.addEventListener('progress', event => {
+        const pct = event.lengthComputable ? Math.round((event.loaded / event.total) * 100) : 0;
+        const fill=$('#upload-progress-fill'), value=$('#upload-progress-value'), label=$('#upload-progress-label');
+        if(fill) fill.style.width=pct+'%';
+        if(value) value.textContent=pct+'%';
+        if(label) label.textContent=event.lengthComputable ? `Uploading ${Math.round(event.loaded/1024/1024*10)/10} MB of ${Math.round(event.total/1024/1024*10)/10} MB` : 'Uploading…';
+      });
+
+      xhr.addEventListener('load', () => {
+        let body=null;
+        try{ body=JSON.parse(xhr.responseText || '{}'); }catch(_){}
+        if(xhr.status >= 200 && xhr.status < 300) resolve({status:xhr.status, body});
+        else reject(new Error(body?.error || `server error ${xhr.status}`));
+      });
+      xhr.addEventListener('error', () => reject(new Error('network error while uploading the file')));
+      xhr.addEventListener('timeout', () => reject(new Error('upload timed out')));
+      xhr.addEventListener('abort', () => reject(new Error('upload cancelled')));
+      xhr.send(fd);
+    });
+
+    let result=res.body;
+    if(res.status === 202 && result?.jobId){
+      result = await pollJob(`${API}/api/admin/upload-jobs/${result.jobId}`, 'Importing');
+    }
+
+    LAST_BATCH = result.batchId;
+    renderResult(result);
+    loadHistory();
+  }catch(e){
+    $('#result').innerHTML = `<div class="banner err">✕ Upload could not complete: ${esc(e.message)}</div>`;
+  }
+}
+
+function renderCommittedResult(validation, commit){
+  $('#result').innerHTML = `
+    <div class="banner ok">✓ Imported <strong>${esc(validation.rowCount)}</strong> rows successfully. Dashboards are now up to date for <strong>${esc(commit.period||'')}</strong>.</div>
+    ${previewTable(validation.preview)}
+    <div class="row section-gap"><span class="muted">Inserted ${esc(commit.inserted||0)} · Updated ${esc(commit.updated||0)} · Deleted ${esc(commit.deleted||0)} · Skipped ${esc(commit.skipped||0)}</span></div>`;
+}
+
+function renderResult(res){
+  if(res.status === 'COMMITTED'){
+    $('#result').innerHTML = `
+      <div class="banner ok">✓ Imported <strong>${esc(res.rowCount)}</strong> rows successfully. Dashboards are now up to date for <strong>${esc(res.period||'')}</strong>.</div>
+      ${previewTable(res.preview)}
+      <div class="row section-gap"><span class="muted">Inserted ${esc(res.inserted||0)} · Updated ${esc(res.updated||0)} · Deleted ${esc(res.deleted||0)} · Skipped ${esc(res.skipped||0)}</span></div>`;
+  } else if(res.status === 'VALIDATED'){
+    $('#result').innerHTML = `
+      <div class="banner ok">✓ Validated <strong>${esc(res.rowCount)}</strong> rows. The import is ready to commit.</div>
+      ${previewTable(res.preview)}
+      <div class="row section-gap">
+        <button class="btn btn-green" onclick="commit('${esc(res.batchId)}')">Commit & recompute scores</button>
+      </div>`;
+  } else {
+    const rows = res.errors.map(e=>`<tr><td>row ${esc(e.row)}</td><td>${esc(e.column)}</td><td><code>${esc(e.value??'')}</code></td><td>${esc(e.reason)}</td></tr>`).join('');
+    const missing = res.missingColumns.length ? `<div class="muted" style="margin-top:8px;">Missing required columns: <code>${res.missingColumns.join(', ')}</code></div>`:'';
+    $('#result').innerHTML = `
+      <div class="banner err">✕ ${esc(res.errorCount)} problem(s) found across ${esc(res.rowCount)} rows. Nothing was loaded. Fix the file and re-upload.</div>
+      ${missing}
+      <div class="err-list"><table><thead><tr><th>Row</th><th>Column</th><th>Value</th><th>Problem</th></tr></thead><tbody>${rows}</tbody></table></div>`;
+  }
+}
+
+function previewTable(rows){
+  if(!rows || !rows.length) return '';
+  const cols = Object.keys(rows[0]);
+  return `<div class="err-list" style="margin-top:12px;"><table><thead><tr>${cols.map(c=>`<th>${c}</th>`).join('')}</tr></thead>
+    <tbody>${rows.map(r=>`<tr>${cols.map(c=>`<td>${r[c]??''}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`;
+}
+
+async function commit(batchId){
+  $('#result').innerHTML = `<div class="banner ok">Committing & recomputing scores…</div>`;
+  try{
+    const r = await fetch(`${API}/api/admin/batches/${batchId}/commit`, {method:'POST'});
+    let res = await r.json().catch(() => ({}));
+    if(!r.ok) throw new Error(res.error || `server error ${r.status}`);
+
+    // Server now returns 202 and commits in the background.
+    if(r.status === 202 && res.jobId){
+      res = await pollJob(`${API}/api/admin/commit-jobs/${res.jobId}`, 'Committing');
+    }
+
+    $('#result').innerHTML = `<div class="banner ok">✓ Committed. Recomputed ${res.touchedEmployers?.length||0} employer dashboard(s) for period <strong>${esc(res.period||'')}</strong>.</div>`;
+    loadHistory();
+  }catch(e){
+    $('#result').innerHTML = `<div class="banner err">✕ Commit failed: ${esc(e.message)}. Check Import history before retrying so you do not duplicate the import.</div>`;
+  }
+}
+
+
+async function revert(batchId){
+  if(!confirm('Revert this import? Only rows that can be safely rolled back will be removed.')) return;
+  try{
+    const r = await fetch(`${API}/api/admin/batches/${batchId}/revert`, {method:'POST'});
+    let d={};
+    try{ d=await r.json(); }catch(_){ }
+    if(!r.ok) throw new Error(d.error || `Revert failed (HTTP ${r.status})`);
+    await loadHistory();
+    alert('Import reverted successfully.');
+  }catch(e){
+    alert(`Could not revert this import: ${e.message}`);
+  }
+}
+
+let HISTORY_LOADING=false;
+async function loadHistory(){
+  if(HISTORY_LOADING) return;
+  HISTORY_LOADING=true;
+  const body=$('#hist-body');
+  try{
+    const r = await fetch(`${API}/api/admin/batches`,{cache:'no-store'});
+    let batches=[];
+    try{ batches = await r.json(); }catch(_){ }
+    if(!r.ok) throw new Error(`HTTP ${r.status}`);
+    if(!batches.length){
+      body.innerHTML = '<tr><td colspan="7" class="muted" style="padding:16px 10px;">No imports yet.</td></tr>';
+      return;
+    }
+    body.innerHTML = batches.map(b=>{
+      const total=Number(b.rowCount||0);
+      const inserted=Number(b.insertedCount||0), updated=Number(b.updatedCount||0), deleted=Number(b.deletedCount||0);
+      const applied=inserted+updated+deleted;
+      const isLiveCommit=b.status==='VALIDATED' && applied>0;
+      const statusClass=isLiveCommit?'COMMITTING':b.status;
+      const statusLabel=isLiveCommit?'COMMITTING':(b.status==='VALIDATED'?'VALIDATED · NOT LIVE':b.status);
+      const historicalFeed=['employees','debt_accounts','policies'].includes(b.reportKey);
+      const authoritative=String(b.uploadedBy||'').includes('(full-refresh)');
+      const remainder=b.status==='COMMITTED'?Math.max(0,total-applied):0;
+      let detail='';
+      if(b.status==='VALIDATED' && applied===0) detail=`validated · 0 current-projection changes applied yet`;
+      else if(isLiveCommit) detail=`${applied.toLocaleString('en-ZA')} current-projection change(s) applied so far`;
+      else if(b.status==='COMMITTED' && historicalFeed) detail=`processed from source · +${inserted.toLocaleString('en-ZA')} current new · ~${updated.toLocaleString('en-ZA')} current rewritten · -${deleted.toLocaleString('en-ZA')} deleted · ${remainder.toLocaleString('en-ZA')} dated observation(s) retained in history${authoritative?' · authoritative rebuild':''}`;
+      else if(b.status==='COMMITTED') detail=`processed from source · +${inserted.toLocaleString('en-ZA')} new · ~${updated.toLocaleString('en-ZA')} rewritten · -${deleted.toLocaleString('en-ZA')} deleted${remainder>0 && !authoritative?` · ${remainder.toLocaleString('en-ZA')} stale skipped`:''}${authoritative?' · authoritative rebuild':''}`;
+      else detail=`rows`;
+      return `<tr>
+        <td>${(MANIFEST?.reports?.find(x=>x.key===b.reportKey)||{}).title||esc(b.reportKey)}</td>
+        <td class="muted">${esc(b.filename)}</td>
+        <td><strong>${total.toLocaleString('en-ZA')}</strong><span class="history-row-detail ${isLiveCommit?'live':''}">${esc(detail)}</span></td>
+        <td><span class="st ${esc(statusClass)}">${esc(statusLabel)}</span></td>
+        <td class="muted">${fmtDate(b.committedAt||b.uploadedAt)}</td>
+        <td><a class="btn btn-ghost" style="padding:5px 11px;font-size:12px;display:inline-block;" href="${API}/api/admin/batches/${esc(b.id)}/download" download>Download CSV</a></td>
+        <td>${b.status==='COMMITTED' && b.revertable
+          ? `<button class="btn btn-ghost" style="padding:5px 11px;font-size:12px;" onclick="revert('${esc(b.id)}')">Revert</button>`
+          : (b.status==='COMMITTED' ? `<span class="muted" style="font-size:11px;" title="${esc(b.revertReason||'This batch cannot be safely reverted.')}">Not reversible</span>` : '')}</td>
+      </tr>`;
+    }).join('');
+  }catch(e){
+    body.innerHTML = `<tr><td colspan="7" class="muted" style="padding:16px 10px;color:#b5391f;">Could not load import history: ${esc(e.message)}</td></tr>`;
+  }finally{
+    HISTORY_LOADING=false;
+  }
+}
+
+function installCompactCollapse(){
+  const ids=["enterprise-operations-card","live-integration"];
+  ids.forEach(function(id){
+    const card=document.getElementById(id); if(!card||card.dataset.collapsibleInstalled)return;
+    const head=card.querySelector('.card-hd'); if(!head)return;
+    card.dataset.collapsibleInstalled='1';
+    const btn=document.createElement('button'); btn.type='button'; btn.className='btn btn-sm compact-toggle'; btn.textContent='Collapse';
+    btn.setAttribute('aria-expanded','true');
+    btn.onclick=function(){ const collapsed=card.classList.toggle('compact-collapsed'); btn.textContent=collapsed?'Expand':'Collapse'; btn.setAttribute('aria-expanded',String(!collapsed)); };
+    head.appendChild(btn);
+  });
+}
+window.addEventListener("load", () => boot(), { once: true });
+window.setInterval(() => {
+  if(document.visibilityState !== 'visible') return;
+  loadHistory();
+}, 1500);
+window.setInterval(() => {
+  if(document.visibilityState !== 'visible') return;
+  Promise.allSettled([loadAdminSecuritySummary(), loadComplianceSummary()]);
+}, 30000);
+</script>
+<script src="/static/shell.js?v=1"></script>
+<script>
+
+function openCompliancePanel(){
+  const el=document.getElementById('compliance-panel');
+  if(!el) return;
+  el.style.display=el.style.display==='none'?'block':'none';
+  if(el.style.display==='block') loadComplianceDetail();
+}
+function compEsc(v){ return esc(v==null?'':String(v)); }
+async function loadComplianceSummary(){
+  try{
+    const r=await fetch('/api/admin/compliance/overview',{cache:'no-store'});
+    if(!r.ok) throw new Error(`HTTP ${r.status}`);
+    const d=await r.json();
+    document.getElementById('comp-activities').textContent=String(d.processingActivities||0);
+    document.getElementById('comp-crossborder').textContent=String(d.crossBorderActivities||0);
+    document.getElementById('comp-requests').textContent=String(d.openDataSubjectRequests||0);
+    document.getElementById('comp-incidents').textContent=String(d.openSecurityIncidents||0);
+    document.getElementById('comp-gaps').textContent=String(d.governanceGaps||0);
+    const el=document.getElementById('comp-status');
+    el.textContent=d.status==='ACTION_REQUIRED'
+      ? 'Action required: review governance gaps, overdue data-subject requests and/or open security incidents.'
+      : 'Governance controls are being monitored. Keep the processing register, vendor register and retention schedule current.';
+    el.style.color=d.status==='ACTION_REQUIRED'?'#b5391f':'#617486';
+  }catch(e){
+    const el=document.getElementById('admin-sec-copy');
+    if(el) el.textContent=`Unable to load security posture: ${e.message}`;
+  }
+}
+async function loadComplianceDetail(){
+  try{
+    const [a,v,r,i,p]=await Promise.all([
+      fetch('/api/admin/compliance/processing-activities').then(x=>x.json()),
+      fetch('/api/admin/compliance/vendors').then(x=>x.json()),
+      fetch('/api/admin/compliance/requests').then(x=>x.json()),
+      fetch('/api/admin/compliance/incidents').then(x=>x.json()),
+      fetch('/api/admin/compliance/retention').then(x=>x.json())
+    ]);
+    document.getElementById('comp-activities-list').innerHTML=(a||[]).slice(0,8).map(x=>`<div class="compliance-item"><strong>${compEsc(x.name)}</strong><small>${compEsc(x.partyRole)} · ${compEsc(x.lawfulBasis)} · PIA: ${compEsc(x.piaStatus)}${x.crossBorder?' · cross-border':''}</small></div>`).join('')||'<div class="compliance-item">No processing activities recorded yet.</div>';
+    document.getElementById('comp-vendors-list').innerHTML=(v||[]).slice(0,8).map(x=>`<div class="compliance-item"><strong>${compEsc(x.name)}</strong><small>${compEsc(x.country)} · ${x.crossBorder?'cross-border':'local'} · approved: ${x.approved?'yes':'no'} · operator agreement: ${x.operatorAgreement?'yes':'no'}</small></div>`).join('')||'<div class="compliance-item">No vendors recorded yet.</div>';
+    document.getElementById('comp-requests-list').innerHTML=(r||[]).slice(0,8).map(x=>`<div class="compliance-item"><strong>${compEsc(x.requestType)}</strong><small>${compEsc(x.requesterEmail)} · ${compEsc(x.status)} · due: ${x.dueAt?compEsc(fmtDate(x.dueAt)):'not set'}</small></div>`).join('')||'<div class="compliance-item">No data-subject requests recorded.</div>';
+    document.getElementById('comp-retention-list').innerHTML=(p||[]).slice(0,8).map(x=>`<div class="compliance-item"><strong>${compEsc(x.dataClass)}</strong><small>${x.retentionDays?compEsc(x.retentionDays+' days'):'event/purpose based'} · ${compEsc(x.deletionMethod)} · legal hold: ${x.legalHold?'yes':'no'}</small></div>`).join('')||'<div class="compliance-item">No retention policies recorded.</div>';
+    document.getElementById('comp-incidents-list').innerHTML=(i||[]).slice(0,8).map(x=>`<div class="compliance-item"><strong>${compEsc(x.title)}</strong><small>${compEsc(x.severity)} · ${compEsc(x.status)} · discovered: ${compEsc(fmtDate(x.discoveredAt))}</small></div>`).join('')||'<div class="compliance-item">No open security incidents.</div>';
+  }catch(_){}
+}
+
+async function loadEnterpriseOperations(){
+  try{
+    const [o,q,r,replica]=await Promise.all([
+      fetch('/api/admin/enterprise/overview',{cache:'no-store'}).then(x=>x.json()),
+      fetch('/api/admin/enterprise/data-quality',{cache:'no-store'}).then(x=>x.json()),
+      fetch('/api/admin/integration/routes',{cache:'no-store'}).then(x=>x.json()),
+      fetch('/api/admin/integration/replica-health',{cache:'no-store'}).then(x=>x.json())
+    ]);
+    document.getElementById('ops-quality').textContent=(q.score??0).toFixed(1)+'%';
+    document.getElementById('ops-source').textContent=o.integration.sourceMode;
+    document.getElementById('ops-store').textContent=o.integration.analyticsMode==='POSTGRES_READ_MODEL'?'PostgreSQL':o.integration.analyticsMode;
+    const freshness=o.integration.freshnessState==='FRESH'?'Fresh':o.integration.freshnessState==='STALE'?'Stale':'Unknown';
+    document.getElementById('ops-freshness').textContent=freshness;
+    document.getElementById('ops-imports').textContent=String(o.imports.open||0);
+    const replicaText = replica.configured ? (replica.reachable ? (replica.readOnly && replica.lagWithinThreshold !== false ? 'Healthy' : 'Attention') : 'Unreachable') : 'Not configured';
+    document.getElementById('ops-architecture').dataset.replica = replicaText;
+    const replicaMode=o.integration.sourceAnalyticsUseReplica?'read replica':'source database';
+    document.getElementById('ops-architecture').innerHTML=
+      '<strong style="color:var(--brand-primary);">Recommended placement:</strong> '+esc(o.integration.sourceMode)+' remains the source of truth. PostgreSQL serves the application read model and governed audit/history. Heavy analytics should run against approved source-side reporting views'+
+      (o.integration.sourceAnalyticsUseReplica?' on a read replica':'')+' rather than the production source database. '+(o.integration.sourceAnalyticsEnabled?'Source-side analytics is enabled.':'Source-side analytics is currently disabled.')+
+      ' No raw SQL is exposed to administrators.';
+    document.getElementById('ops-routes').innerHTML=(r||[]).map(x=>'<tr><td><code>'+esc(x.reportKey)+'</code></td><td>'+esc(x.workloadClass||'POSTGRES_READ_MODEL')+'</td><td>'+esc(x.executionMode)+'</td><td>'+esc(x.sourceView||'not configured')+'</td><td>'+ (x.useReplica?'Required':'No') +'</td><td>'+ (x.enabled?'Yes':'No') +'</td><td class="muted">'+esc(x.rationale||'No rationale recorded')+'</td></tr>').join('')||'<tr><td colspan="7" class="muted">No per-feed routes configured. PostgreSQL is used by default.</td></tr>';
+    const c=q.checks||{};
+    document.getElementById('ops-quality-detail').innerHTML='<div class="compliance-grid">'+
+      '<div class="compliance-box"><h3>Completeness</h3><p>'+esc(c.employeeRecordsChecked||0)+' employee records checked. Missing income band: '+esc(c.employeesMissingIncomeBand||0)+'. Missing site: '+esc(c.employeesMissingSite||0)+'.</p></div>'+
+      '<div class="compliance-box"><h3>Freshness</h3><p>Employees older than 7 days: '+esc(c.staleEmployeesOver7Days||0)+'. Salary advances older than 7 days: '+esc(c.staleSalaryAdvancesOver7Days||0)+'.</p></div>'+
+    '</div>';
+  }catch(e){
+    const el=document.getElementById('ops-architecture'); if(el) el.textContent='Could not load enterprise operations: '+e.message;
+  }
+}
+
+function toggleMLOpsAlert(){
+  const el=document.getElementById('mlops-alert-detail');
+  if(el) el.classList.toggle('open');
+}
+async function loadMLOpsAlert(){
+  const card=document.getElementById('admin-mlops-alert');
+  if(!card) return;
+  try{
+    const r=await fetch('/api/admin/mlops/events?limit=50',{cache:'no-store'});
+    if(!r.ok) throw new Error('MLOps events unavailable');
+    const events=await r.json();
+    const latestByReport=new Map();
+    for(const e of (Array.isArray(events)?events:[])){
+      if(e.eventType!=='DATA_QUALITY_GATE') continue;
+      const reportKey=e.metadata?.reportKey||'dataset';
+      if(!latestByReport.has(reportKey)) latestByReport.set(reportKey,e);
+    }
+    const latest=[...latestByReport.values()].filter(e=>e.status && e.status!=='PASS');
+    const issue=latest.find(e=>e.status==='QUARANTINE') || latest.find(e=>e.status==='REVIEW');
+    if(!issue){
+      card.classList.remove('show');
+      document.getElementById('mlops-alert-detail')?.classList.remove('open');
+      return;
+    }
+    card.classList.add('show');
+    const meta=issue.metadata||{};
+    const findings=Array.isArray(meta.findings)?meta.findings:[];
+    const blocking=issue.status==='QUARANTINE';
+    const badge=document.getElementById('mlops-alert-badge');
+    if(badge){
+      badge.textContent=blocking?'ACTION REQUIRED':'REVIEW ONLY';
+      badge.style.color=blocking?'#b5391f':'#8a5a10';
+      badge.style.background=blocking?'#fdecea':'#fff8e8';
+      badge.style.borderColor=blocking?'#f3c9c1':'#efd49b';
+    }
+    document.getElementById('mlops-alert-summary').textContent=blocking
+      ? `QUARANTINE: ${meta.reportKey||'incoming dataset'} was blocked before live-table commit. ${meta.findingCount||findings.length||0} issue(s) require action.`
+      : `REVIEW: ${meta.reportKey||'incoming dataset'} loaded successfully with ${meta.findingCount||findings.length||0} advisory warning(s). No rows were blocked.`;
+    const detail=document.getElementById('mlops-alert-detail');
+    detail.innerHTML=
+      `<div class="mlops-summary"><strong>What is off:</strong> ${esc(issue.modelKey||'data-quality')} detected abnormal incoming data.</div>`+
+      (findings.slice(0,8).map(f=>`<div class="mlops-finding"><strong>${esc(f.code||'DATA_QUALITY')}</strong> · ${esc(f.field||'dataset')} — ${esc(f.message||'Review this finding.')}<br><span class="muted"><strong>Fix:</strong> ${esc(f.action||'Correct the source data and retry the load.')}</span></div>`).join('')||
+       '<div class="mlops-finding">Review the MLOps event metadata for the full diagnostic record.</div>');
+  }catch(_){}
+}
+
+async function loadAdminSecuritySummary(){
+  try{
+    const r=await fetch('/api/admin/security/overview',{cache:'no-store'});
+    if(!r.ok) throw new Error(`HTTP ${r.status}`);
+    const d=await r.json();
+    document.getElementById('admin-sec-live').textContent=String(d.activeSessions??0);
+    document.getElementById('admin-sec-failed').textContent=String(d.failedLogins24h||0);
+    document.getElementById('admin-sec-alerts').textContent=String(d.openAlerts||0);
+    document.getElementById('admin-sec-success').textContent=String(d.successfulLogins24h||0);
+    const el=document.getElementById('admin-sec-copy');
+    el.textContent=d.riskState==='Good' ? 'Security posture is clear. Open the Security & identity centre for active sessions and recent sign-ins.' : 'Attention is required. Review open alerts and recent sign-ins before making further access changes.';
+  }catch(_){}
+}
+</script>
+<script src="/static/admin-source-status.js?v=1"></script>
+</body>
+</html>
+<script>
+function toggleChannelPartners(){
+  const card=document.getElementById('channel-partners-card'); if(!card) return;
+  const body=card.querySelector('.card-bd'), btn=card.querySelector('.card-hd button');
+  const collapsed=body.style.display==='none'; body.style.display=collapsed?'':'none'; if(btn) btn.textContent=collapsed?'Collapse':'Expand';
+}
+</script>
