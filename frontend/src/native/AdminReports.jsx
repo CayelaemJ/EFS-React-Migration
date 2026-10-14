@@ -280,6 +280,7 @@ export function AdminReportsProvider({ children }) {
         select,
         upload,
         commit,
+        clearResult: () => setResult(null),
         result,
         progress,
         error,
@@ -290,6 +291,10 @@ export function AdminReportsProvider({ children }) {
     </Context.Provider>
   );
 }
+export function useClearReportResult() {
+  return useContext(Context).clearResult;
+}
+
 export function ReportPicker() {
   const {
     manifest,

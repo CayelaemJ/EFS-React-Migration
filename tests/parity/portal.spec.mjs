@@ -1660,3 +1660,42 @@ for (const width of [1440, 390])
     }
     expect(measurements[1]).toEqual(measurements[0]);
   });
+
+test('React reset requires both confirmations, blocks duplicate requests and recovers failures', async ({page})=>{
+  await mockApi(page);
+  let requests=0, pendingRoute;
+  await page.route('**/api/admin/reset-all',route=>{requests++;pendingRoute=route;});
+  await page.goto(url+'/admin');
+  await page.locator('#reset-btn').click();
+  await expect(page.locator('#reset-confirm')).toBeFocused();
+  const rebuild=page.locator('#reset-area').getByRole('button',{name:'Reset & rebuild',exact:true});
+  await rebuild.click();
+  await expect(page.locator('#reset-msg')).toContainText('Please type RESET exactly');
+  expect(requests).toBe(0);
+  await page.locator('#reset-confirm').fill('RESET');
+  page.once('dialog',dialog=>dialog.dismiss());
+  await rebuild.click();
+  expect(requests).toBe(0);
+  page.once('dialog',dialog=>dialog.accept());
+  await rebuild.click();
+  await expect.poll(()=>requests).toBe(1);
+  expect(pendingRoute.request().method()).toBe('POST');
+  expect(pendingRoute.request().postDataJSON()).toEqual({confirm:'RESET'});
+  await expect(rebuild).toBeDisabled();
+  await expect(page.locator('#reset-btn')).toBeDisabled();
+  await expect(page.locator('#reset-area').getByRole('button',{name:'Cancel'})).toBeDisabled();
+  await pendingRoute.fulfill({status:503,json:{error:'<img src=x> Source unavailable'}});
+  await expect(page.locator('#reset-msg')).toContainText('last successful dashboard remains visible');
+  await expect(page.locator('#reset-msg')).toContainText('<img src=x> Source unavailable');
+  await expect(page.locator('#reset-msg img')).toHaveCount(0);
+  await expect(page.locator('#reset-confirm')).toHaveValue('RESET');
+  page.once('dialog',dialog=>dialog.accept());
+  await rebuild.click();
+  await expect.poll(()=>requests).toBe(2);
+  await pendingRoute.fulfill({json:{ok:true,cleared:{employees:5,payroll:7},overwrittenRows:15}});
+  await expect(page.locator('#reset-msg')).toContainText('Cleared 12 source-derived rows and accepted 15 rows');
+  await expect(page.locator('#reset-confirm')).toHaveValue('');
+  await expect(rebuild).toBeEnabled();
+  await page.locator('#reset-area').getByRole('button',{name:'Cancel'}).click();
+  await expect(page.locator('#reset-area')).toHaveCount(0);
+});

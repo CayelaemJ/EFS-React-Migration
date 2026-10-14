@@ -28,7 +28,8 @@ Brand Engine 1.4, supplied The Fixer normal/reversed SVG assets, updated styles,
 | Admin audit and engagement | React critical-event ranking, date-window selection, statistics and histories | Authenticated telemetry verification |
 | Admin security, compliance and MLOps | React summaries, independent register requests, alert details, polling and retry | Live telemetry and role verification |
 | Enterprise operations | React summary, source/read-model placement, routes, replica status, quality detail and refresh/collapse actions | Authenticated source verification |
-| Remaining administration | React JSX with retained integration/partner/preview/reset controllers | Full conversion to React state/components |
+| Reset and rebuild | React confirmation, pending state, error recovery and dependent-panel refresh | Authenticated migration-environment verification |
+| Remaining administration | React JSX with retained integration/partner/preview controllers | Full conversion to React state/components |
 
 The users entry no longer starts the legacy users or user-security scripts. Source HTML remains a reference fixture. Default Admin/Superadmin shells use The Fixer; custom partner dashboards show the partner identity alone, matching the latest source product decision.
 
@@ -40,7 +41,7 @@ The screenshot gate remains a maximum differing-pixel ratio of 0.5%, with per-pi
 
 ## Railway and publication
 
-The migration-test app is healthy at `https://efs-react-migration-migration-test.up.railway.app`. The inspected deployment is `d73e4d9b-fc5a-4dad-b7af-0b54bb86036e` (SUCCESS). It still follows `migration/newchanges-react-parity`, has `/health` configured, and uses a service-level `prisma db push` predeploy override. No Railway configuration, variables or database data were changed by this checkpoint.
+At the earlier Railway inspection, the migration-test app was healthy at `https://efs-react-migration-migration-test.up.railway.app`. The inspected deployment is `d73e4d9b-fc5a-4dad-b7af-0b54bb86036e` (SUCCESS). At that inspection it followed `migration/newchanges-react-parity`, has `/health` configured, and uses a service-level `prisma db push` predeploy override. No Railway configuration, variables or database data were changed by this checkpoint.
 
 This checkpoint uses `migration/newchanges-upstream-react` to avoid automatically deploying unfinished work from the service's tracked branch. Main is not merged. Railway OAuth exposes variable names with values redacted; no migration database URL or admin password is available for authenticated testing. Health and anonymous authentication responses were checked, but authenticated database/Railway workflows remain unverified.
 
@@ -75,3 +76,9 @@ The request-origin contract test exposed an upstream cookie-hook ordering issue:
 Wellness now renders its gauge, driver rows, RAG state and unavailable values with React, retaining the source colour tokens in light/dark themes. Enterprise operations now owns its four reads, refresh/collapse controls, quality detail, route rows and replica status in React. Its failures remain visible and recover through Refresh.
 
 On 14 October, NewChanges advanced again to `348cf2e1bdf8084d5d19115c571563d9f08efd12` (24 further commits). That newer Neon/shared-database, refresh and semantic-layer delta is **not incorporated in this checkpoint** and requires a separate reconciliation. This checkpoint must not be described as current with that source head or as ready for deployment.
+
+## October 14 reset conversion
+
+The reset-and-rebuild panel now owns its confirmation input, visibility, pending state and response messages in React. Both typed RESET and the confirmation dialog remain required. While the request is running, the submit, reopen and cancel actions are disabled to prevent duplicate submissions. Failed requests preserve the confirmation for retry, and API error text is escaped. Success clears the native report result and refreshes import history, governance and the remaining integration panel through a temporary data-refresh bridge. Optional refresh failures cannot overwrite the published-success result. No reset has been executed against a real database.
+
+The preceding `e5636077b3cd79bf3cb946225ba0402dbc8353b7` checkpoint passed hosted CI run `38535141081`, including all 60 browser checks. This follow-up adds a mocked reset workflow covering invalid confirmation, dialog cancellation, pending controls, failure/retry and success.

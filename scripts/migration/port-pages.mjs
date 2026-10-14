@@ -90,6 +90,7 @@ for(const file of fs.readdirSync('public').filter(x=>x.endsWith('.html'))){
    if(!governanceLayout&&id==='enterprise-operations-card')return '<EnterpriseOperations/>';
    if(!governanceLayout&&id==='admin-compliance-strip')return '<Compliance/>';
    if(!governanceLayout&&id==='admin-mlops-alert')return '<MLOpsAlert/>';
+   if(n.tagName==='div'&&n.childNodes?.some(child=>child.childNodes?.some(title=>title.tagName==='h2'&&title.childNodes?.some(text=>text.value==='Danger zone'))))return '<AdminReset/>';
    if(id==='audit-rows')return '<AuditRows/>';
    if(!insightsLayout&&n.tagName==='div'&&n.childNodes?.some(child=>child.childNodes?.some(title=>title.tagName==='h2'&&title.childNodes?.some(text=>text.value==='Client Reach & Engagement'))))return '<Engagement/>';
    if(!emailLayout&&id==='email-settings-card')return '<AdminEmailPanel/>';
@@ -234,6 +235,10 @@ for(const file of fs.readdirSync('public').filter(x=>x.endsWith('.html'))){
   if(sectionsStart<0||sectionsEnd<0)throw new Error('Missing section permissions migration boundary');
   controllerSource=controllerSource.slice(0,sectionsStart)+controllerSource.slice(sectionsEnd);
   controllerSource=controllerSource.replace("    ['sections',loadSections],\n",'');
+  const resetStart=controllerSource.indexOf('// ── danger zone: full reset');
+  const resetEnd=controllerSource.indexOf('async function boot(){',resetStart);
+  if(resetStart<0||resetEnd<0)throw new Error('Missing reset controller boundary');
+  controllerSource=controllerSource.slice(0,resetStart)+'configureResetRefresh(()=>Promise.allSettled([loadInteg(),loadIntegLogs()]));\n'+controllerSource.slice(resetEnd);
   const manifestStart=controllerSource.indexOf("  try{\n    const r=await fetch(`${API}/api/admin/reports`");
   const manifestEnd=controllerSource.indexOf('  const optionalLoads=[',manifestStart);
   if(manifestStart<0||manifestEnd<0)throw new Error('Missing report manifest migration boundary');
@@ -276,7 +281,7 @@ for(const file of fs.readdirSync('public').filter(x=>x.endsWith('.html'))){
  if(name==='dashboard')fs.writeFileSync(`${out}/${name}.jsx`,code.replace("import React from 'react';","import React from 'react';\nimport {Portfolio,updatePortfolio} from '../native/Portfolio.jsx';"));
  if(name==='admin')fs.writeFileSync(`${out}/${name}.jsx`,code.replace("import React from 'react';", "import React from 'react';\nimport {AdminEmailPanel,AdminAutomationPanel} from '../native/AdminSettings.jsx';\nimport {AdminSections} from '../native/AdminSections.jsx';\nimport {ReportPicker,ReportWorkspace,ImportHistoryRows,initializeReports,refreshImportHistory} from '../native/AdminReports.jsx';"));
  const native=fs.existsSync(`frontend/src/native/${name}.jsx`);
- if(name==='admin')fs.writeFileSync(`${out}/${name}.jsx`,fs.readFileSync(`${out}/${name}.jsx`,'utf8').replace("import React from 'react';","import React from 'react';\nimport {EnterpriseOperations} from '../native/EnterpriseOperations.jsx';"));
+ if(name==='admin')fs.writeFileSync(`${out}/${name}.jsx`,fs.readFileSync(`${out}/${name}.jsx`,'utf8').replace("import React from 'react';","import React from 'react';\nimport {AdminReset,configureResetRefresh} from '../native/AdminReset.jsx';\nimport {EnterpriseOperations} from '../native/EnterpriseOperations.jsx';"));
  if(name==='dashboard')fs.writeFileSync(`${out}/${name}.jsx`,fs.readFileSync(`${out}/${name}.jsx`,'utf8').replace("import React from 'react';","import React from 'react';\nimport {Wellness,updateWellness} from '../native/Wellness.jsx';"));
  if(name==='admin')fs.writeFileSync(`${out}/${name}.jsx`,fs.readFileSync(`${out}/${name}.jsx`,'utf8').replace("import React from 'react';","import React from 'react';\nimport {AdminSecurity,Compliance,MLOpsAlert,refreshGovernance} from '../native/AdminGovernance.jsx';"));
  if(name==='admin')fs.writeFileSync(`${out}/${name}.jsx`,fs.readFileSync(`${out}/${name}.jsx`,'utf8').replace("import React from 'react';","import React from 'react';\nimport {AuditRows,Engagement} from '../native/AdminInsights.jsx';"));
