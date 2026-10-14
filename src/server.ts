@@ -52,7 +52,7 @@ const app = Fastify({
   logger: { redact: ["req.headers.authorization", "req.headers.cookie", "res.headers[\"set-cookie\"]"] },
   // Behind Railway's proxy, req.ip is the proxy unless this is enabled, which
   // collapsed every visitor into a single rate-limit bucket.
-  trustProxy: process.env.TRUST_PROXY === "false" ? false : true,
+  trustProxy: (address: string, hop: number) => process.env.TRUST_PROXY === "true" && hop === 1,
   bodyLimit: 8 * 1024 * 1024, // JSON bodies (partner logos are data URLs); file uploads are streamed via multipart and capped separately
   connectionTimeout: 0,
   keepAliveTimeout: 75_000,
@@ -137,18 +137,28 @@ app.addHook("onRequest", async (req, reply) => {
     const origin = req.headers.origin;
     const referer = req.headers.referer;
     if (!authHeader) {
-      const hasSessionCookie = Boolean(req.cookies?.session);
-      const forwardedProto = String(req.headers["x-forwarded-proto"] || req.protocol).split(",")[0].trim();
+      // This onRequest hook can run before the cookie plugin's hook. Parse
+      // the header with the same plugin parser when cookies are not populated.
+      const hasSessionCookie = Boolean(req.cookies?.session || app.parseCookie(req.headers.cookie || "").session);
       const configuredOrigin = String(process.env.PUBLIC_BASE_URL || "").replace(/\/$/, "");
-      const expectedOrigin = configuredOrigin || `${forwardedProto}://${req.headers.host}`;
       const suppliedOrigin = origin || (() => { try { return new URL(referer as string).origin; } catch { return ""; } })();
+      // TLS may terminate at Railway before Fastify sees the request. Compare the
+      // browser origin to the externally requested host, not the internal HTTP
+      // protocol. Never accept a different hostname just because it uses HTTPS.
+      const requestHost = String(req.headers.host || "").toLowerCase();
+      const sameHostOrigin = (() => {
+        try {
+          const parsed = new URL(suppliedOrigin);
+          return parsed.host.toLowerCase() === requestHost &&
+            (parsed.protocol === "https:" || (req.protocol === "http" && parsed.protocol === "http:"));
+        } catch { return false; }
+      })();
       // Browser session requests must prove same-origin. Bearer-token clients
       // remain usable without Origin/Referer because they have no browser cookie.
       if (hasSessionCookie && !suppliedOrigin) return reply.code(403).send({ error: "same-origin request required" });
       // A custom domain plus the platform domain (or a preview URL) are both legitimate; a cross-site
       // attacker's Origin can never equal the host this request was addressed to.
-      const hostOrigin = `${forwardedProto}://${req.headers.host}`;
-      if (suppliedOrigin && suppliedOrigin !== expectedOrigin && suppliedOrigin !== hostOrigin) {
+      if (suppliedOrigin && !sameHostOrigin && suppliedOrigin !== configuredOrigin) {
         return reply.code(403).send({ error: "cross-origin request rejected" });
       }
     }

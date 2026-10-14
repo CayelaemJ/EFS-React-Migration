@@ -23,6 +23,8 @@ export function fixture(url,method='GET'){
  if(p==='/api/users')return method==='GET'?users:{ok:true};
  if(p==='/api/admin/sections')return sections;
  if(p==='/api/admin/email-settings')return {};
+ if(p==='/api/admin/enterprise/overview')return {integration:{sourceMode:'MYSQL',analyticsMode:'POSTGRES_READ_MODEL',freshnessState:'FRESH',sourceAnalyticsUseReplica:false,sourceAnalyticsEnabled:false},imports:{open:0}};
+ if(p==='/api/admin/analytics/summary')return {activeAccountCount:1,uniqueSignedInUsers:1,totalLogins:4,totalPageviews:10,totalInteractions:8,avgScrollDepth:65,avgSessionSeconds:42,trend:[{date:'2026-10-01',logins:4}],topPages:[{path:'/dashboard',views:10}],byUser:[{id:'admin-1',name:'Test Administrator',email:'test@example.invalid',logins:4,pageviews:10,avgScrollDepth:65}]};
  if(p==='/api/admin/reports')return {loadOrder:LOAD_ORDER,reports:formatManifest(REPORT_FORMATS)};
  if(p.endsWith('/overview')||p.endsWith('/database')||p.endsWith('/integration')||p.endsWith('/email')||p.endsWith('/automations')||p.endsWith('/data-quality')||p.endsWith('/replica-health'))return {};
  if(p.includes('/engagement'))return {summary:{},daily:[],topUsers:[],topPages:[],events:[]};

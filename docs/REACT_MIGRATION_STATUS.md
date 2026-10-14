@@ -1,10 +1,10 @@
-# React migration status — 9 October 2026
+# React migration status — 14 October 2026
 
 The migration is **not ready for acceptance**. Dashboard and administration controllers still need conversion, and real authenticated workflows require migration-test credentials.
 
 ## Source
 
-The supplied ZIP was based on NewChanges commit `115a28a12ddc7ea1b5effbdb0baa354824ce7841`. The current source target is `19f32c1905371ea8868eef82a6078c4439c93300`, verified on 9 October. The initial reconciliation imported 53 changed files through `ed5a71a7cf9ee5ea5d3b337924be1db94a8a76f8`; the subsequent source update changes custom partner portals to partner-only branding. Existing native React components are retained rather than replaced with upstream controllers.
+The supplied ZIP was based on NewChanges commit `115a28a12ddc7ea1b5effbdb0baa354824ce7841`. This checkpoint incorporates source through `528be408e07042b449f5258f23bd00702df09a20`. The newer `348cf2e1bdf8084d5d19115c571563d9f08efd12` head observed on 14 October still requires reconciliation. The initial import covered 53 changed files through `ed5a71a7cf9ee5ea5d3b337924be1db94a8a76f8`; subsequent updates include partner-only custom portals and the security, permissions and branding fixes described below. Existing native React components are retained rather than replaced with upstream controllers.
 
 Brand Engine 1.4, supplied The Fixer normal/reversed SVG assets, updated styles, source-status UI, post-login greeting, dashboard/admin changes, backend source synchronisation, daily refresh, import, snapshot, report, partner and job services have been reconciled. The source frontend starter is not the production entry point: production uses the twelve React page entries and shared components. No Prisma schema changes were introduced by the source delta. SQL/deployment script changes are included but have not been executed against Railway.
 
@@ -19,11 +19,16 @@ Brand Engine 1.4, supplied The Fixer normal/reversed SVG assets, updated styles,
 | Security centre | React sessions, alerts, sign-in/device/access history, database status, audit export, profile drawer and session revocation | Live security telemetry and server integration verification |
 | Source-status badge | React polling, event refresh, visibility refresh and cleanup | Live source-job verification |
 | Dashboard dialogs | React Quick Actions and scheduled reports | Authenticated delivery and SMTP verification |
-| Employer and portfolio dashboards | React JSX with retained imperative calculation/render controllers | Full conversion to React state/components; broader data permutations |
+| Portfolio dashboard | React employer selection, KPI totals, heatmap, rankings and metric explanations | Shared dashboard authentication, data-fetching, audience switch and export controllers remain; broader role/data verification |
+| Employer wellness | Native React gauge, status colours, driver rows and incomplete-data handling | Shared dashboard data/theme controller still supplies snapshots |
+| Remaining employer dashboard | React JSX with retained imperative calculation/render controllers | Full conversion to React state/components; broader data permutations |
 | Administration reports/imports | React report selection, templates, file/drop upload progress, validation, background jobs, commit and live import history | Authenticated database import/revert verification |
 | Dashboard section permissions | React visibility, role checkboxes, user grants/revocations, loading/error recovery | Authenticated permission-write verification |
 | Email and automations | React controlled provider/SMTP/Resend forms, run-now actions, schedules and delivery history | Real SMTP/Resend delivery and automation verification |
-| Remaining administration | React JSX with retained integration/security/compliance/audit/engagement/partner/preview/reset controllers | Full conversion to React state/components |
+| Admin audit and engagement | React critical-event ranking, date-window selection, statistics and histories | Authenticated telemetry verification |
+| Admin security, compliance and MLOps | React summaries, independent register requests, alert details, polling and retry | Live telemetry and role verification |
+| Enterprise operations | React summary, source/read-model placement, routes, replica status, quality detail and refresh/collapse actions | Authenticated source verification |
+| Remaining administration | React JSX with retained integration/partner/preview/reset controllers | Full conversion to React state/components |
 
 The users entry no longer starts the legacy users or user-security scripts. Source HTML remains a reference fixture. Default Admin/Superadmin shells use The Fixer; custom partner dashboards show the partner identity alone, matching the latest source product decision.
 
@@ -52,3 +57,21 @@ The Dashboard Sections panel now renders visibility, allowed roles and individua
 ## Email and automation checkpoint
 
 System Email, scheduled-report listings, delivery history and automation settings/actions now use React state and preserve the original NewChanges layout. The legacy email draft, settings loader/save/test, automation and history controllers are removed from production. The generator produces a declarative layout with controlled inputs and option values; static styles no longer require imperative attribute updates in these panels. Responsive and dark-mode overrides use stable classes rather than depending on HTML style-string formatting. Failed operations retain drafts; successful settings saves clear submitted credential fields. Automation actions and delivery tests refresh status/history without overwriting unrelated edits. Empty credential fields are omitted to retain server-side secrets. Requests are aborted on unmount and competing writes are prevented. Schedule/delivery values are rendered as text. Browser coverage adds save-failure recovery, credential clearing, provider switching, all three run-now kinds, load retry, escaped delivery content, and source dark-mode geometry/colour checks at desktop/mobile sizes. SMTP/Resend delivery, Slack, account deactivation, database writes and scheduled jobs have not been exercised against a live environment.
+
+## Portfolio and admin insights checkpoint
+
+NewChanges remains at `19f32c1905371ea8868eef82a6078c4439c93300`, rechecked on 12 October. Portfolio employer filters, selection, KPI aggregation, heatmap cells, league sorting and metric definitions now render directly from React state. The original calculations and missing-data rules are retained: unavailable measures are excluded from averages/rankings, risk measures rank highest risk first, and one-employer heatmap columns remain neutral. A late portfolio response updates an already-open view; explicit demo mode is required before seeded employers can be displayed. The shared dashboard still supplies the data snapshot and owns authentication, fetching, audience switching and export. Employer rendering remains transitional.
+
+Admin audit, engagement, security summaries, compliance registers and MLOps alerts are native React. Critical audit changes still take priority over recency with five displayed entries and full CSV export. Requests check status, abort on cleanup, and expose retry; changing engagement windows cancels the old request. Compliance register failures remain independent and no longer overwrite the security summary. Security/compliance summaries refresh every 30 seconds while visible. MLOps uses the latest gate per dataset and prioritises quarantine over advisory review, with escaped findings. The remaining reset controller notifies React to refresh these panels after reset.
+
+New browser coverage exercises portfolio selection/missing measures/risk ordering, delayed responses, critical audit ranking, engagement recovery/window changes, independent register recovery and MLOps priority/escaped content. Portfolio screenshots compare desktop/mobile layouts in light and dark themes at the existing 0.5% gate. Mobile captures select the portfolio at desktop width before resizing because the source hides its audience switch on small screens; this is not proof of mobile audience navigation. GitHub CI is rerun on the published checkpoint. No live database, delivery or Railway changes are part of this checkpoint.
+
+## October 13 source reconciliation and wellness/enterprise conversion
+
+The source target for this checkpoint is `528be408e07042b449f5258f23bd00702df09a20`. Its 25 commits after `19f32c1` are reconciled: preserved section permission defaults, session invalidation before access changes, malformed-password-hash handling, per-request API destination validation, TLS-termination-aware origin checks, privacy notice additions, source history, gauge status colours and fixed default Admin/Superadmin branding across partner filters/theme changes. Migration-specific React routes, section API guards and completed-job responses are retained. Source section UI fixes are covered by the existing native React save/error flow rather than restarting legacy code.
+
+The request-origin contract test exposed an upstream cookie-hook ordering issue: this onRequest check may run before request cookies are populated. It now falls back to the cookie plugin's header parser. Isolated Fastify tests verify matching external HTTPS origins, reject foreign origins and reject missing-origin cookie requests. Runtime tests exercise invalid password hashes, repeated section initialisation without overwriting saved roles, and session invalidation before a failed access-change write. No live records are changed.
+
+Wellness now renders its gauge, driver rows, RAG state and unavailable values with React, retaining the source colour tokens in light/dark themes. Enterprise operations now owns its four reads, refresh/collapse controls, quality detail, route rows and replica status in React. Its failures remain visible and recover through Refresh.
+
+On 14 October, NewChanges advanced again to `348cf2e1bdf8084d5d19115c571563d9f08efd12` (24 further commits). That newer Neon/shared-database, refresh and semantic-layer delta is **not incorporated in this checkpoint** and requires a separate reconciliation. This checkpoint must not be described as current with that source head or as ready for deployment.

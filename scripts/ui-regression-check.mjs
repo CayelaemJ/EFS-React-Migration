@@ -168,9 +168,9 @@ must(
   server.includes("payload.theme = await themeForEmployer(employer.id)"),
   "dashboard APIs must preserve an assigned user's partner theme and otherwise publish the selected employer's white-label theme"
 );
-must(pages.dashboard.includes("applyTheme(live.theme, me)") && pages.dashboard.includes("applyEmployerScopedTheme(theme)"), "dashboard must apply the selected employer partner theme to employer content");
+must(pages.dashboard.includes("applyTheme(live.theme, me)"), "dashboard must resolve the selected employer theme using the current user's role");
 must(pages.dashboard.includes("applyDefaultPortalTheme();") && pages.dashboard.includes("const privileged=user && ['ADMIN','SUPERADMIN'].includes"), "Admin/Superadmin shell must retain the EFS default identity");
-must(pages.dashboard.includes("target.setAttribute('data-partner-theme','1')"), "partner branding must be scoped to employer dashboard content for privileged users rather than leaking into the control-plane shell");
+must(/if\(privileged\)\{\s*clearEmployerScopedTheme\(\);\s*applyDefaultPortalTheme\(\);\s*return;/.test(pages.dashboard), "Admin/Superadmin must keep original branding across partner filters");
 must(read("src/services/partnerService.ts").includes('user?.role === "ADMIN" || user?.role === "SUPERADMIN"'), "Admin/Superadmin user theme resolution must always return the default empower-fin theme");
 must(pages.admin.includes("function partnerPreviewTokens(p)") && pages.admin.includes("BrandEngine.themeTokens(brand,'dark')"), "partner cards must derive their preview palette through Brand Engine");
 must(pages.admin.includes("background:var(--preview-surface,var(--brand-primary))") && pages.admin.includes("color:var(--preview-text,#fff)"), "partner preview must use its own contrast-safe surface and foreground");

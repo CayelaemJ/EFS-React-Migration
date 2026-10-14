@@ -60,6 +60,12 @@ assert.equal(
   404,
 );
 const logo = await app.inject({ method: "GET", url: "/static/logo.png" });
+// Railway terminates TLS before Fastify; matching external HTTPS origins must
+// work without trusting arbitrary forwarded headers. No database calls occur.
+for (const [origin,status] of [['https://portal.example.invalid',404],['https://attacker.example.invalid',403],['',403]]) {
+  const response=await app.inject({method:'POST',url:'/api/__origin-contract-test',headers:{host:'portal.example.invalid',cookie:'session=isolated-origin-test',...(origin?{origin}:{}),'x-forwarded-proto':'https'}});
+  assert.equal(response.statusCode,status,`origin ${origin||'missing'}`);
+}
 assert.equal(logo.statusCode, 200);
 assert.match(logo.headers["content-type"], /image\/png/);
 // Exercise the real session resolver and route guards with isolated data.
@@ -149,3 +155,4 @@ try {
 console.log(
   "PASS: production React routes, auth redirects, static access restrictions, logo and health endpoint",
 );
+await import('./upstream-migration-contract.test.mjs');

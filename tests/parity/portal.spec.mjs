@@ -8,10 +8,308 @@ import {
   users,
   sections,
   dashboard,
+  portfolio,
   fixture,
 } from "./fixtures.mjs";
 import { completedJobResponse } from "../../dist/services/jobResponses.js";
 const url = "http://127.0.0.1:4100";
+test('React enterprise operations refreshes routes, replica status and recovers failed reads',async({page})=>{
+  await mockApi(page,{'/api/admin/integration/replica-health':{configured:true,reachable:true,readOnly:true,lagWithinThreshold:true},'/api/admin/enterprise/data-quality':{score:92.5,checks:{employeeRecordsChecked:100,employeesMissingSite:2}}});
+  let fail=true;
+  await page.route('**/api/admin/integration/routes',route=>route.fulfill(fail?{status:503,json:{error:'Routes unavailable'}}:{json:[{reportKey:'employees',executionMode:'SOURCE_VIEW',sourceView:'<img src=x>',useReplica:true,enabled:true}]}));
+  await page.goto(url+'/admin');
+  await expect(page.locator('#ops-architecture')).toContainText('Routes unavailable');
+  await expect(page.locator('#ops-quality')).toHaveText('92.5%');
+  await expect(page.locator('#ops-architecture')).toHaveAttribute('data-replica','Healthy');
+  await page.locator('#enterprise-operations-card .compact-toggle').click();
+  await expect(page.locator('#enterprise-operations-card .card-bd')).not.toBeVisible();
+  await page.locator('#enterprise-operations-card .compact-toggle').click();
+  fail=false;
+  await page.locator('#enterprise-operations-card').getByRole('button',{name:'Refresh',exact:true}).click();
+  await expect(page.locator('#ops-routes')).toContainText('employees');
+  await expect(page.locator('#ops-routes')).toContainText('<img src=x>');
+  await expect(page.locator('#ops-routes img')).toHaveCount(0);
+  await expect(page.locator('#ops-architecture')).toContainText('Recommended placement:');
+  await expect(page.locator('#ops-store')).toHaveText('PostgreSQL');
+});
+test('React wellness updates status colours and preserves incomplete-data semantics',async({page})=>{
+  await mockApi(page);
+  let score=32,complete=true;
+  await page.route('**/api/employers/*/dashboard**',route=>route.fulfill({json:{...dashboard,wellness:{...dashboard.wellness,score,complete,drivers:[{name:'Engagement',score:score,note:'<img src=x>'},{name:'Cashflow relief',score:null,available:false}]}}}));
+  await page.goto(url+'/dashboard');
+  for(const [value,token] of [[32,'high'],[50,'mid'],[80,'low']]){
+    score=value;await page.reload();
+    await expect(page.locator('#wellness svg text').first()).toHaveText(String(value));
+    await expect(page.locator('#wellness svg text').first()).toHaveAttribute('fill',`var(--chart-${token})`);
+    await expect(page.locator('#wellness .wd-state').last()).toHaveText('Unavailable');
+    await expect(page.locator('#wellness img')).toHaveCount(0);
+    for(const dark of [false,true]){
+      if(dark)await page.locator('.portal-theme-quick').click();
+      const colour=await page.locator('#wellness .wellness-band').evaluate(el=>getComputedStyle(el).color);
+      await expect(page.locator('#wellness svg text').first()).toHaveCSS('fill',colour);
+    }
+  }
+  score=null;complete=false;await page.reload();
+  await expect(page.locator('#wellness')).toContainText('Data incomplete');
+  await expect(page.locator('#wellness svg')).toHaveCount(0);
+  await expect(page.locator('#wellness')).toContainText('Missing data is never treated as zero.');
+});
+test('React governance isolates failed registers and renders MLOps findings safely',async({page})=>{
+  await mockApi(page,{
+    '/api/admin/security/overview':{riskState:'Good',activeSessions:3},
+    '/api/admin/mlops/events':[{id:'q',eventType:'DATA_QUALITY_GATE',status:'QUARANTINE',modelKey:'quality',metadata:{reportKey:'employees',findings:[{code:'MISSING_FIELD',field:'income',message:'<img src=x>',action:'Correct source income.'}]}}],
+    '/api/admin/compliance/processing-activities':[{id:'a',name:'Payroll',partyRole:'Operator',lawfulBasis:'Contract',piaStatus:'Reviewed'}],
+  });
+  let failed=true;
+  await page.route('**/api/admin/compliance/overview',route=>route.fulfill(failed?{status:503,json:{error:'offline'}}:{json:{processingActivities:1,status:'ACTION_REQUIRED'}}));
+  await page.route('**/api/admin/compliance/vendors',route=>route.fulfill(failed?{status:503,json:{error:'offline'}}:{json:[{id:'v',name:'Local operator',country:'ZA',approved:true,operatorAgreement:true}]}));
+  await page.goto(url+'/admin');
+  await expect(page.locator('#admin-sec-copy')).toContainText('Security posture is clear.');
+  await expect(page.locator('#admin-sec-live')).toHaveText('3');
+  await expect(page.locator('#comp-status')).toContainText('Unable to load compliance controls.');
+  await page.getByRole('button',{name:'Open compliance controls'}).click();
+  await expect(page.locator('#comp-activities-list')).toContainText('Payroll');
+  await expect(page.locator('#comp-vendors-list')).toContainText('Could not load this register.');
+  failed=false;
+  await page.locator('#comp-vendors-list button').click();
+  await page.locator('#comp-status button').click();
+  await expect(page.locator('#comp-vendors-list')).toContainText('Local operator');
+  await expect(page.locator('#comp-status')).toContainText('Action required:');
+  await expect(page.locator('#mlops-alert-badge')).toHaveText('ACTION REQUIRED');
+  await page.locator('#admin-mlops-alert button').click();
+  await expect(page.locator('#mlops-alert-detail')).toBeVisible();
+  await expect(page.locator('#mlops-alert-detail')).toContainText('<img src=x>');
+  await expect(page.locator('#mlops-alert-detail img')).toHaveCount(0);
+  await expect(page.locator('#mlops-alert-detail')).toContainText('Correct source income.');
+  await page.getByRole('button',{name:'Open compliance controls'}).click();
+  await expect(page.locator('#compliance-panel')).not.toBeVisible();
+});
+test('React MLOps uses the latest gate per dataset and prioritises quarantine',async({page})=>{
+  await ready(page,'/admin',{'/api/admin/mlops/events':[
+    {eventType:'DATA_QUALITY_GATE',status:'PASS',metadata:{reportKey:'recovered'}},
+    {eventType:'DATA_QUALITY_GATE',status:'QUARANTINE',metadata:{reportKey:'recovered'}},
+    {eventType:'DATA_QUALITY_GATE',status:'REVIEW',metadata:{reportKey:'advisory'}},
+    {eventType:'DATA_QUALITY_GATE',status:'QUARANTINE',metadata:{reportKey:'blocked'}},
+  ]});
+  await expect(page.locator('#mlops-alert-summary')).toContainText('QUARANTINE: blocked');
+  await expect(page.locator('#mlops-alert-summary')).not.toContainText('recovered');
+});
+test("React portfolio selection, missing measures and risk ranking", async ({
+  page,
+}) => {
+  const employers = [
+    {
+      id: "a",
+      name: "Alpha",
+      heads: 10,
+      saving: 100,
+      oppValue: 90,
+      wellness: 80,
+      stress: 10,
+    },
+    {
+      id: "b",
+      name: "Beta",
+      heads: 20,
+      saving: null,
+      oppValue: 150,
+      wellness: null,
+      stress: 90,
+    },
+    {
+      id: "c",
+      name: "<img src=x onerror=alert(1)>",
+      heads: 30,
+      saving: 200,
+      oppValue: 50,
+      wellness: 60,
+      stress: null,
+    },
+  ];
+  await ready(page, "/dashboard", {
+    "/api/portfolio": { ...portfolio, employers },
+  });
+  await page.locator('[data-a="portfolio"]').click();
+  await expect(page.locator("#pf-heatmap tbody tr")).toHaveCount(3);
+  await expect(page.locator("#pf-kpis")).toContainText(
+    "2 of 3 employers have cashflow data",
+  );
+  await expect(page.locator("#pf-heatmap img")).toHaveCount(0);
+  await page.locator('#pf-metric-picker [data-k="stress"]').click();
+  await expect(page.locator("#pf-league .pf-lg-name").first()).toContainText(
+    "Beta",
+  );
+  await expect(page.locator("#pf-league-note")).toContainText(
+    "highest risk first · 1 unavailable",
+  );
+  await page.locator("#pf-employer-filter-btn").click();
+  await page.locator("#pf-clear-all").click();
+  await expect(page.locator("#pf-kpis")).toContainText(
+    "No employers selected.",
+  );
+  await expect(page.locator("#pf-heatmap")).toBeEmpty();
+  await page.locator("#pf-employer-search").fill("Beta");
+  await page.locator("#pf-employer-options input").check();
+  await expect(page.locator("#pf-employer-count")).toHaveText("1 selected");
+  await expect(page.locator("#pf-kpis")).toContainText("Not available");
+  await page.keyboard.press("Escape");
+  await expect(page.locator("#pf-employer-filter-btn")).toBeFocused();
+  await expect(page.locator("#pf-employer-filter-menu")).not.toBeVisible();
+  await page
+    .locator('#pf-metric-picker [data-k="stress"] .metric-info')
+    .focus();
+  await expect(page.getByRole("tooltip")).toContainText(
+    "Financial stress index",
+  );
+  await page.keyboard.press("Escape");
+  await expect(page.locator("#portfolio-view .pf-mh.sort")).toHaveAttribute(
+    "data-k",
+    "stress",
+  );
+});
+test("React portfolio updates an already open view when its delayed feed arrives", async ({
+  page,
+}) => {
+  let release;
+  const gate = new Promise((resolve) => (release = resolve));
+  await mockApi(page);
+  await page.route("**/api/portfolio?*", async (route) => {
+    await gate;
+    await route.fulfill({
+      json: {
+        ...portfolio,
+        employers: [
+          { id: "late", name: "Delayed employer", heads: 77, oppValue: 500 },
+        ],
+      },
+    });
+  });
+  await page.goto(url + "/dashboard");
+  await expect(page.locator("#data-fresh-label")).toContainText(
+    "Source updated",
+  );
+  await page.locator('[data-a="portfolio"]').click();
+  release();
+  await expect(page.locator("#pf-heatmap")).toContainText("Delayed employer");
+  await expect(page.locator("#pf-employer-count")).toHaveText("1 selected");
+});
+test("React admin audit prioritises critical events and engagement retries and changes windows", async ({
+  page,
+}) => {
+  await ready(page, "/admin");
+  let failed = true;
+  await page.route("**/api/admin/audit-log?*", (route) =>
+    route.fulfill({
+      json: [
+        ...Array.from({ length: 6 }, (_, i) => ({
+          id: String(i),
+          action: "user.create",
+          summary: "Routine " + i,
+          createdAt: `2026-10-0${i + 1}`,
+        })),
+        {
+          id: "critical",
+          action: "user.delete",
+          summary: "Critical <img src=x>",
+          createdAt: "2026-09-01",
+        },
+      ],
+    }),
+  );
+  await page.route("**/api/admin/analytics/summary?*", (route) =>
+    route.fulfill(
+      failed
+        ? { status: 503, json: { error: "Unavailable" } }
+        : {
+            json: {
+              ...fixture(route.request().url()),
+              totalLogins: Number(
+                new URL(route.request().url()).searchParams.get("days"),
+              ),
+            },
+          },
+    ),
+  );
+  await page.reload();
+  await expect(page.locator("#audit-rows tr")).toHaveCount(5);
+  await expect(page.locator("#audit-rows tr").first()).toContainText(
+    "Critical <img src=x>",
+  );
+  await expect(page.locator("#audit-rows img")).toHaveCount(0);
+  await expect(page.locator("#eng-stats")).toContainText(
+    "Could not load engagement data.",
+  );
+  failed = false;
+  await page.getByRole("button", { name: "Retry engagement" }).click();
+  await expect(page.locator("#eng-stats")).toContainText("30");
+  await page.locator("#eng-days").selectOption("7");
+  await expect(page.locator("#eng-window")).toHaveText("7");
+  await expect(page.locator("#eng-stats > div").nth(2)).toContainText("7");
+  await expect(page.locator("#eng-users")).toContainText("Test Administrator");
+  await expect(
+    page.locator('a[href="/api/admin/audit-log.csv"]'),
+  ).toHaveAttribute("download", "");
+});
+for (const width of [1440, 390]) for(const theme of ['light','dark'])
+  test(`portfolio source visual parity at ${width}px in ${theme}`, async ({
+    browser,
+  }, testInfo) => {
+    const captures = [];
+    for (const port of [4101, 4100]) {
+      const page = await browser.newPage({
+        viewport: { width: 1440, height: 1000 },
+        timezoneId: "Africa/Johannesburg",
+      });
+      await mockApi(page);
+      await page.addInitScript((theme) => {
+        localStorage.setItem("cookieNoticeDismissed", "1");
+        localStorage.setItem("empower-fin-theme",theme);
+      },theme);
+      await page.goto(`http://127.0.0.1:${port}/dashboard`);
+      await expect(page.locator("#data-fresh-label")).toContainText(
+        "Source updated",
+      );
+      await page.waitForTimeout(500);
+      await page.locator('[data-a="portfolio"]').click();
+      await page.setViewportSize({ width, height: 1000 });
+      await expect(page.locator("#pf-heatmap tbody tr")).toHaveCount(
+        portfolio.employers.length,
+      );
+      await page.addStyleTag({
+        content:
+          "*,*::before,*::after{transition:none!important;animation:none!important;caret-color:transparent!important}.reveal{opacity:1!important;transform:none!important}#welcome-splash{display:none!important}",
+      });
+      await page.evaluate(() => document.fonts.ready);
+      captures.push(PNG.sync.read(await page.screenshot({ fullPage: true })));
+      await page.close();
+    }
+    const [a, b] = captures;
+    expect({ width: b.width, height: b.height }).toEqual({
+      width: a.width,
+      height: a.height,
+    });
+    const diff = new PNG({ width: a.width, height: a.height }),
+      ratio =
+        pixelmatch(a.data, b.data, diff.data, a.width, a.height, {
+          threshold: 0.15,
+        }) /
+        (a.width * a.height);
+    if (ratio > 0.005) {
+      await testInfo.attach("portfolio-source", {
+        body: PNG.sync.write(a),
+        contentType: "image/png",
+      });
+      await testInfo.attach("portfolio-react", {
+        body: PNG.sync.write(b),
+        contentType: "image/png",
+      });
+      await testInfo.attach("portfolio-diff", {
+        body: PNG.sync.write(diff),
+        contentType: "image/png",
+      });
+    }
+    expect(ratio).toBeLessThanOrEqual(0.005);
+  });
 async function ready(page, path, overrides = {}) {
   await mockApi(page, overrides);
   await page.addInitScript(() =>
@@ -432,7 +730,7 @@ test("React security centre filters sessions, resolves alerts, and closes the pr
   await page.keyboard.press("Escape");
   await expect(page.locator(".security-drawer")).toHaveCount(0);
 });
-for (const role of ["EMPLOYER_MANAGER", "SUPERADMIN"])
+for (const role of ["EMPLOYER_MANAGER", "ADMIN", "SUPERADMIN"])
   test(`latest partner branding follows ${role} shell rules in light and dark mode`, async ({
     page,
   }) => {
@@ -456,7 +754,7 @@ for (const role of ["EMPLOYER_MANAGER", "SUPERADMIN"])
     for (const dark of [false, true]) {
       if (dark) await page.locator(".portal-theme-quick").click();
       await expect(page.locator("#portal-brand-default")).toBeVisible({
-        visible: role === "SUPERADMIN",
+        visible: role !== "EMPLOYER_MANAGER",
       });
       await expect(page.locator("#portal-brand-partner")).toBeVisible({
         visible: role === "EMPLOYER_MANAGER",
@@ -466,6 +764,11 @@ for (const role of ["EMPLOYER_MANAGER", "SUPERADMIN"])
           "src",
           logo,
         );
+      if(role!=="EMPLOYER_MANAGER"){
+        await expect(page.locator('#employer-view')).not.toHaveAttribute('data-partner-theme','1');
+        await page.locator('#month-select').selectOption('30d');
+        await expect(page.locator('#employer-view')).not.toHaveAttribute('data-partner-theme','1');
+      }
       await expect(
         page.locator(".portal-powered-by,.portal-fixer-secondary"),
       ).toHaveCount(0);
