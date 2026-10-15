@@ -1,10 +1,10 @@
-# React migration status — 14 October 2026
+# React migration status — 15 October 2026
 
 The migration is **not ready for acceptance**. Dashboard and administration controllers still need conversion, and real authenticated workflows require migration-test credentials.
 
 ## Source
 
-The supplied ZIP was based on NewChanges commit `115a28a12ddc7ea1b5effbdb0baa354824ce7841`. This checkpoint incorporates source through `528be408e07042b449f5258f23bd00702df09a20`. The newer `348cf2e1bdf8084d5d19115c571563d9f08efd12` head observed on 14 October still requires reconciliation. The initial import covered 53 changed files through `ed5a71a7cf9ee5ea5d3b337924be1db94a8a76f8`; subsequent updates include partner-only custom portals and the security, permissions and branding fixes described below. Existing native React components are retained rather than replaced with upstream controllers.
+The supplied ZIP was based on NewChanges commit `115a28a12ddc7ea1b5effbdb0baa354824ce7841`. This checkpoint incorporates source through `528be408e07042b449f5258f23bd00702df09a20`. The newer `499a9d9598d0eced1ce8ebebb06bcaff983215c5` head observed on 15 October is 43 commits ahead of this source target and still requires reconciliation. The initial import covered 53 changed files through `ed5a71a7cf9ee5ea5d3b337924be1db94a8a76f8`; subsequent updates include partner-only custom portals and the security, permissions and branding fixes described below. Existing native React components are retained rather than replaced with upstream controllers.
 
 Brand Engine 1.4, supplied The Fixer normal/reversed SVG assets, updated styles, source-status UI, post-login greeting, dashboard/admin changes, backend source synchronisation, daily refresh, import, snapshot, report, partner and job services have been reconciled. The source frontend starter is not the production entry point: production uses the twelve React page entries and shared components. No Prisma schema changes were introduced by the source delta. SQL/deployment script changes are included but have not been executed against Railway.
 
@@ -29,7 +29,8 @@ Brand Engine 1.4, supplied The Fixer normal/reversed SVG assets, updated styles,
 | Admin security, compliance and MLOps | React summaries, independent register requests, alert details, polling and retry | Live telemetry and role verification |
 | Enterprise operations | React summary, source/read-model placement, routes, replica status, quality detail and refresh/collapse actions | Authenticated source verification |
 | Reset and rebuild | React confirmation, pending state, error recovery and dependent-panel refresh | Authenticated migration-environment verification |
-| Remaining administration | React JSX with retained integration/partner/preview controllers | Full conversion to React state/components |
+| Live data integration | React controlled API/SQL/replica fields, save/test/sync/full-refresh actions, progress and history | Newer source-switch/incremental-refresh contract reconciliation and authenticated source verification |
+| Remaining administration | React JSX with retained partner/preview controllers | Full conversion to React state/components |
 
 The users entry no longer starts the legacy users or user-security scripts. Source HTML remains a reference fixture. Default Admin/Superadmin shells use The Fixer; custom partner dashboards show the partner identity alone, matching the latest source product decision.
 
@@ -82,3 +83,13 @@ On 14 October, NewChanges advanced again to `348cf2e1bdf8084d5d19115c571563d9f08
 The reset-and-rebuild panel now owns its confirmation input, visibility, pending state and response messages in React. Both typed RESET and the confirmation dialog remain required. While the request is running, the submit, reopen and cancel actions are disabled to prevent duplicate submissions. Failed requests preserve the confirmation for retry, and API error text is escaped. Success clears the native report result and refreshes import history, governance and the remaining integration panel through a temporary data-refresh bridge. Optional refresh failures cannot overwrite the published-success result. No reset has been executed against a real database.
 
 The preceding `e5636077b3cd79bf3cb946225ba0402dbc8353b7` checkpoint passed hosted CI run `38535141081`, including all 60 browser checks. This follow-up adds a mocked reset workflow covering invalid confirmation, dialog cancellation, pending controls, failure/retry and success.
+
+## October 15 native integration checkpoint
+
+The API/SQL integration form, source-mode tabs, collapse control, environment notices, save/test actions, sync jobs, refresh action and sync history now render from React state. The production controller no longer contains integrationDraft, saveInteg, testInteg, syncNow, refreshNow, loadIntegLogs or the legacy pollJob renderer. Import and integration jobs share the native progress display and abortable monitor. Reset and ingestion-method shortcuts use small refresh/mode bridges without mutating native fields.
+
+Failed writes retain draft values and credentials; successful writes clear both secret inputs. Blank credentials are omitted from subsequent payloads. A failed settings save prevents a sync request, and zero replica lag remains zero. Background reads update status without overwriting a user's draft. Loading failures expose retry, and all write actions are locked while another operation is pending.
+
+The source head `499a9d9` adds candidate-source preview/staging and changes normal refresh into an incremental operation. Those controls are not enabled here because their required backend reconciliation is pending. This checkpoint intentionally preserves the migration backend's existing **confirmed full-refresh** contract. It must not be presented as matching the newer source behaviour. New source database/refresh/semantic-layer and CI changes still require reconciliation as a complete contract.
+
+Hosted CI run `38535911551` passed for reset checkpoint `2c328d8d3ab58e040c17cdc6f59673474614b63e`. Integration verification adds failure/retry and credential handling, save-before-sync gating, confirmation/already-running handling, sync progress/terminal failure and desktop/mobile dark-form comparisons. API responses are mocked; no live integration, reset or database writes were performed.

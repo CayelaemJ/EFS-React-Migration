@@ -2,6 +2,7 @@
 import React from 'react';
 import {AuditRows,Engagement} from '../native/AdminInsights.jsx';
 import {AdminSecurity,Compliance,MLOpsAlert,refreshGovernance} from '../native/AdminGovernance.jsx';
+import {AdminIntegration,setIntegrationMode as setIntegMode,refreshIntegration} from '../native/AdminIntegration.jsx';
 import {AdminReset,configureResetRefresh} from '../native/AdminReset.jsx';
 import {EnterpriseOperations} from '../native/EnterpriseOperations.jsx';
 import {AdminEmailPanel,AdminAutomationPanel} from '../native/AdminSettings.jsx';
@@ -18,7 +19,7 @@ export function Page(){return <>{siteText("\n")}
 {siteText("\n")}
 <div className={siteText("topbar")}><div className={siteText("topbar-inner")}>{siteText("\n  ")}<img src={siteText("/static/the-fixer-logo.svg?v=6")} className={siteText("efs-brand-logo")} alt={siteText("The Fixer")} style={{"height":"30px","width":"auto"}} ref={node => { if(node) node.setAttribute("style", "height:30px;width:auto;"); }}/>{siteText("\n  ")}<span className={siteText("pill")}>{siteText("Administration")}</span>{siteText("\n  ")}<div id={siteText("portal-nav")} style={{"marginLeft":"auto"}} ref={node => { if(node) node.setAttribute("style", "margin-left:auto;"); }}/>{siteText("\n  ")}<div id={siteText("portal-account")}/>{siteText("\n")}</div></div>
 {siteText("\n\n")}
-<div className={siteText("wrap")}>{siteText("\n  ")}<div className={siteText("head")}>{siteText("\n    ")}<div className={siteText("eyebrow")}>{siteText("Feed the system")}</div>{siteText("\n    ")}<h1>{siteText("Data Centre")}</h1>{siteText("\n    ")}<p>{siteText("Bring approved data into EFS Optimise from files, APIs or SQL. File uploads support CSV, Excel and JSON. Every import is validated against a governed feed contract before it reaches the live reporting model.")}</p>{siteText("\n  ")}</div>{siteText("\n\n  ")}<AdminSecurity/>{siteText("\n  ")}<Compliance/>{siteText("\n  ")}<MLOpsAlert/>{siteText("\n  ")}<section id={siteText("data-centre")} className={siteText("card section-gap")}>{siteText("\n    ")}<div className={siteText("card-hd")}>{siteText("\n      ")}<div><h2>{siteText("Data ingestion")}</h2><div className={siteText("note")}>{siteText("Choose how you want to bring data into EFS Optimise. These are complementary options, not fallbacks.")}</div></div>{siteText("\n    ")}</div>{siteText("\n    ")}<div className={siteText("card-bd")}>{siteText("\n      ")}<div className={siteText("ingestion-method-grid")}>{siteText("\n        ")}<button className={siteText("ingestion-method on")} type={siteText("button")} onClick={event => actions[0]?.(event)}>{siteText("\n          ")}<span className={siteText("ingestion-method-icon")}>{siteText("FILE")}</span>{siteText("\n          ")}<span><strong>{siteText("Upload a file")}</strong><small>{siteText("CSV, Excel (.xlsx/.xls) or JSON, up to 50 MB. Preview, validate and import.")}</small></span>{siteText("\n        ")}</button>{siteText("\n        ")}<button className={siteText("ingestion-method")} type={siteText("button")} onClick={event => actions[1]?.(event)}>{siteText("\n          ")}<span className={siteText("ingestion-method-icon")}>{siteText("API")}</span>{siteText("\n          ")}<span><strong>{siteText("Connect an API")}</strong><small>{siteText("Pull the governed feeds from HTTPS endpoints using private bearer-token authentication.")}</small></span>{siteText("\n        ")}</button>{siteText("\n        ")}<button className={siteText("ingestion-method")} type={siteText("button")} onClick={event => actions[2]?.(event)}>{siteText("\n          ")}<span className={siteText("ingestion-method-icon")}>{siteText("SQL")}</span>{siteText("\n          ")}<span><strong>{siteText("Connect a database")}</strong><small>{siteText("Use approved read-only PostgreSQL, SQL Server, MySQL or MariaDB views.")}</small></span>{siteText("\n        ")}</button>{siteText("\n      ")}</div>{siteText("\n      ")}<div className={siteText("ingestion-note")}><strong>{siteText("Governed by design:")}</strong>{siteText(" files, API records and SQL feeds enter the same validation and import pipeline. Heavy analytics can remain on an approved read replica without moving arbitrary source data into PostgreSQL.")}</div>{siteText("\n    ")}</div>{siteText("\n  ")}</section>{siteText("\n\n  ")}<div className={siteText("grid")}>{siteText("\n    ")}{siteText("\n    ")}<div className={siteText("card")}>{siteText("\n      ")}<div className={siteText("card-hd")}><h2>{siteText("Reports")}</h2><div className={siteText("note")}>{siteText("In load order")}</div></div>{siteText("\n      ")}<ReportPicker/>{siteText("\n    ")}</div>{siteText("\n\n    ")}{siteText("\n    ")}<div id={siteText("file-ingestion")}>{siteText("\n\n    ")}<div id={siteText("client-preview-overlay")} className={siteText("client-preview-overlay")} role={siteText("dialog")} aria-modal={siteText("true")} aria-labelledby={siteText("client-preview-title")} onClick={event => actions[3]?.(event)}>{siteText("\n      ")}<div className={siteText("client-preview-dialog")} onClick={event => actions[4]?.(event)}>{siteText("\n        ")}<div className={siteText("client-preview-toolbar")}>{siteText("\n          ")}<strong id={siteText("client-preview-title")}>{siteText("Client dashboard preview")}</strong>{siteText("\n          ")}<span>{siteText("Preview only")}</span>{siteText("\n          ")}<button className={siteText("client-preview-close")} type={siteText("button")} aria-label={siteText("Close preview")} onClick={event => actions[5]?.(event)}>{siteText("×")}</button>{siteText("\n        ")}</div>{siteText("\n        ")}<div id={siteText("client-preview-app")} className={siteText("client-preview-app")}/>{siteText("\n      ")}</div>{siteText("\n    ")}</div>{siteText("\n      ")}<ReportWorkspace/>{siteText("\n\n      ")}<EnterpriseOperations/>{siteText("\n\n      ")}{siteText("\n      ")}<div className={siteText("card section-gap")}>{siteText("\n        ")}<div className={siteText("card-hd")}><h2>{siteText("Import history")}</h2><div className={siteText("note")}>{siteText("Live updates every 1.5s · Rows show validated totals and how many changes have actually reached live tables")}</div></div>{siteText("\n        ")}<div className={siteText("card-bd")} style={{"padding":"6px 8px 12px"}} ref={node => { if(node) node.setAttribute("style", "padding:6px 8px 12px;"); }}>{siteText("\n          ")}<table className={siteText("hist")}><thead><tr><th>{siteText("Report")}</th><th>{siteText("File")}</th><th>{siteText("Rows")}</th><th>{siteText("Status")}</th><th>{siteText("When")}</th><th>{siteText("Download")}</th><th/></tr></thead>{siteText("\n          ")}<ImportHistoryRows/></table>{siteText("\n        ")}</div>{siteText("\n      ")}</div>{siteText("\n\n      ")}{siteText("\n      ")}<div className={siteText("card section-gap")} id={siteText("live-integration")}>{siteText("\n        ")}<div className={siteText("card-hd")}><h2>{siteText("Live Data Integration")}</h2><div className={siteText("note")}>{siteText("Connect the same governed feeds through an API or approved read-only SQL views")}</div></div>{siteText("\n        ")}<div className={siteText("card-bd")}>{siteText("\n          ")}<div id={siteText("integ-status")} className={siteText("banner ok")} style={{"display":"none","marginBottom":"14px"}} ref={node => { if(node) node.setAttribute("style", "display:none;margin-bottom:14px;"); }}/>{siteText("\n\n          ")}<input id={siteText("integ-mode")} type={siteText("hidden")} defaultValue={siteText("API")}/>{siteText("\n          ")}<div className={siteText("source-mode-grid")} role={siteText("tablist")} aria-label={siteText("Integration source")}>{siteText("\n            ")}<button className={siteText("source-mode-card on")} id={siteText("source-tab-api")} type={siteText("button")} role={siteText("tab")} aria-selected={siteText("true")} onClick={event => actions[6]?.(event)}>{siteText("\n              ")}<span className={siteText("source-mode-icon")}>{siteText("API")}</span>{siteText("\n              ")}<span><strong>{siteText("API integration")}</strong><small>{siteText("Pull the 10 contracted feeds from HTTPS endpoints using bearer-token authentication.")}</small></span>{siteText("\n            ")}</button>{siteText("\n            ")}<button className={siteText("source-mode-card")} id={siteText("source-tab-sql")} type={siteText("button")} role={siteText("tab")} aria-selected={siteText("false")} onClick={event => actions[7]?.(event)}>{siteText("\n              ")}<span className={siteText("source-mode-icon")}>{siteText("DB")}</span>{siteText("\n              ")}<span><strong>{siteText("Database integration")}</strong><small>{siteText("Connect directly to approved read-only PostgreSQL, SQL Server, MySQL or MariaDB views.")}</small></span>{siteText("\n            ")}</button>{siteText("\n          ")}</div>{siteText("\n          ")}<div style={{"maxWidth":"820px","marginBottom":"14px"}} ref={node => { if(node) node.setAttribute("style", "max-width:820px;margin-bottom:14px;"); }}>{siteText("\n            ")}<label style={{"display":"block","fontSize":"12.5px","fontWeight":"700","color":"#5b6b7a","maxWidth":"390px"}} ref={node => { if(node) node.setAttribute("style", "display:block;font-size:12.5px;font-weight:700;color:#5b6b7a;max-width:390px;"); }}>{siteText("Heartbeat reconciliation every (hours)\n              ")}<input id={siteText("integ-hours")} type={siteText("number")} min={siteText("1")} defaultValue={siteText("24")} style={{"display":"block","width":"100%","marginTop":"5px","font":"inherit","fontWeight":"500","padding":"9px 12px","border":"1px solid #e8e1f7","borderRadius":"9px"}} ref={node => { if(node) node.setAttribute("style", "display:block;width:100%;margin-top:5px;font:inherit;font-weight:500;padding:9px 12px;border:1px solid #e8e1f7;border-radius:9px;"); }}/>{siteText("\n            ")}</label>{siteText("\n            ")}<div id={siteText("integ-change-mode")} className={siteText("muted")} style={{"marginTop":"7px","maxWidth":"820px"}} ref={node => { if(node) node.setAttribute("style", "margin-top:7px;max-width:820px;"); }}>{siteText("SQL sources also use indexed change detection between heartbeat runs.")}</div>{siteText("\n          ")}</div>{siteText("\n\n          ")}<div id={siteText("integ-api-panel")} className={siteText("integration-two-col")} style={{"marginTop":"14px","display":"grid","gridTemplateColumns":"1fr 1fr","gap":"14px","maxWidth":"820px"}} ref={node => { if(node) node.setAttribute("style", "margin-top:14px;display:grid;grid-template-columns:1fr 1fr;gap:14px;max-width:820px;"); }}>{siteText("\n            ")}<div className={siteText("integration-panel-title")}>{siteText("API connection")}</div>{siteText("\n            ")}<label style={{"gridColumn":"span 2","fontSize":"12.5px","fontWeight":"700","color":"#5b6b7a"}} ref={node => { if(node) node.setAttribute("style", "grid-column:span 2;font-size:12.5px;font-weight:700;color:#5b6b7a;"); }}>{siteText("Provider API base URL\n              ")}<input id={siteText("integ-url")} placeholder={siteText("https://your-provider.example.com")} style={{"display":"block","width":"100%","marginTop":"5px","font":"inherit","fontWeight":"500","padding":"9px 12px","border":"1px solid #e8e1f7","borderRadius":"9px"}} ref={node => { if(node) node.setAttribute("style", "display:block;width:100%;margin-top:5px;font:inherit;font-weight:500;padding:9px 12px;border:1px solid #e8e1f7;border-radius:9px;"); }}/>{siteText("\n            ")}</label>{siteText("\n            ")}<label style={{"gridColumn":"span 2","fontSize":"12.5px","fontWeight":"700","color":"#5b6b7a"}} ref={node => { if(node) node.setAttribute("style", "grid-column:span 2;font-size:12.5px;font-weight:700;color:#5b6b7a;"); }}>{siteText("Bearer token (kept private)\n              ")}<input id={siteText("integ-token")} type={siteText("password")} placeholder={siteText("leave blank to keep existing")} style={{"display":"block","width":"100%","marginTop":"5px","font":"inherit","fontWeight":"500","padding":"9px 12px","border":"1px solid #e8e1f7","borderRadius":"9px"}} ref={node => { if(node) node.setAttribute("style", "display:block;width:100%;margin-top:5px;font:inherit;font-weight:500;padding:9px 12px;border:1px solid #e8e1f7;border-radius:9px;"); }}/>{siteText("\n            ")}</label>{siteText("\n          ")}</div>{siteText("\n\n          ")}<div id={siteText("integ-env-override")} style={{"display":"none","marginBottom":"12px","padding":"10px 14px","borderRadius":"9px","background":"var(--amber-soft)","border":"1px solid var(--amber)","color":"#7a4a00","fontSize":"12.5px","fontWeight":"600","lineHeight":"1.5"}} ref={node => { if(node) node.setAttribute("style", "display:none;margin-bottom:12px;padding:10px 14px;border-radius:9px;background:var(--amber-soft);border:1px solid var(--amber);color:#7a4a00;font-size:12.5px;font-weight:600;line-height:1.5;"); }}/>{siteText("\n          ")}<div id={siteText("integ-sql-panel")} className={siteText("integration-two-col")} style={{"marginTop":"14px","display":"none","gridTemplateColumns":"1fr 1fr","gap":"14px","maxWidth":"820px"}} ref={node => { if(node) node.setAttribute("style", "margin-top:14px;display:none;grid-template-columns:1fr 1fr;gap:14px;max-width:820px;"); }}>{siteText("\n            ")}<div className={siteText("integration-panel-title")}>{siteText("Database connection (Direct SQL)")}</div>{siteText("\n            ")}<label style={{"fontSize":"12.5px","fontWeight":"700","color":"#5b6b7a"}} ref={node => { if(node) node.setAttribute("style", "font-size:12.5px;font-weight:700;color:#5b6b7a;"); }}>{siteText("SQL platform\n              ")}<select id={siteText("integ-sql-dialect")} onChange={event => actions[8]?.(event)} style={{"display":"block","width":"100%","marginTop":"5px","font":"inherit","fontWeight":"500","padding":"9px 12px","border":"1px solid #e8e1f7","borderRadius":"9px","background":"#fff"}} ref={node => { if(node) node.setAttribute("style", "display:block;width:100%;margin-top:5px;font:inherit;font-weight:500;padding:9px 12px;border:1px solid #e8e1f7;border-radius:9px;background:#fff;"); }}>{siteText("\n                ")}<option value={siteText("POSTGRESQL")}>{siteText("PostgreSQL")}</option>{siteText("\n                ")}<option value={siteText("MSSQL")}>{siteText("Microsoft SQL Server")}</option>{siteText("\n                ")}<option value={siteText("MYSQL")}>{siteText("MySQL / MariaDB")}</option>{siteText("\n              ")}</select>{siteText("\n            ")}</label>{siteText("\n            ")}<label style={{"fontSize":"12.5px","fontWeight":"700","color":"#5b6b7a"}} ref={node => { if(node) node.setAttribute("style", "font-size:12.5px;font-weight:700;color:#5b6b7a;"); }}>{siteText("Port\n              ")}<input id={siteText("integ-sql-port")} type={siteText("number")} min={siteText("1")} max={siteText("65535")} placeholder={siteText("5432")} style={{"display":"block","width":"100%","marginTop":"5px","font":"inherit","fontWeight":"500","padding":"9px 12px","border":"1px solid #e8e1f7","borderRadius":"9px"}} ref={node => { if(node) node.setAttribute("style", "display:block;width:100%;margin-top:5px;font:inherit;font-weight:500;padding:9px 12px;border:1px solid #e8e1f7;border-radius:9px;"); }}/>{siteText("\n            ")}</label>{siteText("\n            ")}<label style={{"fontSize":"12.5px","fontWeight":"700","color":"#5b6b7a"}} ref={node => { if(node) node.setAttribute("style", "font-size:12.5px;font-weight:700;color:#5b6b7a;"); }}>{siteText("Host\n              ")}<input id={siteText("integ-sql-host")} placeholder={siteText("db.example.internal")} style={{"display":"block","width":"100%","marginTop":"5px","font":"inherit","fontWeight":"500","padding":"9px 12px","border":"1px solid #e8e1f7","borderRadius":"9px"}} ref={node => { if(node) node.setAttribute("style", "display:block;width:100%;margin-top:5px;font:inherit;font-weight:500;padding:9px 12px;border:1px solid #e8e1f7;border-radius:9px;"); }}/>{siteText("\n            ")}</label>{siteText("\n            ")}<label style={{"fontSize":"12.5px","fontWeight":"700","color":"#5b6b7a"}} ref={node => { if(node) node.setAttribute("style", "font-size:12.5px;font-weight:700;color:#5b6b7a;"); }}>{siteText("Database / catalog\n              ")}<input id={siteText("integ-sql-database")} placeholder={siteText("empowerfin_source")} style={{"display":"block","width":"100%","marginTop":"5px","font":"inherit","fontWeight":"500","padding":"9px 12px","border":"1px solid #e8e1f7","borderRadius":"9px"}} ref={node => { if(node) node.setAttribute("style", "display:block;width:100%;margin-top:5px;font:inherit;font-weight:500;padding:9px 12px;border:1px solid #e8e1f7;border-radius:9px;"); }}/>{siteText("\n            ")}</label>{siteText("\n            ")}<label style={{"fontSize":"12.5px","fontWeight":"700","color":"#5b6b7a"}} ref={node => { if(node) node.setAttribute("style", "font-size:12.5px;font-weight:700;color:#5b6b7a;"); }}>{siteText("Schema (optional)\n              ")}<input id={siteText("integ-sql-schema")} placeholder={siteText("public or dbo")} style={{"display":"block","width":"100%","marginTop":"5px","font":"inherit","fontWeight":"500","padding":"9px 12px","border":"1px solid #e8e1f7","borderRadius":"9px"}} ref={node => { if(node) node.setAttribute("style", "display:block;width:100%;margin-top:5px;font:inherit;font-weight:500;padding:9px 12px;border:1px solid #e8e1f7;border-radius:9px;"); }}/>{siteText("\n            ")}</label>{siteText("\n            ")}<label style={{"fontSize":"12.5px","fontWeight":"700","color":"#5b6b7a"}} ref={node => { if(node) node.setAttribute("style", "font-size:12.5px;font-weight:700;color:#5b6b7a;"); }}>{siteText("Canonical view prefix\n              ")}<input id={siteText("integ-sql-prefix")} defaultValue={siteText("v_")} placeholder={siteText("v_")} style={{"display":"block","width":"100%","marginTop":"5px","font":"inherit","fontWeight":"500","padding":"9px 12px","border":"1px solid #e8e1f7","borderRadius":"9px"}} ref={node => { if(node) node.setAttribute("style", "display:block;width:100%;margin-top:5px;font:inherit;font-weight:500;padding:9px 12px;border:1px solid #e8e1f7;border-radius:9px;"); }}/>{siteText("\n            ")}</label>{siteText("\n            ")}<label style={{"fontSize":"12.5px","fontWeight":"700","color":"#5b6b7a"}} ref={node => { if(node) node.setAttribute("style", "font-size:12.5px;font-weight:700;color:#5b6b7a;"); }}>{siteText("Read-only username\n              ")}<input id={siteText("integ-sql-user")} autoComplete={siteText("off")} placeholder={siteText("empowerfin_reader")} style={{"display":"block","width":"100%","marginTop":"5px","font":"inherit","fontWeight":"500","padding":"9px 12px","border":"1px solid #e8e1f7","borderRadius":"9px"}} ref={node => { if(node) node.setAttribute("style", "display:block;width:100%;margin-top:5px;font:inherit;font-weight:500;padding:9px 12px;border:1px solid #e8e1f7;border-radius:9px;"); }}/>{siteText("\n            ")}</label>{siteText("\n            ")}<label style={{"fontSize":"12.5px","fontWeight":"700","color":"#5b6b7a"}} ref={node => { if(node) node.setAttribute("style", "font-size:12.5px;font-weight:700;color:#5b6b7a;"); }}>{siteText("Password (kept private)\n              ")}<input id={siteText("integ-sql-password")} type={siteText("password")} autoComplete={siteText("new-password")} placeholder={siteText("leave blank to keep existing")} style={{"display":"block","width":"100%","marginTop":"5px","font":"inherit","fontWeight":"500","padding":"9px 12px","border":"1px solid #e8e1f7","borderRadius":"9px"}} ref={node => { if(node) node.setAttribute("style", "display:block;width:100%;margin-top:5px;font:inherit;font-weight:500;padding:9px 12px;border:1px solid #e8e1f7;border-radius:9px;"); }}/>{siteText("\n            ")}</label>{siteText("\n            ")}<label style={{"fontSize":"12.5px","fontWeight":"700","color":"#5b6b7a"}} ref={node => { if(node) node.setAttribute("style", "font-size:12.5px;font-weight:700;color:#5b6b7a;"); }}>{siteText("Query timeout (ms)\n              ")}<input id={siteText("integ-sql-timeout")} type={siteText("number")} min={siteText("1000")} defaultValue={siteText("60000")} style={{"display":"block","width":"100%","marginTop":"5px","font":"inherit","fontWeight":"500","padding":"9px 12px","border":"1px solid #e8e1f7","borderRadius":"9px"}} ref={node => { if(node) node.setAttribute("style", "display:block;width:100%;margin-top:5px;font:inherit;font-weight:500;padding:9px 12px;border:1px solid #e8e1f7;border-radius:9px;"); }}/>{siteText("\n            ")}</label>{siteText("\n            ")}<label style={{"fontSize":"12.5px","fontWeight":"700","color":"#5b6b7a"}} ref={node => { if(node) node.setAttribute("style", "font-size:12.5px;font-weight:700;color:#5b6b7a;"); }}>{siteText("Max changed rows / feed / sync\n              ")}<input id={siteText("integ-sql-maxrows")} type={siteText("number")} min={siteText("1")} defaultValue={siteText("250000")} style={{"display":"block","width":"100%","marginTop":"5px","font":"inherit","fontWeight":"500","padding":"9px 12px","border":"1px solid #e8e1f7","borderRadius":"9px"}} ref={node => { if(node) node.setAttribute("style", "display:block;width:100%;margin-top:5px;font:inherit;font-weight:500;padding:9px 12px;border:1px solid #e8e1f7;border-radius:9px;"); }}/>{siteText("\n            ")}</label>{siteText("\n            ")}<label style={{"display":"flex","alignItems":"center","gap":"9px","fontSize":"13px","fontWeight":"700","color":"#32217c","cursor":"pointer"}} ref={node => { if(node) node.setAttribute("style", "display:flex;align-items:center;gap:9px;font-size:13px;font-weight:700;color:#32217c;cursor:pointer;"); }}>{siteText("\n              ")}<input id={siteText("integ-sql-ssl")} type={siteText("checkbox")} defaultChecked={true} style={{"width":"17px","height":"17px"}} ref={node => { if(node) node.setAttribute("style", "width:17px;height:17px;"); }}/>{siteText(" Require encrypted SQL connection\n            ")}</label>{siteText("\n            ")}<label style={{"display":"flex","alignItems":"center","gap":"9px","fontSize":"13px","fontWeight":"700","color":"#32217c","cursor":"pointer"}} ref={node => { if(node) node.setAttribute("style", "display:flex;align-items:center;gap:9px;font-size:13px;font-weight:700;color:#32217c;cursor:pointer;"); }}>{siteText("\n              ")}<input id={siteText("integ-sql-trust")} type={siteText("checkbox")} style={{"width":"17px","height":"17px"}} ref={node => { if(node) node.setAttribute("style", "width:17px;height:17px;"); }}/>{siteText(" Trust server certificate (only when approved)\n            ")}</label>{siteText("\n            ")}<div style={{"gridColumn":"span 2","marginTop":"4px","padding":"12px","border":"1px solid #e8e1f7","borderRadius":"10px","background":"#fff"}} ref={node => { if(node) node.setAttribute("style", "grid-column:span 2;margin-top:4px;padding:12px;border:1px solid #e8e1f7;border-radius:10px;background:#fff;"); }}>{siteText("\n              ")}<div style={{"fontSize":"12.5px","fontWeight":"800","color":"var(--brand-primary)","marginBottom":"8px"}} ref={node => { if(node) node.setAttribute("style", "font-size:12.5px;font-weight:800;color:var(--brand-primary);margin-bottom:8px;"); }}>{siteText("Optional source analytics read replica")}</div>{siteText("\n              ")}<div className={siteText("integration-two-col")} style={{"display":"grid","gridTemplateColumns":"1fr 1fr","gap":"12px"}} ref={node => { if(node) node.setAttribute("style", "display:grid;grid-template-columns:1fr 1fr;gap:12px;"); }}>{siteText("\n                ")}<label style={{"fontSize":"12px","fontWeight":"700","color":"#5b6b7a"}} ref={node => { if(node) node.setAttribute("style", "font-size:12px;font-weight:700;color:#5b6b7a;"); }}>{siteText("Replica host\n                  ")}<input id={siteText("integ-replica-host")} placeholder={siteText("mysql-replica.internal")} style={{"display":"block","width":"100%","marginTop":"5px","font":"inherit","padding":"9px 12px","border":"1px solid #e8e1f7","borderRadius":"9px"}} ref={node => { if(node) node.setAttribute("style", "display:block;width:100%;margin-top:5px;font:inherit;padding:9px 12px;border:1px solid #e8e1f7;border-radius:9px;"); }}/>{siteText("\n                ")}</label>{siteText("\n                ")}<label style={{"fontSize":"12px","fontWeight":"700","color":"#5b6b7a"}} ref={node => { if(node) node.setAttribute("style", "font-size:12px;font-weight:700;color:#5b6b7a;"); }}>{siteText("Replica port\n                  ")}<input id={siteText("integ-replica-port")} type={siteText("number")} min={siteText("1")} max={siteText("65535")} placeholder={siteText("3306")} style={{"display":"block","width":"100%","marginTop":"5px","font":"inherit","padding":"9px 12px","border":"1px solid #e8e1f7","borderRadius":"9px"}} ref={node => { if(node) node.setAttribute("style", "display:block;width:100%;margin-top:5px;font:inherit;padding:9px 12px;border:1px solid #e8e1f7;border-radius:9px;"); }}/>{siteText("\n                ")}</label>{siteText("\n                ")}<label style={{"fontSize":"12px","fontWeight":"700","color":"#5b6b7a"}} ref={node => { if(node) node.setAttribute("style", "font-size:12px;font-weight:700;color:#5b6b7a;"); }}>{siteText("Replica database\n                  ")}<input id={siteText("integ-replica-database")} placeholder={siteText("same database if blank")} style={{"display":"block","width":"100%","marginTop":"5px","font":"inherit","padding":"9px 12px","border":"1px solid #e8e1f7","borderRadius":"9px"}} ref={node => { if(node) node.setAttribute("style", "display:block;width:100%;margin-top:5px;font:inherit;padding:9px 12px;border:1px solid #e8e1f7;border-radius:9px;"); }}/>{siteText("\n                ")}</label>{siteText("\n                ")}<label style={{"fontSize":"12px","fontWeight":"700","color":"#5b6b7a"}} ref={node => { if(node) node.setAttribute("style", "font-size:12px;font-weight:700;color:#5b6b7a;"); }}>{siteText("Replica username\n                  ")}<input id={siteText("integ-replica-user")} autoComplete={siteText("off")} placeholder={siteText("analytics_reader")} style={{"display":"block","width":"100%","marginTop":"5px","font":"inherit","padding":"9px 12px","border":"1px solid #e8e1f7","borderRadius":"9px"}} ref={node => { if(node) node.setAttribute("style", "display:block;width:100%;margin-top:5px;font:inherit;padding:9px 12px;border:1px solid #e8e1f7;border-radius:9px;"); }}/>{siteText("\n                ")}</label>{siteText("\n                ")}<label style={{"fontSize":"12px","fontWeight":"700","color":"#5b6b7a"}} ref={node => { if(node) node.setAttribute("style", "font-size:12px;font-weight:700;color:#5b6b7a;"); }}>{siteText("Maximum replica lag (seconds)\n                  ")}<input id={siteText("integ-replica-lag")} type={siteText("number")} min={siteText("0")} max={siteText("86400")} defaultValue={siteText("60")} style={{"display":"block","width":"100%","marginTop":"5px","font":"inherit","padding":"9px 12px","border":"1px solid #e8e1f7","borderRadius":"9px"}} ref={node => { if(node) node.setAttribute("style", "display:block;width:100%;margin-top:5px;font:inherit;padding:9px 12px;border:1px solid #e8e1f7;border-radius:9px;"); }}/>{siteText("\n                ")}</label>{siteText("\n              ")}</div>{siteText("\n              ")}<div style={{"display":"flex","gap":"18px","flexWrap":"wrap","marginTop":"10px"}} ref={node => { if(node) node.setAttribute("style", "display:flex;gap:18px;flex-wrap:wrap;margin-top:10px;"); }}>{siteText("\n                ")}<label style={{"display":"flex","alignItems":"center","gap":"8px","fontSize":"12px","fontWeight":"700","color":"#32217c","cursor":"pointer"}} ref={node => { if(node) node.setAttribute("style", "display:flex;align-items:center;gap:8px;font-size:12px;font-weight:700;color:#32217c;cursor:pointer;"); }}><input id={siteText("integ-replica-ssl")} type={siteText("checkbox")} defaultChecked={true} style={{"width":"17px","height":"17px"}} ref={node => { if(node) node.setAttribute("style", "width:17px;height:17px;"); }}/>{siteText(" Require encrypted replica connection")}</label>{siteText("\n                ")}<label style={{"display":"flex","alignItems":"center","gap":"8px","fontSize":"12px","fontWeight":"700","color":"#32217c","cursor":"pointer"}} ref={node => { if(node) node.setAttribute("style", "display:flex;align-items:center;gap:8px;font-size:12px;font-weight:700;color:#32217c;cursor:pointer;"); }}><input id={siteText("integ-replica-trust")} type={siteText("checkbox")} style={{"width":"17px","height":"17px"}} ref={node => { if(node) node.setAttribute("style", "width:17px;height:17px;"); }}/>{siteText(" Trust replica certificate")}</label>{siteText("\n              ")}</div>{siteText("\n              ")}<div style={{"fontSize":"11px","color":"#8497a7","marginTop":"8px"}} ref={node => { if(node) node.setAttribute("style", "font-size:11px;color:#8497a7;margin-top:8px;"); }}>{siteText("Replica credentials stay in the server environment. Set SOURCE_SQL_REPLICA_PASSWORD for the read-only replica account. The portal never exposes that secret to the browser.")}</div>{siteText("\n            ")}</div>{siteText("\n            ")}<div style={{"gridColumn":"span 2","fontSize":"12px","color":"#8497a7","lineHeight":"1.5"}} ref={node => { if(node) node.setAttribute("style", "grid-column:span 2;font-size:12px;color:#8497a7;line-height:1.5;"); }}>{siteText("SQL mode expects 10 read-only canonical views named ")}<b>{siteText("v_employers")}</b>{siteText(", ")}<b>{siteText("v_workforce_snapshots")}</b>{siteText(", … ")}<b>{siteText("v_salary_advances")}</b>{siteText(" (or the configured prefix). The connection test checks every view and its contracted columns.")}</div>{siteText("\n          ")}</div>{siteText("\n\n          ")}<div style={{"marginTop":"16px","padding":"14px","border":"1px solid var(--line)","borderRadius":"12px","background":"#fbfaff","maxWidth":"820px"}} ref={node => { if(node) node.setAttribute("style", "margin-top:16px;padding:14px;border:1px solid var(--line);border-radius:12px;background:#fbfaff;max-width:820px;"); }}>{siteText("\n            ")}<div style={{"fontSize":"13px","fontWeight":"800","color":"var(--brand-primary)"}} ref={node => { if(node) node.setAttribute("style", "font-size:13px;font-weight:800;color:var(--brand-primary);"); }}>{siteText("Analytics query placement")}</div>{siteText("\n            ")}<div style={{"fontSize":"11.5px","color":"#617486","lineHeight":"1.5","marginTop":"4px"}} ref={node => { if(node) node.setAttribute("style", "font-size:11.5px;color:#617486;line-height:1.5;margin-top:4px;"); }}>{siteText("Do not run heavy dashboard workloads on a production MySQL primary. Use source-side reporting views or a read replica for approved aggregations, then keep the portal's governed read model in PostgreSQL.")}</div>{siteText("\n            ")}<div className={siteText("integration-two-col")} style={{"display":"grid","gridTemplateColumns":"1fr 1fr","gap":"12px","marginTop":"10px"}} ref={node => { if(node) node.setAttribute("style", "display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:10px;"); }}>{siteText("\n              ")}<label style={{"fontSize":"12px","fontWeight":"700","color":"#5b6b7a"}} ref={node => { if(node) node.setAttribute("style", "font-size:12px;font-weight:700;color:#5b6b7a;"); }}>{siteText("Default analytics mode\n                ")}<select id={siteText("integ-analytics-mode")} style={{"display":"block","width":"100%","marginTop":"5px","font":"inherit","padding":"9px 12px","border":"1px solid #e8e1f7","borderRadius":"9px","background":"#fff"}} ref={node => { if(node) node.setAttribute("style", "display:block;width:100%;margin-top:5px;font:inherit;padding:9px 12px;border:1px solid #e8e1f7;border-radius:9px;background:#fff;"); }}>{siteText("\n                  ")}<option value={siteText("POSTGRES_READ_MODEL")}>{siteText("PostgreSQL read model")}</option>{siteText("\n                  ")}<option value={siteText("SOURCE_AGGREGATES")}>{siteText("Source-side aggregates")}</option>{siteText("\n                  ")}<option value={siteText("HYBRID")}>{siteText("Hybrid, per feed")}</option>{siteText("\n                ")}</select>{siteText("\n              ")}</label>{siteText("\n              ")}<label style={{"display":"flex","alignItems":"center","gap":"9px","fontSize":"12px","fontWeight":"700","color":"#32217c","cursor":"pointer","paddingTop":"20px"}} ref={node => { if(node) node.setAttribute("style", "display:flex;align-items:center;gap:9px;font-size:12px;font-weight:700;color:#32217c;cursor:pointer;padding-top:20px;"); }}>{siteText("\n                ")}<input id={siteText("integ-source-analytics")} type={siteText("checkbox")} style={{"width":"17px","height":"17px"}} ref={node => { if(node) node.setAttribute("style", "width:17px;height:17px;"); }}/>{siteText(" Allow approved source analytics\n              ")}</label>{siteText("\n            ")}</div>{siteText("\n            ")}<label style={{"display":"flex","alignItems":"center","gap":"9px","fontSize":"12px","fontWeight":"700","color":"#32217c","cursor":"pointer","marginTop":"10px"}} ref={node => { if(node) node.setAttribute("style", "display:flex;align-items:center;gap:9px;font-size:12px;font-weight:700;color:#32217c;cursor:pointer;margin-top:10px;"); }}>{siteText("\n              ")}<input id={siteText("integ-source-replica")} type={siteText("checkbox")} style={{"width":"17px","height":"17px"}} ref={node => { if(node) node.setAttribute("style", "width:17px;height:17px;"); }}/>{siteText(" Source analytics must use a read replica\n            ")}</label>{siteText("\n            ")}<div id={siteText("integ-analytics-note")} style={{"fontSize":"11px","color":"#8497a7","marginTop":"8px"}} ref={node => { if(node) node.setAttribute("style", "font-size:11px;color:#8497a7;margin-top:8px;"); }}>{siteText("Read-only is enforced by the server. Arbitrary SQL is never accepted from the browser.")}</div>{siteText("\n          ")}</div>{siteText("\n\n          ")}<label style={{"marginTop":"16px","display":"flex","alignItems":"center","gap":"9px","fontSize":"13px","fontWeight":"700","color":"#32217c","cursor":"pointer"}} ref={node => { if(node) node.setAttribute("style", "margin-top:16px;display:flex;align-items:center;gap:9px;font-size:13px;font-weight:700;color:#32217c;cursor:pointer;"); }}>{siteText("\n            ")}<input id={siteText("integ-enabled")} type={siteText("checkbox")} style={{"width":"17px","height":"17px"}} ref={node => { if(node) node.setAttribute("style", "width:17px;height:17px;"); }}/>{siteText(" Enable automatic scheduled sync\n          ")}</label>{siteText("\n\n          ")}<div style={{"marginTop":"16px","display":"flex","gap":"8px","flexWrap":"wrap"}} ref={node => { if(node) node.setAttribute("style", "margin-top:16px;display:flex;gap:8px;flex-wrap:wrap;"); }}>{siteText("\n            ")}<button className={siteText("btn")} onClick={event => actions[9]?.(event)}>{siteText("Save settings")}</button>{siteText("\n            ")}<button className={siteText("btn btn-ghost")} onClick={event => actions[10]?.(event)}>{siteText("Test source")}</button>{siteText("\n            ")}<button className={siteText("btn")} style={{"background":"#2B1D73","color":"#fff","borderColor":"#2B1D73"}} ref={node => { if(node) node.setAttribute("style", "background:#2B1D73;color:#fff;border-color:#2B1D73;"); }} onClick={event => actions[11]?.(event)}>{siteText("Sync now")}</button>{siteText("\n            ")}<button id={siteText("btn-refresh-now")} className={siteText("btn btn-ghost")} onClick={event => actions[12]?.(event)} title={siteText("Run the full governed purge, authoritative reload, snapshot rebuild and publish cycle now")}>{siteText("Refresh now")}</button>{siteText("\n          ")}</div>{siteText("\n          ")}<div className={siteText("muted")} style={{"marginTop":"8px","maxWidth":"820px","lineHeight":"1.5"}} ref={node => { if(node) node.setAttribute("style", "margin-top:8px;max-width:820px;line-height:1.5;"); }}><b>{siteText("Sync now")}</b>{siteText(" applies incremental source changes. ")}<b>{siteText("Refresh now")}</b>{siteText(" runs the full purge-and-reload cycle; dashboard users keep seeing the last successful published data until the new refresh completes successfully.")}</div>{siteText("\n          ")}<div id={siteText("integ-result")} style={{"marginTop":"12px"}} ref={node => { if(node) node.setAttribute("style", "margin-top:12px;"); }}/>{siteText("\n          ")}<div style={{"marginTop":"18px"}} ref={node => { if(node) node.setAttribute("style", "margin-top:18px;"); }}>{siteText("\n            ")}<div style={{"fontSize":"12.5px","fontWeight":"700","color":"#5b6b7a","marginBottom":"8px"}} ref={node => { if(node) node.setAttribute("style", "font-size:12.5px;font-weight:700;color:#5b6b7a;margin-bottom:8px;"); }}>{siteText("Recent syncs")}</div>{siteText("\n            ")}<table className={siteText("hist")}><tbody id={siteText("integ-logs")}><tr><td className={siteText("muted")} style={{"padding":"10px"}} ref={node => { if(node) node.setAttribute("style", "padding:10px;"); }}>{siteText("No syncs yet.")}</td></tr></tbody></table>{siteText("\n          ")}</div>{siteText("\n        ")}</div>{siteText("\n      ")}</div>{siteText("\n\n      ")}{siteText("\n      ")}<AdminEmailPanel/>{siteText("\n\n      ")}{siteText("\n      ")}<div className={siteText("card section-gap")}>{siteText("\n        ")}<div className={siteText("card-hd")}><h2>{siteText("Admin Audit Log")}</h2><div className={siteText("note")}>{siteText("Top 5 most critical admin changes · full history remains available in the CSV export")}</div></div>{siteText("\n        ")}<div className={siteText("card-bd")}>{siteText("\n          ")}<div style={{"overflow":"auto"}} ref={node => { if(node) node.setAttribute("style", "overflow:auto;"); }}><table className={siteText("hist")}><thead><tr><th>{siteText("When")}</th><th>{siteText("Admin")}</th><th>{siteText("Action")}</th><th>{siteText("Details")}</th></tr></thead><AuditRows/></table></div>{siteText("\n          ")}<div className={siteText("row")} style={{"justifyContent":"space-between","marginTop":"14px"}} ref={node => { if(node) node.setAttribute("style", "justify-content:space-between;margin-top:14px;"); }}>{siteText("\n            ")}<span className={siteText("muted")}>{siteText("Audit events continue recording without display limits.")}</span>{siteText("\n            ")}<a className={siteText("btn btn-primary")} href={siteText("/api/admin/audit-log.csv")} download={siteText("")}>{siteText("Download all logs (CSV)")}</a>{siteText("\n          ")}</div>{siteText("\n        ")}</div>{siteText("\n      ")}</div>{siteText("\n\n      ")}{siteText("\n      ")}<AdminAutomationPanel/>{siteText("\n\n      ")}{siteText("\n      ")}<Engagement/>{siteText("\n      ")}<style>{siteText("@media(max-width:820px){.eng-grid{grid-template-columns:1fr!important;}}")}</style>{siteText("\n\n      ")}{siteText("\n      ")}<div className={siteText("card section-gap")} id={siteText("channel-partners-card")}>{siteText("\n        ")}<div className={siteText("card-hd")}><h2>{siteText("Channel Partners")}</h2><button className={siteText("btn btn-sm")} type={siteText("button")} onClick={event => actions[13]?.(event)}>{siteText("Collapse")}</button><div className={siteText("note")}>{siteText("White-label branding · each partner's users see their colours, logo & name")}</div></div>{siteText("\n        ")}<div className={siteText("card-bd")}>{siteText("\n          ")}<div style={{"display":"flex","gap":"8px","marginBottom":"10px","flexWrap":"wrap"}} ref={node => { if(node) node.setAttribute("style", "display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap;"); }}>{siteText("\n            ")}<input id={siteText("pt-new-name")} placeholder={siteText("New partner name (e.g. Acme Financial)")} style={{"flex":"1","minWidth":"220px","font":"inherit","padding":"9px 12px","border":"1px solid #e8e1f7","borderRadius":"9px"}} ref={node => { if(node) node.setAttribute("style", "flex:1;min-width:220px;font:inherit;padding:9px 12px;border:1px solid #e8e1f7;border-radius:9px;"); }}/>{siteText("\n            ")}<label className={siteText("btn btn-ghost")} style={{"fontSize":"12.5px","padding":"9px 14px","cursor":"pointer"}} ref={node => { if(node) node.setAttribute("style", "font-size:12.5px;padding:9px 14px;cursor:pointer;"); }} title={siteText("Optional — colours are auto-detected from it")}>{siteText("\n              ")}<span id={siteText("pt-new-logo-label")}>{siteText("+ Logo (optional)")}</span>{siteText("\n              ")}<input id={siteText("pt-new-logo")} type={siteText("file")} accept={siteText("image/png,image/jpeg")} style={{"display":"none"}} ref={node => { if(node) node.setAttribute("style", "display:none;"); }} onChange={event => actions[14]?.(event)}/>{siteText("\n            ")}</label>{siteText("\n            ")}<button className={siteText("btn")} onClick={event => actions[15]?.(event)}>{siteText("Add partner")}</button>{siteText("\n          ")}</div>{siteText("\n          ")}<div style={{"marginBottom":"16px"}} ref={node => { if(node) node.setAttribute("style", "margin-bottom:16px;"); }}>{siteText("\n            ")}<div className={siteText("note")} style={{"margin":"0 0 8px","fontSize":"12px","color":"#8497a7"}} ref={node => { if(node) node.setAttribute("style", "margin:0 0 8px;font-size:12px;color:#8497a7;"); }}>{siteText("Or start from a test client preset (dummy placeholder logo & approximate brand colours, for demo/testing only):")}</div>{siteText("\n            ")}<div id={siteText("pt-presets")} style={{"display":"flex","gap":"8px","flexWrap":"wrap"}} ref={node => { if(node) node.setAttribute("style", "display:flex;gap:8px;flex-wrap:wrap;"); }}/>{siteText("\n          ")}</div>{siteText("\n          ")}<div id={siteText("pt-list")}/>{siteText("\n        ")}</div>{siteText("\n      ")}</div>{siteText("\n\n      ")}{siteText("\n      ")}<div className={siteText("card section-gap")}>{siteText("\n        ")}<div className={siteText("card-hd")}><h2>{siteText("Dashboard Sections")}</h2><div className={siteText("note")}>{siteText("Hide sections that aren't ready yet, and control which roles (or specific people) can see each one")}</div></div>{siteText("\n        ")}<div className={siteText("card-bd")}>{siteText("\n          ")}<AdminSections/>{siteText("\n        ")}</div>{siteText("\n      ")}</div>{siteText("\n\n      ")}{siteText("\n      ")}<AdminReset/>{siteText("\n    ")}</div>{siteText("\n  ")}</div>{siteText("\n")}</div>
+<div className={siteText("wrap")}>{siteText("\n  ")}<div className={siteText("head")}>{siteText("\n    ")}<div className={siteText("eyebrow")}>{siteText("Feed the system")}</div>{siteText("\n    ")}<h1>{siteText("Data Centre")}</h1>{siteText("\n    ")}<p>{siteText("Bring approved data into EFS Optimise from files, APIs or SQL. File uploads support CSV, Excel and JSON. Every import is validated against a governed feed contract before it reaches the live reporting model.")}</p>{siteText("\n  ")}</div>{siteText("\n\n  ")}<AdminSecurity/>{siteText("\n  ")}<Compliance/>{siteText("\n  ")}<MLOpsAlert/>{siteText("\n  ")}<section id={siteText("data-centre")} className={siteText("card section-gap")}>{siteText("\n    ")}<div className={siteText("card-hd")}>{siteText("\n      ")}<div><h2>{siteText("Data ingestion")}</h2><div className={siteText("note")}>{siteText("Choose how you want to bring data into EFS Optimise. These are complementary options, not fallbacks.")}</div></div>{siteText("\n    ")}</div>{siteText("\n    ")}<div className={siteText("card-bd")}>{siteText("\n      ")}<div className={siteText("ingestion-method-grid")}>{siteText("\n        ")}<button className={siteText("ingestion-method on")} type={siteText("button")} onClick={event => actions[0]?.(event)}>{siteText("\n          ")}<span className={siteText("ingestion-method-icon")}>{siteText("FILE")}</span>{siteText("\n          ")}<span><strong>{siteText("Upload a file")}</strong><small>{siteText("CSV, Excel (.xlsx/.xls) or JSON, up to 50 MB. Preview, validate and import.")}</small></span>{siteText("\n        ")}</button>{siteText("\n        ")}<button className={siteText("ingestion-method")} type={siteText("button")} onClick={event => actions[1]?.(event)}>{siteText("\n          ")}<span className={siteText("ingestion-method-icon")}>{siteText("API")}</span>{siteText("\n          ")}<span><strong>{siteText("Connect an API")}</strong><small>{siteText("Pull the governed feeds from HTTPS endpoints using private bearer-token authentication.")}</small></span>{siteText("\n        ")}</button>{siteText("\n        ")}<button className={siteText("ingestion-method")} type={siteText("button")} onClick={event => actions[2]?.(event)}>{siteText("\n          ")}<span className={siteText("ingestion-method-icon")}>{siteText("SQL")}</span>{siteText("\n          ")}<span><strong>{siteText("Connect a database")}</strong><small>{siteText("Use approved read-only PostgreSQL, SQL Server, MySQL or MariaDB views.")}</small></span>{siteText("\n        ")}</button>{siteText("\n      ")}</div>{siteText("\n      ")}<div className={siteText("ingestion-note")}><strong>{siteText("Governed by design:")}</strong>{siteText(" files, API records and SQL feeds enter the same validation and import pipeline. Heavy analytics can remain on an approved read replica without moving arbitrary source data into PostgreSQL.")}</div>{siteText("\n    ")}</div>{siteText("\n  ")}</section>{siteText("\n\n  ")}<div className={siteText("grid")}>{siteText("\n    ")}{siteText("\n    ")}<div className={siteText("card")}>{siteText("\n      ")}<div className={siteText("card-hd")}><h2>{siteText("Reports")}</h2><div className={siteText("note")}>{siteText("In load order")}</div></div>{siteText("\n      ")}<ReportPicker/>{siteText("\n    ")}</div>{siteText("\n\n    ")}{siteText("\n    ")}<div id={siteText("file-ingestion")}>{siteText("\n\n    ")}<div id={siteText("client-preview-overlay")} className={siteText("client-preview-overlay")} role={siteText("dialog")} aria-modal={siteText("true")} aria-labelledby={siteText("client-preview-title")} onClick={event => actions[3]?.(event)}>{siteText("\n      ")}<div className={siteText("client-preview-dialog")} onClick={event => actions[4]?.(event)}>{siteText("\n        ")}<div className={siteText("client-preview-toolbar")}>{siteText("\n          ")}<strong id={siteText("client-preview-title")}>{siteText("Client dashboard preview")}</strong>{siteText("\n          ")}<span>{siteText("Preview only")}</span>{siteText("\n          ")}<button className={siteText("client-preview-close")} type={siteText("button")} aria-label={siteText("Close preview")} onClick={event => actions[5]?.(event)}>{siteText("×")}</button>{siteText("\n        ")}</div>{siteText("\n        ")}<div id={siteText("client-preview-app")} className={siteText("client-preview-app")}/>{siteText("\n      ")}</div>{siteText("\n    ")}</div>{siteText("\n      ")}<ReportWorkspace/>{siteText("\n\n      ")}<EnterpriseOperations/>{siteText("\n\n      ")}{siteText("\n      ")}<div className={siteText("card section-gap")}>{siteText("\n        ")}<div className={siteText("card-hd")}><h2>{siteText("Import history")}</h2><div className={siteText("note")}>{siteText("Live updates every 1.5s · Rows show validated totals and how many changes have actually reached live tables")}</div></div>{siteText("\n        ")}<div className={siteText("card-bd")} style={{"padding":"6px 8px 12px"}} ref={node => { if(node) node.setAttribute("style", "padding:6px 8px 12px;"); }}>{siteText("\n          ")}<table className={siteText("hist")}><thead><tr><th>{siteText("Report")}</th><th>{siteText("File")}</th><th>{siteText("Rows")}</th><th>{siteText("Status")}</th><th>{siteText("When")}</th><th>{siteText("Download")}</th><th/></tr></thead>{siteText("\n          ")}<ImportHistoryRows/></table>{siteText("\n        ")}</div>{siteText("\n      ")}</div>{siteText("\n\n      ")}{siteText("\n      ")}<AdminIntegration/>{siteText("\n\n      ")}{siteText("\n      ")}<AdminEmailPanel/>{siteText("\n\n      ")}{siteText("\n      ")}<div className={siteText("card section-gap")}>{siteText("\n        ")}<div className={siteText("card-hd")}><h2>{siteText("Admin Audit Log")}</h2><div className={siteText("note")}>{siteText("Top 5 most critical admin changes · full history remains available in the CSV export")}</div></div>{siteText("\n        ")}<div className={siteText("card-bd")}>{siteText("\n          ")}<div style={{"overflow":"auto"}} ref={node => { if(node) node.setAttribute("style", "overflow:auto;"); }}><table className={siteText("hist")}><thead><tr><th>{siteText("When")}</th><th>{siteText("Admin")}</th><th>{siteText("Action")}</th><th>{siteText("Details")}</th></tr></thead><AuditRows/></table></div>{siteText("\n          ")}<div className={siteText("row")} style={{"justifyContent":"space-between","marginTop":"14px"}} ref={node => { if(node) node.setAttribute("style", "justify-content:space-between;margin-top:14px;"); }}>{siteText("\n            ")}<span className={siteText("muted")}>{siteText("Audit events continue recording without display limits.")}</span>{siteText("\n            ")}<a className={siteText("btn btn-primary")} href={siteText("/api/admin/audit-log.csv")} download={siteText("")}>{siteText("Download all logs (CSV)")}</a>{siteText("\n          ")}</div>{siteText("\n        ")}</div>{siteText("\n      ")}</div>{siteText("\n\n      ")}{siteText("\n      ")}<AdminAutomationPanel/>{siteText("\n\n      ")}{siteText("\n      ")}<Engagement/>{siteText("\n      ")}<style>{siteText("@media(max-width:820px){.eng-grid{grid-template-columns:1fr!important;}}")}</style>{siteText("\n\n      ")}{siteText("\n      ")}<div className={siteText("card section-gap")} id={siteText("channel-partners-card")}>{siteText("\n        ")}<div className={siteText("card-hd")}><h2>{siteText("Channel Partners")}</h2><button className={siteText("btn btn-sm")} type={siteText("button")} onClick={event => actions[6]?.(event)}>{siteText("Collapse")}</button><div className={siteText("note")}>{siteText("White-label branding · each partner's users see their colours, logo & name")}</div></div>{siteText("\n        ")}<div className={siteText("card-bd")}>{siteText("\n          ")}<div style={{"display":"flex","gap":"8px","marginBottom":"10px","flexWrap":"wrap"}} ref={node => { if(node) node.setAttribute("style", "display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap;"); }}>{siteText("\n            ")}<input id={siteText("pt-new-name")} placeholder={siteText("New partner name (e.g. Acme Financial)")} style={{"flex":"1","minWidth":"220px","font":"inherit","padding":"9px 12px","border":"1px solid #e8e1f7","borderRadius":"9px"}} ref={node => { if(node) node.setAttribute("style", "flex:1;min-width:220px;font:inherit;padding:9px 12px;border:1px solid #e8e1f7;border-radius:9px;"); }}/>{siteText("\n            ")}<label className={siteText("btn btn-ghost")} style={{"fontSize":"12.5px","padding":"9px 14px","cursor":"pointer"}} ref={node => { if(node) node.setAttribute("style", "font-size:12.5px;padding:9px 14px;cursor:pointer;"); }} title={siteText("Optional — colours are auto-detected from it")}>{siteText("\n              ")}<span id={siteText("pt-new-logo-label")}>{siteText("+ Logo (optional)")}</span>{siteText("\n              ")}<input id={siteText("pt-new-logo")} type={siteText("file")} accept={siteText("image/png,image/jpeg")} style={{"display":"none"}} ref={node => { if(node) node.setAttribute("style", "display:none;"); }} onChange={event => actions[7]?.(event)}/>{siteText("\n            ")}</label>{siteText("\n            ")}<button className={siteText("btn")} onClick={event => actions[8]?.(event)}>{siteText("Add partner")}</button>{siteText("\n          ")}</div>{siteText("\n          ")}<div style={{"marginBottom":"16px"}} ref={node => { if(node) node.setAttribute("style", "margin-bottom:16px;"); }}>{siteText("\n            ")}<div className={siteText("note")} style={{"margin":"0 0 8px","fontSize":"12px","color":"#8497a7"}} ref={node => { if(node) node.setAttribute("style", "margin:0 0 8px;font-size:12px;color:#8497a7;"); }}>{siteText("Or start from a test client preset (dummy placeholder logo & approximate brand colours, for demo/testing only):")}</div>{siteText("\n            ")}<div id={siteText("pt-presets")} style={{"display":"flex","gap":"8px","flexWrap":"wrap"}} ref={node => { if(node) node.setAttribute("style", "display:flex;gap:8px;flex-wrap:wrap;"); }}/>{siteText("\n          ")}</div>{siteText("\n          ")}<div id={siteText("pt-list")}/>{siteText("\n        ")}</div>{siteText("\n      ")}</div>{siteText("\n\n      ")}{siteText("\n      ")}<div className={siteText("card section-gap")}>{siteText("\n        ")}<div className={siteText("card-hd")}><h2>{siteText("Dashboard Sections")}</h2><div className={siteText("note")}>{siteText("Hide sections that aren't ready yet, and control which roles (or specific people) can see each one")}</div></div>{siteText("\n        ")}<div className={siteText("card-bd")}>{siteText("\n          ")}<AdminSections/>{siteText("\n        ")}</div>{siteText("\n      ")}</div>{siteText("\n\n      ")}{siteText("\n      ")}<AdminReset/>{siteText("\n    ")}</div>{siteText("\n  ")}</div>{siteText("\n")}</div>
 {siteText("\n\n")}
 
 {siteText("\n")}
@@ -64,27 +65,6 @@ event => {
 },
 event => {
   closeClientPreview();
-},
-event => {
-  setIntegMode('API');
-},
-event => {
-  setIntegMode('SQL');
-},
-event => {
-  setSqlPortDefault();
-},
-event => {
-  saveInteg();
-},
-event => {
-  testInteg();
-},
-event => {
-  syncNow();
-},
-event => {
-  refreshNow(event.currentTarget);
 },
 event => {
   toggleChannelPartners();
@@ -295,314 +275,6 @@ function addNav(me) {
   }
 }
 // ── live data integration (API or direct SQL) ──
-function setIntegMode(mode) {
-  mode = String(mode || 'API').toUpperCase() === 'SQL' ? 'SQL' : 'API';
-  $('#integ-mode').value = mode;
-  $('#integ-api-panel').style.display = mode === 'API' ? 'grid' : 'none';
-  $('#integ-sql-panel').style.display = mode === 'SQL' ? 'grid' : 'none';
-  const api = $('#source-tab-api'),
-    sql = $('#source-tab-sql');
-  if (api) {
-    api.classList.toggle('on', mode === 'API');
-    api.setAttribute('aria-selected', String(mode === 'API'));
-  }
-  if (sql) {
-    sql.classList.toggle('on', mode === 'SQL');
-    sql.setAttribute('aria-selected', String(mode === 'SQL'));
-  }
-}
-function toggleIntegMode() {
-  setIntegMode($('#integ-mode')?.value || 'API');
-}
-function setSqlPortDefault(force = false) {
-  const dialect = $('#integ-sql-dialect').value;
-  const field = $('#integ-sql-port');
-  if (!force && field.value) return;
-  field.value = dialect === 'MSSQL' ? '1433' : dialect === 'MYSQL' ? '3306' : '5432';
-}
-async function loadInteg() {
-  try {
-    const c = await fetch(`${API}/api/admin/integration`).then(r => r.json());
-    setIntegMode((c.effectiveSourceMode || c.sourceMode || 'API').toUpperCase());
-    $('#integ-url').value = c.baseUrl || '';
-    $('#integ-hours').value = c.scheduleHours || 1;
-    $('#integ-enabled').checked = !!c.enabled;
-    if (c.hasToken) $('#integ-token').placeholder = c.apiTokenFromEnvironment ? '•••••• (provided by SOURCE_API_TOKEN)' : '•••••• (saved — leave blank to keep)';
-    $('#integ-sql-dialect').value = (c.sqlDialect || 'POSTGRESQL').toUpperCase();
-    $('#integ-sql-host').value = c.sqlHost || '';
-    $('#integ-sql-port').value = c.sqlPort || '';
-    if (!$('#integ-sql-port').value) setSqlPortDefault(true);
-    $('#integ-sql-database').value = c.sqlDatabase || '';
-    $('#integ-sql-schema').value = c.sqlSchema || '';
-    $('#integ-sql-user').value = c.sqlUsername || '';
-    $('#integ-sql-prefix').value = c.sqlViewPrefix || 'v_';
-    $('#integ-sql-timeout').value = c.sqlQueryTimeoutMs || 60000;
-    $('#integ-sql-maxrows').value = c.sqlMaxRowsPerReport || 250000;
-    $('#integ-sql-ssl').checked = c.sqlSsl !== false;
-    $('#integ-sql-trust').checked = !!c.sqlTrustServerCertificate;
-    $('#integ-analytics-mode').value = c.analyticsMode || 'POSTGRES_READ_MODEL';
-    $('#integ-source-analytics').checked = !!c.sourceAnalyticsEnabled;
-    $('#integ-source-replica').checked = !!c.sourceAnalyticsUseReplica;
-    $('#integ-replica-host').value = c.sourceAnalyticsReplicaHost || '';
-    $('#integ-replica-port').value = c.sourceAnalyticsReplicaPort || (c.sqlDialect === 'MYSQL' ? 3306 : c.sqlPort || '');
-    $('#integ-replica-database').value = c.sourceAnalyticsReplicaDatabase || '';
-    $('#integ-replica-user').value = c.sourceAnalyticsReplicaUsername || '';
-    $('#integ-replica-lag').value = c.sourceAnalyticsReplicaMaxLagSeconds ?? 60;
-    $('#integ-replica-ssl').checked = c.sourceAnalyticsReplicaSsl !== false;
-    $('#integ-replica-trust').checked = !!c.sourceAnalyticsReplicaTrustServerCertificate;
-    if (c.hasSqlPassword) $('#integ-sql-password').placeholder = c.sqlPasswordFromEnvironment ? '•••••• (provided by SOURCE_SQL_PASSWORD)' : '•••••• (saved — leave blank to keep)';
-    const envBox = $('#integ-env-override');
-    if (envBox) {
-      if (Array.isArray(c.envOverrides) && c.envOverrides.length) {
-        envBox.style.display = 'block';
-        renderMarkup(envBox, '⚠ These fields are locked by environment variables on the app service and will always win over whatever is set below, no matter what you save here: ' + c.envOverrides.map(o => `<b>${esc(o.label)}</b> = "${esc(o.value)}" (${esc(o.envName)})`).join(', ') + '.');
-      } else {
-        envBox.style.display = 'none';
-        renderMarkup(envBox, '');
-      }
-    }
-    const s = $('#integ-status');
-    const changeMode = $('#integ-change-mode');
-    if (changeMode) {
-      changeMode.textContent = c.changeDetectionSupported ? `Live SQL change detection is active every ${Number(c.sourceChangePollSeconds || 30).toLocaleString('en-ZA')}s using indexed source_updated_at watermarks. Bulk writes process up to ${Number(c.syncBulkChunkSize || 20000).toLocaleString('en-ZA')} rows per database call. The hourly setting above remains a safety reconciliation.` : 'This source does not expose a portable SQL watermark, so the heartbeat schedule above controls automatic reconciliation.';
-    }
-    const configuredText = c.configured ? 'configured' : 'incomplete';
-    if (c.lastSyncAt) {
-      const when = new Date(c.lastSyncAt).toLocaleString('en-ZA');
-      const lastGood = c.lastSuccessfulSyncAt ? new Date(c.lastSuccessfulSyncAt).toLocaleString('en-ZA') : 'none yet';
-      const failureStates = ['FAILED', 'PARTIAL', 'FULL_REFRESH_FAILED', 'FULL_REFRESH_PRECHECK_FAILED'];
-      const rebuilding = c.lastSyncStatus === 'REBUILDING';
-      s.style.display = 'block';
-      s.className = 'banner ' + (c.lastSyncStatus === 'OK' ? 'ok' : failureStates.includes(c.lastSyncStatus) ? 'err' : '');
-      const reason = c.lastSyncNote || 'No refresh reason was recorded.';
-      const watcher = c.changeDetectionEnabled ? ` · Change watch: every ${c.sourceChangePollSeconds || 30}s` : '';
-      s.textContent = `${c.effectiveSourceMode || c.sourceMode || 'API'} source · ${configuredText}${watcher} · Last attempt: ${c.lastSyncStatus || 'UNKNOWN'} · ${when} · Last successful: ${lastGood} · ${rebuilding ? 'Refresh status' : 'Refresh reason'}: ${reason}`;
-    } else {
-      s.style.display = 'block';
-      s.className = 'banner ' + (c.configured ? 'ok' : '');
-      const watcher = c.changeDetectionEnabled ? ` Change watch runs every ${c.sourceChangePollSeconds || 30}s.` : '';
-      s.textContent = `${c.effectiveSourceMode || c.sourceMode || 'API'} source · ${configuredText}. No sync has run yet.${watcher}`;
-    }
-    loadIntegLogs();
-  } catch (e) {}
-}
-function integrationDraft() {
-  const mode = ($('#integ-mode').value || 'API').toUpperCase();
-  const body = {
-    sourceMode: mode,
-    baseUrl: $('#integ-url').value.trim(),
-    scheduleHours: parseInt($('#integ-hours').value) || 1,
-    enabled: $('#integ-enabled').checked,
-    sqlDialect: $('#integ-sql-dialect').value,
-    sqlHost: $('#integ-sql-host').value.trim(),
-    sqlPort: parseInt($('#integ-sql-port').value) || null,
-    sqlDatabase: $('#integ-sql-database').value.trim(),
-    sqlSchema: $('#integ-sql-schema').value.trim(),
-    sqlUsername: $('#integ-sql-user').value.trim(),
-    sqlViewPrefix: $('#integ-sql-prefix').value.trim() || 'v_',
-    sqlQueryTimeoutMs: parseInt($('#integ-sql-timeout').value) || 60000,
-    sqlMaxRowsPerReport: parseInt($('#integ-sql-maxrows').value) || 250000,
-    sqlSsl: $('#integ-sql-ssl').checked,
-    sqlTrustServerCertificate: $('#integ-sql-trust').checked,
-    analyticsMode: $('#integ-analytics-mode').value,
-    sourceAnalyticsEnabled: $('#integ-source-analytics').checked,
-    sourceAnalyticsReadOnly: true,
-    sourceAnalyticsUseReplica: $('#integ-source-replica').checked,
-    sourceAnalyticsReplicaEnabled: $('#integ-source-replica').checked,
-    sourceAnalyticsReplicaHost: $('#integ-replica-host').value.trim(),
-    sourceAnalyticsReplicaPort: parseInt($('#integ-replica-port').value) || null,
-    sourceAnalyticsReplicaDatabase: $('#integ-replica-database').value.trim(),
-    sourceAnalyticsReplicaUsername: $('#integ-replica-user').value.trim(),
-    sourceAnalyticsReplicaMaxLagSeconds: parseInt($('#integ-replica-lag').value) || 60,
-    sourceAnalyticsReplicaSsl: $('#integ-replica-ssl').checked,
-    sourceAnalyticsReplicaTrustServerCertificate: $('#integ-replica-trust').checked
-  };
-  const tok = $('#integ-token').value.trim();
-  if (tok) body.authToken = tok;
-  const sqlPassword = $('#integ-sql-password').value.trim();
-  if (sqlPassword) body.sqlPassword = sqlPassword;
-  return body;
-}
-async function saveInteg() {
-  const body = integrationDraft();
-  const mode = body.sourceMode;
-  renderMarkup($('#integ-result'), '<div class="banner ok">Saving…</div>');
-  try {
-    const r = await fetch(`${API}/api/admin/integration`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify(body)
-    });
-    const d = await r.json();
-    if (!r.ok) throw new Error(d.error || 'save failed');
-    $('#integ-token').value = '';
-    $('#integ-sql-password').value = '';
-    renderMarkup($('#integ-result'), `<div class="banner ok">✓ ${mode === 'SQL' ? 'Database' : 'API'} integration settings saved.</div>`);
-    loadInteg();
-  } catch (e) {
-    renderMarkup($('#integ-result'), `<div class="banner err">✕ ${esc(e.message)}</div>`);
-  }
-}
-async function testInteg() {
-  const body = integrationDraft();
-  const label = body.sourceMode === 'SQL' ? 'database' : 'API';
-  renderMarkup($('#integ-result'), `<div class="banner ok">Testing ${label} connection and contract…</div>`);
-  try {
-    const r = await fetch(`${API}/api/admin/integration/test`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify(body)
-    });
-    const d = await r.json();
-    renderMarkup($('#integ-result'), d.ok ? `<div class="banner ok">✓ ${esc(d.note)}</div>` : `<div class="banner err">✕ ${esc(d.error)}</div>`);
-  } catch (e) {
-    renderMarkup($('#integ-result'), `<div class="banner err">✕ ${esc(e.message)}</div>`);
-  }
-}
-async function syncNow() {
-  const mode = ($('#integ-mode').value || 'API').toUpperCase();
-  renderMarkup($('#integ-result'), `<div class="banner ok">Saving settings…</div>`);
-  try {
-    const saveBody = integrationDraft();
-    const saveResp = await fetch(`${API}/api/admin/integration`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify(saveBody)
-    });
-    const saved = await saveResp.json();
-    if (!saveResp.ok) throw new Error(saved.error || 'Could not save settings before syncing');
-    $('#integ-token').value = '';
-    $('#integ-sql-password').value = '';
-  } catch (e) {
-    renderMarkup($('#integ-result'), `<div class="banner err">✕ ${esc(e.message)}</div>`);
-    return;
-  }
-  try {
-    const r = await fetch(`${API}/api/admin/integration/sync`, {
-      method: 'POST'
-    });
-    const d = await r.json();
-    if (!r.ok || d.error) {
-      renderMarkup($('#integ-result'), `<div class="banner err">✕ ${esc(d.error || 'sync failed to start')}</div>`);
-      return;
-    }
-    const result = await pollJob(`${API}/api/admin/sync-jobs/${d.jobId}`, `Syncing all reports from ${mode}`, () => {
-      loadHistory();
-    }, '#integ-result');
-    const rows = Object.entries(result.summary || {}).map(([k, v]) => {
-      const txt = v.error ? `<span style="color:#b5391f">${esc(v.error)}</span>` : v.errorCount ? `<span style="color:#b5391f">${esc(v.errorCount)} validation error(s)</span>` : (() => {
-        const h = Number(v.historyRows || 0),
-          s = Number(v.staleSkipped || 0);
-        return `${Number(v.committed || 0).toLocaleString('en-ZA')} processed · +${Number(v.inserted || 0).toLocaleString('en-ZA')} new · ~${Number(v.updated || 0).toLocaleString('en-ZA')} updated · -${Number(v.deleted || 0).toLocaleString('en-ZA')} deleted${h > 0 ? ` · ${h.toLocaleString('en-ZA')} dated history observation(s)` : s > 0 ? ` · ${s.toLocaleString('en-ZA')} stale skipped` : ''}${v.authoritativeOverwrite ? ' · authoritative overwrite' : ''}`;
-      })();
-      return `<tr><td style="font-weight:700">${esc(k)}</td><td>${txt}</td></tr>`;
-    }).join('');
-    const cls = result.status === 'OK' ? 'ok' : result.status === 'FAILED' ? 'err' : 'ok';
-    renderMarkup($('#integ-result'), `<div class="banner ${cls}">${esc(result.status)}: ${esc(result.note)}</div><table class="hist" style="margin-top:8px"><tbody>${rows}</tbody></table>`);
-    await Promise.allSettled([loadHistory(), loadInteg(), loadIntegLogs()]);
-  } catch (e) {
-    renderMarkup($('#integ-result'), `<div class="banner err">✕ ${esc(e.message)}</div>`);
-  }
-}
-async function refreshNow(btn) {
-  if (!confirm('Run an authoritative full refresh now?\n\nThe connected source will be treated as truth. Previous cursors, MLOps decisions and stale-write comparisons will not gate this rebuild. All 10 feeds are read from the beginning, the source-derived model is rewritten, and a new dashboard is published only after the full rebuild succeeds.\n\nDashboard users continue seeing the last successful published dashboard while this runs.')) return;
-  const original = btn?.textContent || 'Refresh now';
-  if (btn) {
-    btn.disabled = true;
-    btn.textContent = 'Refreshing…';
-  }
-  renderMarkup($('#integ-result'), '<div class="banner ok">Saving settings and preflighting the source…</div>');
-  try {
-    const saveBody = integrationDraft();
-    const saveResp = await fetch(`${API}/api/admin/integration`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify(saveBody)
-    });
-    const saved = await saveResp.json().catch(() => ({}));
-    if (!saveResp.ok) throw new Error(saved.error || 'Could not save settings before refresh');
-    $('#integ-token').value = '';
-    $('#integ-sql-password').value = '';
-    renderMarkup($('#integ-result'), '<div class="banner ok">Full refresh started. The last successful dashboard remains published while source data is rebuilt…</div>');
-    const r = await fetch(`${API}/api/admin/integration/refresh`, {
-      method: 'POST'
-    });
-    const d = await r.json().catch(() => ({}));
-    if (!r.ok || !d.ok) throw new Error(d.error || d.note || 'Full refresh failed');
-    if (d.status === 'ALREADY_RUNNING') {
-      renderMarkup($('#integ-result'), '<div class="banner ok">A full refresh is already running on another application instance. The last successful dashboard remains visible until it publishes.</div>');
-      return;
-    }
-    const detail = [d.purgedRows != null ? `${Number(d.purgedRows).toLocaleString('en-ZA')} source rows purged` : null, d.overwrittenRows != null ? `${Number(d.overwrittenRows).toLocaleString('en-ZA')} rows committed` : null, d.publishedDashboards != null ? `${Number(d.publishedDashboards).toLocaleString('en-ZA')} dashboard snapshot${Number(d.publishedDashboards) === 1 ? '' : 's'} published` : null].filter(Boolean).join(' · ');
-    renderMarkup($('#integ-result'), `<div class="banner ok">✓ Full refresh completed and published.${detail ? ' ' + esc(detail) + '.' : ''}</div>`);
-  } catch (e) {
-    renderMarkup($('#integ-result'), `<div class="banner err">✕ Refresh did not publish a new dashboard. The last successful dashboard remains visible. Reason: ${esc(e.message)}</div>`);
-  } finally {
-    if (btn) {
-      btn.disabled = false;
-      btn.textContent = original;
-    }
-    loadInteg();
-    loadIntegLogs();
-  }
-}
-function syncLogFailureDetail(log) {
-  const summary = log?.summary || {};
-  const order = Array.isArray(MANIFEST?.loadOrder) ? MANIFEST.loadOrder : [];
-  for (let i = 0; i < order.length; i++) {
-    const key = order[i],
-      item = summary?.[key];
-    if (item?.error) {
-      const rep = MANIFEST?.reports?.find(r => r.key === key);
-      return `STEP ${i + 1} ${rep?.title || key}: ${item.error}`;
-    }
-  }
-  if (summary?.source?.error) return `Source connection: ${summary.source.error}`;
-  return '';
-}
-function syncLogBlockedDetail(log) {
-  const summary = log?.summary || {};
-  const order = Array.isArray(MANIFEST?.loadOrder) ? MANIFEST.loadOrder : [];
-  return order.map((key, i) => {
-    const item = summary?.[key];
-    if (item?.status !== 'BLOCKED') return null;
-    const rep = MANIFEST?.reports?.find(r => r.key === key);
-    return `STEP ${i + 1} ${rep?.title || key}`;
-  }).filter(Boolean).join(', ');
-}
-async function loadIntegLogs() {
-  try {
-    const logs = await fetch(`${API}/api/admin/integration/logs`).then(r => r.json());
-    const tb = $('#integ-logs');
-    if (!logs.length) {
-      renderMarkup(tb, '<tr><td class="muted" style="padding:10px;">No syncs yet.</td></tr>');
-      return;
-    }
-    renderMarkup(tb, logs.map(l => {
-      const when = new Date(l.startedAt).toLocaleString('en-ZA');
-      const badge = l.status === 'OK' ? '#1fa463' : l.status === 'FAILED' ? '#e0492f' : '#e8910c';
-      const failure = syncLogFailureDetail(l);
-      const blocked = syncLogBlockedDetail(l);
-      const detail = [l.note || '', failure ? 'Failure: ' + failure : '', blocked ? 'Blocked downstream: ' + blocked : ''].filter(Boolean).join(' · ');
-      return `<tr><td>${when}</td><td>${esc(l.trigger)}</td><td><span style="color:${badge};font-weight:700">${esc(l.status)}</span></td><td class="muted">${esc(detail)}</td></tr>`;
-    }).join(''));
-    const latest = logs[0];
-    const latestFailure = syncLogFailureDetail(latest);
-    if (latestFailure && ['PARTIAL', 'FAILED'].includes(String(latest?.status || ''))) {
-      const s = $('#integ-status');
-      if (s && !s.textContent.includes(latestFailure)) s.textContent += ` · Failed feed: ${latestFailure}`;
-    }
-  } catch (e) {}
-}
-
 // ── system email / SMTP and scheduled reports ──
 // ── admin audit log (React)
 // ── channel partners (white-label) ──
@@ -1278,9 +950,8 @@ async function deletePartner(id, name) {
 }
 
 // ── dashboard section permissions ──
-configureResetRefresh(() => Promise.allSettled([loadInteg(), loadIntegLogs()]));
+configureResetRefresh(refreshIntegration);
 async function boot() {
-  installCompactCollapse();
   // Require an authenticated admin, then load the report contract independently
   // from the rest of the optional administration panels. A failure elsewhere
   // must never remove the report selector or its upload controls.
@@ -1329,7 +1000,7 @@ async function boot() {
   } catch (e) {
     return;
   }
-  const optionalLoads = [['history', loadHistory], ['integration', loadInteg], ['partners', loadPartners], ['presets', renderPresets]];
+  const optionalLoads = [['history', loadHistory], ['partners', loadPartners], ['presets', renderPresets]];
   await Promise.allSettled(optionalLoads.map(async ([name, fn]) => {
     try {
       await fn();
@@ -1338,135 +1009,8 @@ async function boot() {
     }
   }));
 }
-async function pollJob(url, label, onProgress = null, target = '#result') {
-  const started = Date.now();
-  const jobId = url.split('/').pop();
-  let settled = false;
-  let source = null;
-  let fallbackTimer = null;
-  const showProgress = (payload = {}) => {
-    const progress = payload.progress ?? 0;
-    const phase = payload.phase ?? 'PROCESSING';
-    const message = payload.message || label;
-    const detail = payload.detail || {};
-    const pct = Math.max(0, Math.min(100, Number(progress || 0)));
-    const host = document.querySelector(target);
-    if (!host) return;
-    const pieces = [];
-    if (detail.reportKey) pieces.push(`Feed ${esc(detail.reportKey)}${detail.feedIndex && detail.feedCount ? ` · ${esc(detail.feedIndex)}/${esc(detail.feedCount)}` : ''}`);
-    if (detail.sourceTotalRows != null) pieces.push(`Source view: ${Number(detail.sourceTotalRows).toLocaleString('en-ZA')} rows`);
-    if (detail.pulledRows != null) pieces.push(`Pulled: ${Number(detail.pulledRows).toLocaleString('en-ZA')}`);
-    if (detail.validatedRows != null) pieces.push(`Validated: ${Number(detail.validatedRows).toLocaleString('en-ZA')}`);
-    if (detail.committedRows != null) pieces.push(`Processed live: ${Number(detail.committedRows).toLocaleString('en-ZA')}`);
-    if (detail.inserted != null || detail.updated != null || detail.deleted != null) {
-      const mutations = `+${Number(detail.inserted || 0).toLocaleString('en-ZA')} new · ~${Number(detail.updated || 0).toLocaleString('en-ZA')} updated · -${Number(detail.deleted || 0).toLocaleString('en-ZA')} deleted`;
-      const history = Number(detail.historyRows || 0);
-      pieces.push(history > 0 ? `${mutations} · ${history.toLocaleString('en-ZA')} dated history observation(s)` : `${mutations}${Number(detail.skipped || 0) > 0 ? ` · ${Number(detail.skipped).toLocaleString('en-ZA')} stale skipped` : ''}`);
-    }
-    renderMarkup(host, `<div class="job-progress">
-      <strong>${esc(message)}</strong>
-      <div class="job-progress-track"><div class="job-progress-fill" style="width:${pct}%"></div></div>
-      <div class="job-progress-meta"><span>${esc(phase)}</span><strong>${pct}%</strong></div>
-      ${pieces.length ? `<div class="job-progress-detail">${pieces.map(esc).join(' · ')}</div>` : ''}
-    </div>`);
-  };
-  const readState = async () => {
-    const r = await fetch(url, {
-      cache: 'no-store'
-    });
-    const d = await r.json().catch(() => null);
-    if (!r.ok || !d) throw new Error(d?.error || `${label} status check failed: HTTP ${r.status}`);
-    return d;
-  };
-  const finishState = async d => {
-    if (d.status === 'DONE') return d.result || d;
-    if (d.status === 'FAILED') throw new Error(d.error || `${label} failed`);
-    showProgress(d);
-    if (onProgress) onProgress(d);
-    return null;
-  };
-  const fallbackPoll = async () => {
-    while (Date.now() - started < 30 * 60 * 1000) {
-      const state = await readState();
-      const done = await finishState(state);
-      if (done) return done;
-      await new Promise(resolve => setTimeout(resolve, 1500));
-    }
-    throw new Error(`${label} is still running after 30 minutes. Import history continues to update automatically.`);
-  };
-  if (window.EventSource && jobId) {
-    try {
-      source = new EventSource(`${API}/api/admin/events?jobId=${encodeURIComponent(jobId)}`);
-      const result = await new Promise((resolve, reject) => {
-        const finish = (fn, value) => {
-          if (settled) return;
-          settled = true;
-          try {
-            source && source.close();
-          } catch (_) {}
-          fn(value);
-        };
-        source.addEventListener('job.progress', async event => {
-          try {
-            const p = JSON.parse(event.data || '{}');
-            showProgress(p);
-            if (onProgress) onProgress(p);
-            if (p.status === 'DONE' || p.status === 'FAILED') {
-              try {
-                const finalState = await readState();
-                const final = await finishState(finalState);
-                if (final) finish(resolve, final);
-              } catch (e) {
-                finish(reject, e);
-              }
-            }
-          } catch (e) {
-            finish(reject, e);
-          }
-        });
-        source.onerror = () => {
-          if (settled) return;
-          try {
-            source.close();
-          } catch (_) {}
-          finish(reject, new Error('live progress stream unavailable'));
-        };
-        fallbackTimer = setTimeout(() => finish(reject, new Error('live progress stream timed out')), 8000);
-      });
-      clearTimeout(fallbackTimer);
-      return result;
-    } catch (_) {
-      clearTimeout(fallbackTimer);
-      if (!settled) try {
-        source && source.close();
-      } catch (_) {}
-    }
-  }
-  return fallbackPoll();
-}
 function loadHistory() {
   return refreshImportHistory();
-}
-function installCompactCollapse() {
-  const ids = ["live-integration"];
-  ids.forEach(function (id) {
-    const card = document.getElementById(id);
-    if (!card || card.dataset.collapsibleInstalled) return;
-    const head = card.querySelector('.card-hd');
-    if (!head) return;
-    card.dataset.collapsibleInstalled = '1';
-    const btn = document.createElement('button');
-    btn.type = 'button';
-    btn.className = 'btn btn-sm compact-toggle';
-    btn.textContent = 'Collapse';
-    btn.setAttribute('aria-expanded', 'true');
-    btn.onclick = function () {
-      const collapsed = card.classList.toggle('compact-collapsed');
-      btn.textContent = collapsed ? 'Expand' : 'Collapse';
-      btn.setAttribute('aria-expanded', String(!collapsed));
-    };
-    head.appendChild(btn);
-  });
 }
 onReady(() => boot());
 ;

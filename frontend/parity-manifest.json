@@ -12,7 +12,7 @@
     "source": "admin.html",
     "implementation": "transitional-controller",
     "navigation": "declarative-react",
-    "staticHandlers": 16,
+    "staticHandlers": 9,
     "scripts": 10
   },
   {

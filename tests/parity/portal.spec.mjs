@@ -1699,3 +1699,68 @@ test('React reset requires both confirmations, blocks duplicate requests and rec
   await page.locator('#reset-area').getByRole('button',{name:'Cancel'}).click();
   await expect(page.locator('#reset-area')).toHaveCount(0);
 });
+
+test('React integration retains failed drafts, clears saved secrets and preserves zero replica lag',async({page})=>{
+ await mockApi(page);let fail=true,bodies=[];
+ await page.route('**/api/admin/integration',route=>{
+  if(route.request().method()==='GET')return route.fulfill({json:{sourceMode:'API',configured:true,hasToken:true,hasSqlPassword:true,sqlDialect:'POSTGRESQL'}});
+  bodies.push(route.request().postDataJSON());return route.fulfill(fail?{status:503,json:{error:'<img src=x> Save unavailable'}}:{json:{ok:true}});
+ });
+ await page.goto(url+'/admin');await expect(page.locator('#integ-url')).toBeEnabled();
+ await page.locator('#integ-url').fill('https://draft.example.invalid');await page.locator('#integ-token').fill('unsaved-api-secret');
+ await page.locator('#source-tab-sql').click();await page.locator('#integ-sql-password').fill('unsaved-sql-secret');await page.locator('#integ-replica-lag').fill('0');
+ const save=page.locator('#live-integration').getByRole('button',{name:'Save settings',exact:true});
+ await save.click();await expect(page.locator('#integ-result')).toContainText('<img src=x> Save unavailable');await expect(page.locator('#integ-result img')).toHaveCount(0);
+ await expect(page.locator('#integ-token')).toHaveValue('unsaved-api-secret');await expect(page.locator('#integ-sql-password')).toHaveValue('unsaved-sql-secret');
+ expect(bodies[0].sourceAnalyticsReplicaMaxLagSeconds).toBe(0);
+ fail=false;await save.click();await expect(page.locator('#integ-result')).toContainText('Database integration settings saved');
+ await expect(page.locator('#integ-token')).toHaveValue('');await expect(page.locator('#integ-sql-password')).toHaveValue('');
+ await expect(page.locator('#integ-mode')).toHaveValue('SQL');
+ await save.click();await expect.poll(()=>bodies.length).toBe(3);expect(bodies[2]).not.toHaveProperty('authToken');expect(bodies[2]).not.toHaveProperty('sqlPassword');
+});
+
+test('React integration stops sync after a failed save and retries failed reads',async({page})=>{
+ await mockApi(page);let loadFails=true,syncs=0;
+ await page.route('**/api/admin/integration',route=>route.fulfill(route.request().method()==='POST'?{status:500,json:{error:'Save blocked'}}:loadFails?{status:503,json:{error:'Configuration unavailable'}}:{json:{configured:true}}));
+ await page.route('**/api/admin/integration/sync',route=>{syncs++;return route.fulfill({json:{jobId:'unexpected'}});});
+ await page.goto(url+'/admin');await expect(page.locator('#integ-status')).toContainText('Configuration unavailable');
+ await expect(page.locator('#live-integration').getByRole('button',{name:'Sync now',exact:true})).toBeDisabled();
+ loadFails=false;await page.locator('#integ-status').getByRole('button',{name:'Retry'}).click();
+ await page.locator('#live-integration').getByRole('button',{name:'Sync now',exact:true}).click();
+ await expect(page.locator('#integ-result')).toContainText('Save blocked');expect(syncs).toBe(0);
+ await page.locator('#live-integration .compact-toggle').click();await expect(page.locator('#live-integration .card-bd')).not.toBeVisible();
+ await page.getByRole('button',{name:'Connect a database'}).click();await expect(page.locator('#integ-sql-host')).toBeVisible();
+});
+
+test('React integration refresh preserves the current backend confirmation and already-running result',async({page})=>{
+ await mockApi(page);let refreshes=0,saves=0;
+ await page.route('**/api/admin/integration',route=>{if(route.request().method()==='POST')saves++;return route.fulfill({json:{configured:true,ok:true}});});
+ await page.route('**/api/admin/integration/refresh',route=>{refreshes++;return route.fulfill({json:{ok:true,status:'ALREADY_RUNNING'}});});
+ await page.goto(url+'/admin');await expect(page.locator('#btn-refresh-now')).toBeEnabled();
+ page.once('dialog',dialog=>dialog.dismiss());await page.locator('#btn-refresh-now').click();expect(refreshes).toBe(0);expect(saves).toBe(0);
+ page.once('dialog',dialog=>dialog.accept());await page.locator('#btn-refresh-now').click();await expect(page.locator('#integ-result')).toContainText('already running on another application instance');
+ expect(refreshes).toBe(1);expect(saves).toBe(1);await expect(page.locator('#btn-refresh-now')).toBeEnabled();
+});
+
+for(const width of [1440,390])test(`React integration preserves source dark form styling at ${width}px`,async({browser})=>{
+ const measured=[];
+ for(const port of [4101,4100]){
+  const page=await browser.newPage({viewport:{width,height:1000}});await mockApi(page);
+  await page.addInitScript(()=>{localStorage.setItem('empower-fin-theme','dark');localStorage.setItem('cookieNoticeDismissed','1');});
+  await page.goto(`http://127.0.0.1:${port}/admin`);await expect(page.locator('#integ-status')).toBeVisible();await page.locator('#source-tab-sql').click();
+  const values=[];
+  for(const selector of ['#integ-sql-host','#integ-sql-dialect','#integ-sql-password','#integ-replica-host','label:has(#integ-sql-host)','label:has(#integ-sql-ssl)'])values.push(await page.locator(selector).evaluate(node=>{const style=getComputedStyle(node),rect=node.getBoundingClientRect();return {color:style.color,background:style.backgroundColor,border:style.borderColor,width:Math.round(rect.width),height:Math.round(rect.height)};}));
+  measured.push(values);await page.close();
+ }
+ expect(measured[1]).toEqual(measured[0]);
+});
+
+test('React integration renders sync progress details and returns a terminal job failure',async({page})=>{
+ await mockApi(page);let done=false;
+ await page.route('**/api/admin/integration/sync',route=>route.fulfill({status:202,json:{jobId:'native-sync'}}));
+ await page.route('**/api/admin/sync-jobs/native-sync',route=>route.fulfill({json:done?{status:'FAILED',error:'<img src=x> Source disconnected'}:{status:'RUNNING',progress:40,phase:'IMPORTING',message:'Loading employees',detail:{reportKey:'employees',feedIndex:2,feedCount:10,sourceTotalRows:100,pulledRows:40,validatedRows:35,committedRows:30,inserted:20,updated:10,deleted:0,historyRows:3}}}));
+ await page.goto(url+'/admin');await page.locator('#live-integration').getByRole('button',{name:'Sync now',exact:true}).click();
+ await expect(page.locator('#integ-result')).toContainText('40%');await expect(page.locator('#integ-result')).toContainText('Feed employees · 2/10');await expect(page.locator('#integ-result')).toContainText('3 dated history observation(s)');
+ await expect(page.locator('#live-integration').getByRole('button',{name:'Sync now',exact:true})).toBeDisabled();done=true;
+ await expect(page.locator('#integ-result')).toContainText('<img src=x> Source disconnected');await expect(page.locator('#integ-result img')).toHaveCount(0);await expect(page.locator('#integ-url')).toBeEnabled();
+});

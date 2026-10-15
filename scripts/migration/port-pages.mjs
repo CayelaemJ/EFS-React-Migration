@@ -75,7 +75,7 @@ for(const file of fs.readdirSync('public').filter(x=>x.endsWith('.html'))){
  const name=file.slice(0,-5),source=fs.readFileSync('public/'+file,'utf8'),doc=htmlParse(source);
  const html=doc.childNodes.find(n=>n.tagName==='html'),head=html.childNodes.find(n=>n.tagName==='head'),body=html.childNodes.find(n=>n.tagName==='body');
  const handlers=[],scripts=[];
- let securityLayout=false,emailLayout=false,portfolioLayout=false,insightsLayout=false,governanceLayout=false;
+ let integrationLayout=false,securityLayout=false,emailLayout=false,portfolioLayout=false,insightsLayout=false,governanceLayout=false;
  function collect(n){if(n.tagName==='script'){if(name==='users')return;const src=n.attrs.find(a=>a.name==='src')?.value; const inline=n.childNodes.map(n=>n.value||'').join(''); if(name==='users'&&!src&&inline.includes('async function addUser()'))return; scripts.push((src?.includes('portal-nav-v080.js')||src?.includes('admin-source-status.js'))?'':src?.includes('brand-engine.js')?'window.BrandEngine=BrandEngine;':src?fs.readFileSync('public/'+src.split('/').pop().split('?')[0],'utf8'):inline);}else n.childNodes?.forEach(collect)} collect(head);collect(body);
  function jsx(n){
   if(n.nodeName==='#comment'||n.tagName==='script')return '';
@@ -86,6 +86,7 @@ for(const file of fs.readdirSync('public').filter(x=>x.endsWith('.html'))){
   if(portfolioLayout&&n.attrs?.some(a=>a.name==='data-metric'&&a.value==='measureGuide'))return '{state.guide}';
   if(name==='admin'){
    const id=n.attrs?.find(a=>a.name==='id')?.value;
+   if(!integrationLayout&&id==='live-integration')return '<AdminIntegration/>';
    if(!governanceLayout&&id==='admin-security-strip')return '<AdminSecurity/>';
    if(!governanceLayout&&id==='enterprise-operations-card')return '<EnterpriseOperations/>';
    if(!governanceLayout&&id==='admin-compliance-strip')return '<Compliance/>';
@@ -110,12 +111,13 @@ for(const file of fs.readdirSync('public').filter(x=>x.endsWith('.html'))){
   let attrs='';
   const nodeId=n.attrs?.find(a=>a.name==='id')?.value;
   const originalAttrs=n.attrs;
+  if(integrationLayout)n.attrs=n.attrs.filter(a=>!a.name.startsWith('on')&&!(['value','checked'].includes(a.name)&&['input','select'].includes(n.tagName))&&!(a.name==='placeholder'&&['integ-token','integ-sql-password'].includes(nodeId))&&!(a.name==='class'&&['live-integration','integ-status','source-tab-api','source-tab-sql'].includes(nodeId))&&!(a.name==='aria-selected'&&['source-tab-api','source-tab-sql'].includes(nodeId))&&!(a.name==='style'&&['integ-status','integ-api-panel','integ-sql-panel','integ-env-override'].includes(nodeId)));
   if(governanceLayout)n.attrs=n.attrs.filter(a=>!a.name.startsWith('on')&&!(a.name==='style'&&['compliance-panel','comp-status'].includes(nodeId))&&!(a.name==='class'&&['enterprise-operations-card','admin-mlops-alert','mlops-alert-detail'].includes(nodeId)));
   if(insightsLayout&&nodeId==='eng-days')n.attrs=n.attrs.filter(a=>a.name!=='onchange');
   if(portfolioLayout&&nodeId==='pf-employer-filter-btn')n.attrs=n.attrs.filter(a=>a.name!=='aria-expanded');
   if(portfolioLayout&&nodeId==='pf-employer-filter-menu')n.attrs=n.attrs.filter(a=>a.name!=='class');
-  const settingsStyle=emailLayout?n.attrs?.find(a=>a.name==='style')?.value||'':'';
-  const settingsClasses=emailLayout?[settingsStyle.includes('grid-column:span 2')?'settings-wide':'',settingsStyle.includes('color:#5b6b7a')?'settings-label':'',settingsStyle.includes('color:#32217c')?'settings-accent':'',settingsStyle.includes('color:#7a5512')?'settings-warning':''].filter(Boolean).join(' '):'';
+  const settingsStyle=(emailLayout||integrationLayout)?n.attrs?.find(a=>a.name==='style')?.value||'':'';
+  const settingsClasses=(emailLayout||integrationLayout)?[settingsStyle.includes('grid-column:span 2')&&(!integrationLayout||n.tagName==='label')?'settings-wide':'',settingsStyle.includes('color:#5b6b7a')?'settings-label':'',settingsStyle.includes('color:#32217c')?'settings-accent':'',settingsStyle.includes('color:#7a5512')?'settings-warning':'',integrationLayout&&settingsStyle.includes('background:#fff;')?'integration-surface':'',integrationLayout&&settingsStyle.includes('background:#fbfaff;')?'integration-surface-2':'',integrationLayout&&settingsStyle.includes('color:#8497a7')?'integration-muted':'',integrationLayout&&settingsStyle.includes('border:1px solid #e8e1f7')?'integration-border':''].filter(Boolean).join(' '):'';
   for(const a of n.attrs||[]){let key=attrName(a.name);if(a.name.startsWith('on')){const ev=a.name.slice(2); if(emailLayout){const action={'saveEmailSettings()':'saveEmail','testEmailSettings()':'testEmail','saveAutomations()':'saveAutomation',"runAutomationNow('stale')":'runStale',"runAutomationNow('digest')":'runDigest',"runAutomationNow('test')":'runTest'}[a.value];if(!action)throw new Error('Unknown settings handler '+a.value);attrs+=` on${eventNames[ev]}={actions.${action}}`;continue;} if(securityLayout){const action={'loadSecurityCenter()':'refresh','renderSecuritySessions()':'search','downloadSecurityAuditLog()':'download'}[a.value];if(!action)throw new Error('Unknown security handler '+a.value);attrs+=` on${eventNames[ev]}={actions.${action}}`;continue;} const id=handlers.length;handlers.push(generate(callback(a.value)).code);attrs+=` on${eventNames[ev]}={event => actions[${id}]?.(event)}`;continue;}
    if(emailLayout&&['input','select'].includes(n.tagName)&&['value','checked'].includes(key))continue;
    if(emailLayout&&nodeId==='mail-password'&&key==='placeholder')continue;
@@ -124,7 +126,7 @@ for(const file of fs.readdirSync('public').filter(x=>x.endsWith('.html'))){
    if(emailLayout&&['mail-status','auto-status'].includes(nodeId)&&key==='style'){attrs+=' style={{display:state.config?"block":"none",marginBottom:14}}';continue;}
    if(securityLayout&&key==='className'&&nodeId==='security-center'){attrs+=' className={"card"+(state.collapsed?" compact-collapsed":"")}';continue;}
    if(securityLayout&&key==='className'&&nodeId==='sec-db-status'){attrs+=' className={state.databaseClass}';continue;}
-   if(key==='style'){attrs+=` style={${json(style(a.value))}}`+(emailLayout?'':` ref={node => { if(node) node.setAttribute("style", ${json(a.value)}); }}`);continue;}
+   if(key==='style'){attrs+=` style={${json(style(a.value))}}`+((emailLayout||integrationLayout)?'':` ref={node => { if(node) node.setAttribute("style", ${json(a.value)}); }}`);continue;}
    if(key==='value'&&['input','textarea','select'].includes(n.tagName))key='defaultValue';if(key==='checked')key='defaultChecked';
    if(key==='selected'){continue;}
    attrs+=bools.has(key)||key==='defaultChecked'?` ${key}={true}`:` ${key}={siteText(${json(a.value)})}`;
@@ -132,6 +134,25 @@ for(const file of fs.readdirSync('public').filter(x=>x.endsWith('.html'))){
   n.attrs=originalAttrs;
   if(n.tagName==='select'&&!insightsLayout){const option=n.childNodes?.find(x=>x.tagName==='option'&&x.attrs?.some(a=>a.name==='selected'));if(option)attrs+=` defaultValue={${json(option.attrs.find(a=>a.name==='value')?.value||'')}}`;}
   let children=(n.childNodes||[]).map(jsx).join('');
+  if(integrationLayout){
+   if(settingsClasses&&!originalAttrs.some(a=>a.name==='class'))attrs+=` className={${json(settingsClasses)}}`;
+   if(['input','select'].includes(n.tagName)){
+    const check=originalAttrs.some(a=>a.name==='type'&&a.value==='checkbox');
+    attrs+=` ${check?'checked':'value'}={state.draft[${json(nodeId)}]} onChange={event=>actions.change(${json(nodeId)},event.target.${check?'checked':'value'})} disabled={state.busy}`;
+   }
+   const action=originalAttrs.find(a=>a.name==='onclick')?.value;
+   if(action){const key={"setIntegMode('API')":'api',"setIntegMode('SQL')":'sql','saveInteg()':'save','testInteg()':'test','syncNow()':'sync','refreshNow(this)':'refresh'}[action];if(!key)throw new Error('Unknown integration action '+action);attrs+=` onClick={actions.${key}} disabled={state.busy}`;}
+   const dynamic={'integ-status':'status','integ-change-mode':'changeMode','integ-env-override':'environment','integ-result':'result','integ-logs':'logs','btn-refresh-now':'refreshLabel'};
+   if(dynamic[nodeId])children=`{state.${dynamic[nodeId]}}`;
+   if(nodeId==='live-integration')attrs+=' className={"card section-gap"+(state.collapsed?" compact-collapsed":"")}';
+   if(nodeId==='integ-status')attrs+=' className={state.statusClass} style={{display:state.statusVisible?"block":"none",marginBottom:14}}';
+   if(['source-tab-api','source-tab-sql'].includes(nodeId)){const mode=nodeId==='source-tab-api'?'API':'SQL';attrs+=` className={"source-mode-card"+(state.mode===${json(mode)}?" on":"")} aria-selected={state.mode===${json(mode)}}`;}
+   if(['integ-api-panel','integ-sql-panel'].includes(nodeId)){const mode=nodeId==='integ-api-panel'?'API':'SQL';attrs+=` style={{marginTop:14,display:state.mode===${json(mode)}?"grid":"none",gridTemplateColumns:"1fr 1fr",gap:14,maxWidth:820}}`;}
+   if(nodeId==='integ-env-override')attrs+=' className="integration-warning" style={{display:state.envVisible?"block":"none",marginBottom:12,padding:"10px 14px",borderRadius:9,background:"var(--amber-soft)",border:"1px solid var(--amber)",color:"#7a4a00",fontSize:12.5,fontWeight:600,lineHeight:1.5}}';
+   if(nodeId==='integ-token')attrs+=' placeholder={state.tokenPlaceholder}';
+   if(nodeId==='integ-sql-password')attrs+=' placeholder={state.passwordPlaceholder}';
+   if(originalAttrs.some(a=>a.name==='class'&&a.value==='card-hd')&&n.parentNode?.attrs?.some(a=>a.name==='id'&&a.value==='live-integration'))children+='<button type="button" className="btn btn-sm compact-toggle" aria-expanded={!state.collapsed} onClick={actions.toggle}>{state.collapsed?"Expand":"Collapse"}</button>';
+  }
   if(governanceLayout){
    const fields={'admin-sec-live':'live','admin-sec-failed':'failed','admin-sec-alerts':'alerts','admin-sec-success':'success','admin-sec-copy':'copy','comp-activities':'activities','comp-crossborder':'crossborder','comp-requests':'requests','comp-incidents':'incidents','comp-gaps':'gaps','comp-status':'status','comp-activities-list':'activitiesList','comp-vendors-list':'vendorsList','comp-requests-list':'requestsList','comp-retention-list':'retentionList','comp-incidents-list':'incidentsList','mlops-alert-summary':'summary','mlops-alert-badge':'badge','mlops-alert-detail':'detail'};
    if(fields[nodeId])children=`{state.${fields[nodeId]}}`;
@@ -192,6 +213,8 @@ for(const file of fs.readdirSync('public').filter(x=>x.endsWith('.html'))){
  }
  if(name==='admin'){
   function findNode(n,predicate){if(predicate(n))return n;for(const child of n.childNodes||[]){const result=findNode(child,predicate);if(result)return result;}}
+  integrationLayout=true;const integrationMarkup=jsx(findNode(body,n=>n.attrs?.some(a=>a.name==='id'&&a.value==='live-integration')));integrationLayout=false;
+  fs.writeFileSync(`${out}/admin-integration-layout.jsx`,`// Source integration layout; fields and actions are React-owned.\nimport React from 'react';\nimport {siteText} from '../native/site-config.js';\nexport function IntegrationLayout({state,actions}){return (${integrationMarkup});}\n`);
   governanceLayout=true;
   const governance=[['admin-security-strip','AdminSecurityLayout'],['admin-compliance-strip','ComplianceLayout'],['admin-mlops-alert','MLOpsLayout'],['enterprise-operations-card','EnterpriseLayout']].map(([id,component])=>`export function ${component}({state,actions}){return (${jsx(findNode(body,n=>n.attrs?.some(a=>a.name==='id'&&a.value===id)))});}`).join('\n');
   governanceLayout=false;
@@ -225,6 +248,11 @@ for(const file of fs.readdirSync('public').filter(x=>x.endsWith('.html'))){
   if(insightsStart<0||insightsEnd<0)throw new Error('Missing admin insights boundary');
   controllerSource=controllerSource.slice(0,insightsStart)+'// ── admin audit log (React)\n'+controllerSource.slice(insightsEnd);
   controllerSource=controllerSource.replace("    ['engagement',loadEngagement],\n",'').replace("    ['audit',loadAuditLog],\n",'');
+  const integrationStart=controllerSource.indexOf('function setIntegMode(mode){');
+  const integrationEnd=controllerSource.indexOf('// ── system email / SMTP',integrationStart);
+  if(integrationStart<0||integrationEnd<0)throw new Error('Missing integration boundary');
+  controllerSource=controllerSource.slice(0,integrationStart)+controllerSource.slice(integrationEnd);
+  controllerSource=controllerSource.replace("    ['integration',loadInteg],\n",'');
   const emailStart=controllerSource.indexOf('function emailDraft(){');
   const emailEnd=controllerSource.indexOf('// ── admin audit log',emailStart);
   if(emailStart<0||emailEnd<0)throw new Error('Missing email/automation controller boundary');
@@ -238,7 +266,7 @@ for(const file of fs.readdirSync('public').filter(x=>x.endsWith('.html'))){
   const resetStart=controllerSource.indexOf('// ── danger zone: full reset');
   const resetEnd=controllerSource.indexOf('async function boot(){',resetStart);
   if(resetStart<0||resetEnd<0)throw new Error('Missing reset controller boundary');
-  controllerSource=controllerSource.slice(0,resetStart)+'configureResetRefresh(()=>Promise.allSettled([loadInteg(),loadIntegLogs()]));\n'+controllerSource.slice(resetEnd);
+  controllerSource=controllerSource.slice(0,resetStart)+'configureResetRefresh(refreshIntegration);\n'+controllerSource.slice(resetEnd);
   const manifestStart=controllerSource.indexOf("  try{\n    const r=await fetch(`${API}/api/admin/reports`");
   const manifestEnd=controllerSource.indexOf('  const optionalLoads=[',manifestStart);
   if(manifestStart<0||manifestEnd<0)throw new Error('Missing report manifest migration boundary');
@@ -252,6 +280,11 @@ for(const file of fs.readdirSync('public').filter(x=>x.endsWith('.html'))){
   if(uploadStart<0||uploadEnd<0)throw new Error('Missing import migration boundary');
   controllerSource=controllerSource.slice(0,uploadStart)+'function loadHistory(){return refreshImportHistory();}\n\n'+controllerSource.slice(uploadEnd);
   controllerSource=controllerSource.replace(/window\.setInterval\(\(\) => \{\n  if\(document\.visibilityState !== 'visible'\) return;\n  loadHistory\(\);\n\}, 1500\);/,'');
+ }
+ if(name==='admin'){
+  const obsolete=parse(controllerSource,{sourceType:'script'}).program.body.filter(n=>n.type==='FunctionDeclaration'&&['pollJob','installCompactCollapse'].includes(n.id.name));
+  for(const node of obsolete.reverse())controllerSource=controllerSource.slice(0,node.start)+controllerSource.slice(node.end);
+  controllerSource=controllerSource.replace('  installCompactCollapse();','');
  }
  if(name==='dashboard'){
   const portfolioStart=controllerSource.indexOf('let PF_SORT =');
@@ -281,7 +314,7 @@ for(const file of fs.readdirSync('public').filter(x=>x.endsWith('.html'))){
  if(name==='dashboard')fs.writeFileSync(`${out}/${name}.jsx`,code.replace("import React from 'react';","import React from 'react';\nimport {Portfolio,updatePortfolio} from '../native/Portfolio.jsx';"));
  if(name==='admin')fs.writeFileSync(`${out}/${name}.jsx`,code.replace("import React from 'react';", "import React from 'react';\nimport {AdminEmailPanel,AdminAutomationPanel} from '../native/AdminSettings.jsx';\nimport {AdminSections} from '../native/AdminSections.jsx';\nimport {ReportPicker,ReportWorkspace,ImportHistoryRows,initializeReports,refreshImportHistory} from '../native/AdminReports.jsx';"));
  const native=fs.existsSync(`frontend/src/native/${name}.jsx`);
- if(name==='admin')fs.writeFileSync(`${out}/${name}.jsx`,fs.readFileSync(`${out}/${name}.jsx`,'utf8').replace("import React from 'react';","import React from 'react';\nimport {AdminReset,configureResetRefresh} from '../native/AdminReset.jsx';\nimport {EnterpriseOperations} from '../native/EnterpriseOperations.jsx';"));
+ if(name==='admin')fs.writeFileSync(`${out}/${name}.jsx`,fs.readFileSync(`${out}/${name}.jsx`,'utf8').replace("import React from 'react';","import React from 'react';\nimport {AdminIntegration,setIntegrationMode as setIntegMode,refreshIntegration} from '../native/AdminIntegration.jsx';\nimport {AdminReset,configureResetRefresh} from '../native/AdminReset.jsx';\nimport {EnterpriseOperations} from '../native/EnterpriseOperations.jsx';"));
  if(name==='dashboard')fs.writeFileSync(`${out}/${name}.jsx`,fs.readFileSync(`${out}/${name}.jsx`,'utf8').replace("import React from 'react';","import React from 'react';\nimport {Wellness,updateWellness} from '../native/Wellness.jsx';"));
  if(name==='admin')fs.writeFileSync(`${out}/${name}.jsx`,fs.readFileSync(`${out}/${name}.jsx`,'utf8').replace("import React from 'react';","import React from 'react';\nimport {AdminSecurity,Compliance,MLOpsAlert,refreshGovernance} from '../native/AdminGovernance.jsx';"));
  if(name==='admin')fs.writeFileSync(`${out}/${name}.jsx`,fs.readFileSync(`${out}/${name}.jsx`,'utf8').replace("import React from 'react';","import React from 'react';\nimport {AuditRows,Engagement} from '../native/AdminInsights.jsx';"));

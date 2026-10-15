@@ -75,7 +75,7 @@ function sleep(delay, signal) {
     if (signal.aborted) aborted();
   });
 }
-async function monitorJob(path, label, onProgress, signal) {
+export async function monitorJob(path, label, onProgress, signal) {
   const read = async () => {
     const { data } = await request(path, { signal });
     if (data.status === "FAILED")
@@ -291,6 +291,10 @@ export function AdminReportsProvider({ children }) {
     </Context.Provider>
   );
 }
+export function useReportManifest() {
+  return useContext(Context).manifest;
+}
+
 export function useClearReportResult() {
   return useContext(Context).clearResult;
 }
@@ -371,7 +375,7 @@ function Preview({ rows }) {
     </div>
   );
 }
-function JobProgress({ value }) {
+export function JobProgress({ value }) {
   const detail = value.detail || {},
     pieces = [],
     pct = Math.max(0, Math.min(100, Number(value.progress) || 0));
