@@ -1165,7 +1165,7 @@ export function EmployeeChat() {
     },
   ];
   return (
-    <section className="dash-section" data-section="voiceOfEmployee">
+    <>
       <div className="head" style={{ padding: "36px 0 14px" }}>
         <div>
           <div className="head-eyebrow">Voice of the employee</div>
@@ -1403,7 +1403,7 @@ export function EmployeeChat() {
           )}
         </div>
       </div>
-    </section>
+    </>
   );
 }
 

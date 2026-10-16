@@ -3,6 +3,7 @@ import React from 'react';
 import {ExecSummary,EmployerKpis,EngagementFunnel,ValueStrip,updateEmployerOverview} from '../native/EmployerOverview.jsx';
 import {Wellness,updateWellness} from '../native/Wellness.jsx';
 import {ExecutiveInsight,DataTrust,EmployeeChat,Outcomes,OutcomesNote,SavingsChart,EwaChart,EwaKpis,DebtProfile,Regions,StressMap,Income,Ratings,DebtStates,Prescription,RiskSignals,Opportunities,updateEmployerCharts} from '../native/EmployerCharts.jsx';
+import {configureDashboard,DashboardWelcome,DashboardRole,DashboardAudience,DashboardFreshness,DashboardViewport,DashboardHeading,DashboardNotices,DashboardFilters,DashboardFootnote,DashboardButton,DashboardSection} from '../native/DashboardState.jsx';
 import {Portfolio,updatePortfolio} from '../native/Portfolio.jsx';
 import {showQuickActions,showScheduleReport} from '../native/DashboardDialogs.jsx';
 import BrandEngine from '../lib/brand-engine.js';
@@ -12,15 +13,15 @@ let actions=[];
 export function Page(){return <>{siteText("\n\n")}
 
 {siteText("\n")}
-<div id={siteText("welcome-splash")}>{siteText("\n  ")}<div className={siteText("welcome-splash-inner")}>{siteText("\n    ")}<img id={siteText("welcome-splash-logo")} className={siteText("welcome-splash-logo efs-brand-logo")} src={siteText("/static/the-fixer-logo.svg?v=6")} alt={siteText("The Fixer logo")}/>{siteText("\n    ")}<div className={siteText("welcome-splash-spinner")}/>{siteText("\n    ")}<div className={siteText("welcome-splash-greeting")} id={siteText("welcome-splash-greeting")}>{siteText("Welcome")}</div>{siteText("\n    ")}<div className={siteText("welcome-splash-sub")} id={siteText("welcome-splash-sub")}>{siteText("The Fixer is getting things ready…")}</div>{siteText("\n  ")}</div>{siteText("\n")}</div>
+<DashboardWelcome/>
 {siteText("\n")}
 
 {siteText("\n\n")}
 
 {siteText("\n")}
-<div className={siteText("topbar")}>{siteText("\n  ")}<div className={siteText("topbar-inner")}>{siteText("\n    ")}<div className={siteText("logo portal-brand-lockup")} id={siteText("portal-brand-lockup")}>{siteText("\n      ")}<div className={siteText("portal-brand-default")} id={siteText("portal-brand-default")}>{siteText("\n        ")}<img src={siteText("/static/the-fixer-logo.svg?v=6")} className={siteText("efs-brand-logo")} alt={siteText("The Fixer")}/>{siteText("\n      ")}</div>{siteText("\n      ")}<div className={siteText("portal-brand-partner")} id={siteText("portal-brand-partner")} hidden={true}>{siteText("\n        ")}<div className={siteText("portal-partner-mark")}>{siteText("\n          ")}<img id={siteText("portal-partner-logo")} alt={siteText("")}/>{siteText("\n          ")}<span id={siteText("channel-brand-name")} className={siteText("portal-partner-name")}/>{siteText("\n        ")}</div>{siteText("\n      ")}</div>{siteText("\n    ")}</div>{siteText("\n    ")}<div className={siteText("topbar-divider")}/>{siteText("\n    ")}<div className={siteText("audience-switch")} id={siteText("audience-switch")}>{siteText("\n      ")}<button className={siteText("on")} data-a={siteText("employer")}>{siteText("Employer view")}</button>{siteText("\n      ")}<button data-a={siteText("portfolio")}>{siteText("Portfolio view")}</button>{siteText("\n    ")}</div>{siteText("\n    ")}<div className={siteText("topbar-spacer")}/>{siteText("\n    ")}<div className={siteText("topbar-meta")}>{siteText("\n      ")}<div className={siteText("data-fresh")}><span className={siteText("dot")}/>{siteText(" ")}<span id={siteText("data-fresh-label")}>{siteText("Loading…")}</span></div>{siteText("\n      ")}<div id={siteText("role-indicator")} className={siteText("role-indicator")} aria-label={siteText("Current access role")}/>{siteText("\n      ")}<div id={siteText("portal-account")}/>{siteText("\n    ")}</div>{siteText("\n  ")}</div>{siteText("\n")}</div>
+<div className={siteText("topbar")}>{siteText("\n  ")}<div className={siteText("topbar-inner")}>{siteText("\n    ")}<div className={siteText("logo portal-brand-lockup")} id={siteText("portal-brand-lockup")}>{siteText("\n      ")}<div className={siteText("portal-brand-default")} id={siteText("portal-brand-default")}>{siteText("\n        ")}<img src={siteText("/static/the-fixer-logo.svg?v=6")} className={siteText("efs-brand-logo")} alt={siteText("The Fixer")}/>{siteText("\n      ")}</div>{siteText("\n      ")}<div className={siteText("portal-brand-partner")} id={siteText("portal-brand-partner")} hidden={true}>{siteText("\n        ")}<div className={siteText("portal-partner-mark")}>{siteText("\n          ")}<img id={siteText("portal-partner-logo")} alt={siteText("")}/>{siteText("\n          ")}<span id={siteText("channel-brand-name")} className={siteText("portal-partner-name")}/>{siteText("\n        ")}</div>{siteText("\n      ")}</div>{siteText("\n    ")}</div>{siteText("\n    ")}{siteText("\n    ")}<DashboardAudience/>{siteText("\n    ")}<div className={siteText("topbar-spacer")}/>{siteText("\n    ")}<div className={siteText("topbar-meta")}><div id="portal-nav"/>{siteText("\n      ")}<DashboardFreshness/>{siteText("\n      ")}<DashboardRole/>{siteText("\n      ")}<div id={siteText("portal-account")}/>{siteText("\n    ")}</div>{siteText("\n  ")}</div>{siteText("\n")}</div>
 {siteText("\n\n")}
-<div className={siteText("wrap")}>{siteText("\n\n  ")}<div className={siteText("pdf-print-header")} aria-hidden={siteText("true")}>{siteText("\n    ")}<div className={siteText("pdf-brand")}>{siteText("\n      ")}<img src={siteText("/static/the-fixer-logo.svg?v=6")} className={siteText("efs-brand-logo")} alt={siteText("The Fixer logo")}/>{siteText("\n      ")}<div>{siteText("\n        ")}<div className={siteText("pdf-kicker")}>{siteText("empower-fin · Workforce Financial Wellbeing")}</div>{siteText("\n        ")}<div className={siteText("pdf-title")} id={siteText("pdf-report-title")}>{siteText("Employer Insights")}</div>{siteText("\n      ")}</div>{siteText("\n    ")}</div>{siteText("\n    ")}<div className={siteText("pdf-meta")}>{siteText("\n      ")}<div id={siteText("pdf-report-period")}>{siteText("Reporting period")}</div>{siteText("\n      ")}<div id={siteText("pdf-report-generated")}/>{siteText("\n      ")}<span className={siteText("pdf-score")} id={siteText("pdf-report-score")}>{siteText("Workforce Financial Wellness Score Not available")}</span>{siteText("\n    ")}</div>{siteText("\n  ")}</div>{siteText("\n\n  ")}<div id={siteText("employer-view")}>{siteText("\n\n  ")}{siteText("\n  ")}<div className={siteText("head")}>{siteText("\n    ")}<div>{siteText("\n      ")}<div className={siteText("head-eyebrow")}>{siteText("Employer Insights · Financial Wellbeing Programme")}</div>{siteText("\n      ")}<h1>{siteText("Your workforce ")}<span className={siteText("emp")}/></h1>{siteText("\n      ")}<div className={siteText("head-sub")}>{siteText("How the financial wellbeing programme is landing across your workforce Not available who is using it, the outcomes achieved, and how employees rate the service.")}</div>{siteText("\n      ")}<div id={siteText("ctx-sub")} style={{"fontSize":"12px","fontWeight":"700","color":"var(--blue-d)","marginTop":"10px","letterSpacing":".01em"}} ref={node => { if(node) node.setAttribute("style", "font-size:12px;font-weight:700;color:var(--blue-d);margin-top:10px;letter-spacing:.01em;"); }}>{siteText("Programme to date")}</div>{siteText("\n    ")}</div>{siteText("\n    ")}<div className={siteText("head-actions")}>{siteText("\n      ")}<button className={siteText("btn")} id={siteText("btn-schedule")}>{siteText("Schedule report")}</button>{siteText("\n      ")}<button className={siteText("btn btn-primary")} id={siteText("btn-export")}>{siteText("Export PDF")}</button>{siteText("\n    ")}</div>{siteText("\n  ")}</div>{siteText("\n\n  ")}{siteText("\n  ")}<div className={siteText("filters")}>{siteText("\n    ")}<select className={siteText("filter-emp")} id={siteText("employer-select")} style={{"display":"none"}} ref={node => { if(node) node.setAttribute("style", "display:none;"); }} onChange={event => actions[0]?.(event)}/>{siteText("\n    ")}<label className={siteText("period-picker-label")} htmlFor={siteText("month-select")}>{siteText("Reporting period")}</label>{siteText("\n    ")}<select className={siteText("filter-month")} id={siteText("month-select")} aria-label={siteText("Reporting period")} onChange={event => actions[1]?.(event)}>{siteText("\n      ")}<option value={siteText("")}>{siteText("Latest available period")}</option>{siteText("\n      ")}<option value={siteText("30d")}>{siteText("Last 30 days")}</option>{siteText("\n      ")}<option value={siteText("qtd")}>{siteText("Quarter to date")}</option>{siteText("\n      ")}<option value={siteText("all")}>{siteText("Programme to date")}</option>{siteText("\n    ")}</select>{siteText("\n    ")}<span className={siteText("filter-tag interactive")} id={siteText("region-filter")}>{siteText("\n      ")}<svg width={siteText("13")} height={siteText("13")} viewBox={siteText("0 0 24 24")} fill={siteText("none")}><path d={siteText("M3 6h18M6 12h12M10 18h4")} stroke={siteText("currentColor")} strokeWidth={siteText("2")} strokeLinecap={siteText("round")}/></svg>{siteText("\n      ")}<span className={siteText("tag-label")}>{siteText("All regions")}</span>{siteText("\n      ")}<svg className={siteText("caret")} width={siteText("11")} height={siteText("11")} viewBox={siteText("0 0 24 24")} fill={siteText("none")}><path d={siteText("M6 9l6 6 6-6")} stroke={siteText("currentColor")} strokeWidth={siteText("2.4")} strokeLinecap={siteText("round")} strokeLinejoin={siteText("round")}/></svg>{siteText("\n    ")}</span>{siteText("\n    ")}<span className={siteText("filter-tag interactive")} id={siteText("income-filter")}>{siteText("\n      ")}<svg width={siteText("13")} height={siteText("13")} viewBox={siteText("0 0 24 24")} fill={siteText("none")}><path d={siteText("M3 6h18M6 12h12M10 18h4")} stroke={siteText("currentColor")} strokeWidth={siteText("2")} strokeLinecap={siteText("round")}/></svg>{siteText("\n      ")}<span className={siteText("tag-label")}>{siteText("All income bands")}</span>{siteText("\n      ")}<svg className={siteText("caret")} width={siteText("11")} height={siteText("11")} viewBox={siteText("0 0 24 24")} fill={siteText("none")}><path d={siteText("M6 9l6 6 6-6")} stroke={siteText("currentColor")} strokeWidth={siteText("2.4")} strokeLinecap={siteText("round")} strokeLinejoin={siteText("round")}/></svg>{siteText("\n    ")}</span>{siteText("\n    ")}<span className={siteText("filter-tag")} id={siteText("emp-tag")}>{siteText("\n      ")}<svg width={siteText("13")} height={siteText("13")} viewBox={siteText("0 0 24 24")} fill={siteText("none")}><circle cx={siteText("12")} cy={siteText("8")} r={siteText("4")} stroke={siteText("currentColor")} strokeWidth={siteText("2")}/><path d={siteText("M4 20c0-3.3 3.6-6 8-6s8 2.7 8 6")} stroke={siteText("currentColor")} strokeWidth={siteText("2")} strokeLinecap={siteText("round")}/></svg>{siteText("\n      Not available enrolled\n    ")}</span>{siteText("\n  ")}</div>{siteText("\n\n  ")}<div className={siteText("enterprise-toolbar")} aria-label={siteText("Dashboard tools")}>{siteText("\n    ")}<div id="executive-insight"><ExecutiveInsight/></div>{siteText("\n    ")}<div className={siteText("enterprise-toolbar-actions")}>{siteText("\n      ")}<button className={siteText("btn")} id={siteText("btn-save-view")} type={siteText("button")}>{siteText("Save view")}</button>{siteText("\n      ")}<button className={siteText("btn")} id={siteText("btn-command")} type={siteText("button")}>{siteText("Quick actions ")}<span className={siteText("kbd")}>{siteText("Ctrl K")}</span></button>{siteText("\n    ")}</div>{siteText("\n    ")}<div id="data-trust"><DataTrust/></div>{siteText("\n  ")}</div>{siteText("\n  ")}{siteText("\n  ")}<div id="exec-summary"><ExecSummary/></div>{siteText("\n\n  ")}{siteText("\n  ")}<div className={siteText("card reveal wellness-card section-gap")} style={{"animationDelay":".04s"}} ref={node => { if(node) node.setAttribute("style", "animation-delay:.04s"); }}>{siteText("\n    ")}<div className={siteText("card-hd")}>{siteText("\n      ")}<div>{siteText("\n        ")}<div className={siteText("card-title")}>{siteText("Workforce Financial Wellness Score ")}<button type={siteText("button")} className={siteText("metric-info")} data-metric={siteText("wellness")} aria-label={siteText("What is the Workforce Financial Wellness Score?")}>{siteText("i")}</button></div>{siteText("\n        ")}<div className={siteText("card-note")}>{siteText("The single number that tracks your people's financial health Not available and its trajectory")}</div>{siteText("\n      ")}</div>{siteText("\n      ")}<span className={siteText("card-tag")}>{siteText("Index · modelled")}</span>{siteText("\n    ")}</div>{siteText("\n    ")}<div id="wellness"><Wellness/></div>{siteText("\n  ")}</div>{siteText("\n\n  ")}{siteText("\n  ")}<div id="kpis" className="grid g-4"><EmployerKpis/></div>{siteText("\n\n  ")}{siteText("\n  ")}<div className={siteText("grid g-12 section-gap")}>{siteText("\n    ")}<div className={siteText("card reveal")} style={{"gridColumn":"span 7","animationDelay":".05s"}} ref={node => { if(node) node.setAttribute("style", "grid-column:span 7;animation-delay:.05s"); }}>{siteText("\n      ")}<div className={siteText("card-hd")}>{siteText("\n        ")}<div>{siteText("\n          ")}<div className={siteText("card-title")}>{siteText("From enrolled to better off ")}<button type={siteText("button")} className={siteText("metric-info")} data-metric={siteText("funnel")} aria-label={siteText("What is the engagement funnel?")}>{siteText("i")}</button></div>{siteText("\n          ")}<div className={siteText("card-note")}>{siteText("The journey every employee can take Not available and where they are on it")}</div>{siteText("\n        ")}</div>{siteText("\n        ")}<span className={siteText("card-tag")}>{siteText("Engagement funnel")}</span>{siteText("\n      ")}</div>{siteText("\n      ")}<div id="funnel" className="funnel"><EngagementFunnel/></div>{siteText("\n    ")}</div>{siteText("\n    ")}<div className={siteText("card reveal")} style={{"gridColumn":"span 5","animationDelay":".1s"}} ref={node => { if(node) node.setAttribute("style", "grid-column:span 5;animation-delay:.1s"); }}>{siteText("\n      ")}<div className={siteText("card-hd")}>{siteText("\n        ")}<div>{siteText("\n          ")}<div className={siteText("card-title")}>{siteText("Financial problems resolved ")}<button type={siteText("button")} className={siteText("metric-info")} data-metric={siteText("outcomes")} aria-label={siteText("What are financial problems resolved?")}>{siteText("i")}</button></div>{siteText("\n          ")}<div className="card-note" id="outcomes-note"><OutcomesNote/></div>{siteText("\n        ")}</div>{siteText("\n        ")}<span className={siteText("card-tag")}>{siteText("Outcomes")}</span>{siteText("\n      ")}</div>{siteText("\n      ")}<div id="outcomes"><Outcomes/></div>{siteText("\n    ")}</div>{siteText("\n  ")}</div>{siteText("\n\n  ")}{siteText("\n  ")}<section className={siteText("dash-section")} data-section={siteText("valueDelivered")}>{siteText("\n  ")}<div className={siteText("head")} style={{"padding":"36px 0 14px"}} ref={node => { if(node) node.setAttribute("style", "padding:36px 0 14px;"); }}>{siteText("\n    ")}<div>{siteText("\n      ")}<div className={siteText("head-eyebrow")}>{siteText("The bottom line")}</div>{siteText("\n      ")}<h1 style={{"fontSize":"27px"}} ref={node => { if(node) node.setAttribute("style", "font-size:27px;"); }}>{siteText("Value delivered to your people")}</h1>{siteText("\n    ")}</div>{siteText("\n  ")}</div>{siteText("\n  ")}<div id="value-strip"><ValueStrip/></div>{siteText("\n\n  ")}<div className={siteText("grid g-12 section-gap")}>{siteText("\n    ")}<div className={siteText("card reveal")} style={{"gridColumn":"span 5","animationDelay":".05s"}} ref={node => { if(node) node.setAttribute("style", "grid-column:span 5;animation-delay:.05s"); }}>{siteText("\n      ")}<div className={siteText("card-hd")}>{siteText("\n        ")}<div>{siteText("\n          ")}<div className={siteText("card-title")}>{siteText("Monthly cash freed up ")}<button type={siteText("button")} className={siteText("metric-info")} data-metric={siteText("saving")} aria-label={siteText("What is monthly cash freed up?")}>{siteText("i")}</button></div>{siteText("\n          ")}<div className={siteText("card-note")}>{siteText("Recurring savings unlocked, cumulative run-rate")}</div>{siteText("\n        ")}</div>{siteText("\n        ")}<span className={siteText("card-tag")}>{siteText("Run-rate")}</span>{siteText("\n      ")}</div>{siteText("\n      ")}<div id="savings-chart"><SavingsChart/></div>{siteText("\n    ")}</div>{siteText("\n\n    ")}<div className={siteText("card reveal")} style={{"gridColumn":"span 7","animationDelay":".1s"}} ref={node => { if(node) node.setAttribute("style", "grid-column:span 7;animation-delay:.1s"); }}>{siteText("\n      ")}<div className={siteText("card-hd")}>{siteText("\n        ")}<div>{siteText("\n          ")}<div className={siteText("card-title")}>{siteText("Debt Pressure Profile ")}<button type={siteText("button")} className={siteText("metric-info")} data-metric={siteText("debtProfile")} aria-label={siteText("What is the Debt Pressure Profile?")}>{siteText("i")}</button></div>{siteText("\n          ")}<div className={siteText("card-note")}>{siteText("Where your people's arrears sit Not available by credit type, then by creditor")}</div>{siteText("\n        ")}</div>{siteText("\n        ")}<span className={siteText("card-tag")}>{siteText("Arrears journey")}</span>{siteText("\n      ")}</div>{siteText("\n      ")}<DebtProfile/>{siteText("\n      ")}{siteText("\n    ")}</div>{siteText("\n  ")}</div>{siteText("\n  ")}</section>{siteText("\n\n  ")}{siteText("\n  ")}<section className={siteText("dash-section")} data-section={siteText("earlyWageAccess")}>{siteText("\n  ")}<div className={siteText("head")} style={{"padding":"36px 0 14px"}} ref={node => { if(node) node.setAttribute("style", "padding:36px 0 14px;"); }}>{siteText("\n    ")}<div>{siteText("\n      ")}<div className={siteText("eyebrow")}>{siteText("ON-DEMAND PAY")}</div>{siteText("\n      ")}<h1 style={{"fontSize":"27px"}} ref={node => { if(node) node.setAttribute("style", "font-size:27px;"); }}>{siteText("Early Wage Access")}</h1>{siteText("\n      ")}<div className={siteText("head-sub")}>{siteText("How many employees are drawing earned wages early, and how much Not available a live read on cashflow pressure between paydays.")}</div>{siteText("\n    ")}</div>{siteText("\n  ")}</div>{siteText("\n  ")}<div id="ewa-kpis" className="grid g-4"><EwaKpis/></div>{siteText("\n  ")}<div className={siteText("grid g-12 section-gap")}>{siteText("\n    ")}<div className={siteText("card reveal")} style={{"gridColumn":"span 12"}} ref={node => { if(node) node.setAttribute("style", "grid-column:span 12;"); }}>{siteText("\n      ")}<div className={siteText("card-hd")}>{siteText("\n        ")}<div>{siteText("\n          ")}<div className={siteText("card-title")}>{siteText("Total advanced per month ")}<button type={siteText("button")} className={siteText("metric-info")} data-metric={siteText("ewaTrend")} aria-label={siteText("What is total advanced per month?")}>{siteText("i")}</button></div>{siteText("\n          ")}<div className={siteText("card-note")}>{siteText("Finalised advances only · monthly run-rate")}</div>{siteText("\n        ")}</div>{siteText("\n        ")}<span className={siteText("card-tag")}>{siteText("Trend")}</span>{siteText("\n      ")}</div>{siteText("\n      ")}<div id="ewa-chart"><EwaChart/></div>{siteText("\n    ")}</div>{siteText("\n  ")}</div>{siteText("\n  ")}</section>{siteText("\n\n  ")}<section className={siteText("dash-section")} data-section={siteText("stressMap")}>{siteText("\n  ")}<div className={siteText("head")} style={{"padding":"36px 0 14px"}} ref={node => { if(node) node.setAttribute("style", "padding:36px 0 14px;"); }}>{siteText("\n    ")}<div>{siteText("\n      ")}<div className={siteText("head-eyebrow")}>{siteText("Where the pressure sits")}</div>{siteText("\n      ")}<h1 style={{"fontSize":"27px"}} ref={node => { if(node) node.setAttribute("style", "font-size:27px;"); }}>{siteText("Workforce Financial Stress Map")}</h1>{siteText("\n      ")}<div className={siteText("head-sub")}>{siteText("Financial pressure is not evenly spread. This is where it concentrates Not available so you and your broker can direct the programme to the people and sites that need it most.")}</div>{siteText("\n    ")}</div>{siteText("\n  ")}</div>{siteText("\n\n  ")}<div id="stress-strip" className="section-gap"><StressMap/></div>{siteText("\n\n  ")}<div className={siteText("grid g-12 section-gap")}>{siteText("\n    ")}<div className={siteText("card reveal")} style={{"gridColumn":"span 4","animationDelay":".05s"}} ref={node => { if(node) node.setAttribute("style", "grid-column:span 4;animation-delay:.05s"); }}>{siteText("\n      ")}<div className={siteText("card-hd")}>{siteText("\n        ")}<div><div className={siteText("card-title")}>{siteText("Stress index by site ")}<button type={siteText("button")} className={siteText("metric-info")} data-metric={siteText("stressBySite")} aria-label={siteText("What is the stress index by site?")}>{siteText("i")}</button></div><div className={siteText("card-note")}>{siteText("Higher = more financial pressure (arrears, debt load, low resilience)")}</div></div>{siteText("\n        ")}<span className={siteText("card-tag")}>{siteText("By site")}</span>{siteText("\n      ")}</div>{siteText("\n      ")}<div id="region-bars" className="hbar"><Regions/></div>{siteText("\n    ")}</div>{siteText("\n\n    ")}<div className={siteText("card reveal")} style={{"gridColumn":"span 4","animationDelay":".1s"}} ref={node => { if(node) node.setAttribute("style", "grid-column:span 4;animation-delay:.1s"); }}>{siteText("\n      ")}<div className={siteText("card-hd")}>{siteText("\n        ")}<div><div className={siteText("card-title")}>{siteText("Who the programme is reaching ")}<button type={siteText("button")} className={siteText("metric-info")} data-metric={siteText("incomeReach")} aria-label={siteText("What is reach by income band?")}>{siteText("i")}</button></div><div className={siteText("card-note")}>{siteText("Activated employees by income band")}</div></div>{siteText("\n      ")}</div>{siteText("\n      ")}<div id="income-donut"><Income/></div>{siteText("\n    ")}</div>{siteText("\n\n    ")}<div className={siteText("card reveal")} style={{"gridColumn":"span 4","animationDelay":".15s"}} ref={node => { if(node) node.setAttribute("style", "grid-column:span 4;animation-delay:.15s"); }}>{siteText("\n      ")}<div className={siteText("card-hd")}>{siteText("\n        ")}<div><div className={siteText("card-title")}>{siteText("How employees rate us ")}<button type={siteText("button")} className={siteText("metric-info")} data-metric={siteText("rating")} aria-label={siteText("What is the employee experience rating?")}>{siteText("i")}</button></div><div className={siteText("card-note")}>{siteText("From end-of-journey ratings")}</div></div>{siteText("\n        ")}<span className={siteText("card-tag")}>{siteText("Experience")}</span>{siteText("\n      ")}</div>{siteText("\n      ")}<div id="ratings"><Ratings/></div>{siteText("\n    ")}</div>{siteText("\n  ")}</div>{siteText("\n  ")}</section>{siteText("\n\n  ")}{siteText("\n  ")}<section className={siteText("dash-section")} data-section={siteText("problemDebt")}>{siteText("\n  ")}<div className={siteText("head")} style={{"padding":"36px 0 14px"}} ref={node => { if(node) node.setAttribute("style", "padding:36px 0 14px;"); }}>{siteText("\n    ")}<div>{siteText("\n      ")}<div className={siteText("head-eyebrow")}>{siteText("Tackling problem debt")}</div>{siteText("\n      ")}<h1 style={{"fontSize":"27px"}} ref={node => { if(node) node.setAttribute("style", "font-size:27px;"); }}>{siteText("How problem debt is being handled")}</h1>{siteText("\n      ")}<div className={siteText("head-sub")}>{siteText("Not all distressed debt is dealt with the same way. Here is exactly what is happening to each rand Not available and we are precise about which debt is under active arrangement versus self-managed with our guidance.")}</div>{siteText("\n    ")}</div>{siteText("\n  ")}</div>{siteText("\n  ")}<div className={siteText("card reveal section-gap")} style={{"marginTop":"0","animationDelay":".04s"}} ref={node => { if(node) node.setAttribute("style", "margin-top:0;animation-delay:.04s"); }}>{siteText("\n    ")}<div className={siteText("card-hd")}>{siteText("\n      ")}<div>{siteText("\n        ")}<div className={siteText("card-title")}>{siteText("Problem debt by how it's being handled ")}<button type={siteText("button")} className={siteText("metric-info")} data-metric={siteText("debtStates")} aria-label={siteText("How is problem debt being handled?")}>{siteText("i")}</button></div>{siteText("\n        ")}<div className={siteText("card-note")}>{siteText("Three honest states Not available only the first is an active arrangement")}</div>{siteText("\n      ")}</div>{siteText("\n      ")}<span className={siteText("card-tag")}>{siteText("Debt intervention")}</span>{siteText("\n    ")}</div>{siteText("\n    ")}<div id="debt-states"><DebtStates/></div>{siteText("\n  ")}</div>{siteText("\n\n  ")}<div className={siteText("grid g-12 section-gap")}>{siteText("\n    ")}<div className={siteText("card reveal")} style={{"gridColumn":"span 7","animationDelay":".05s"}} ref={node => { if(node) node.setAttribute("style", "grid-column:span 7;animation-delay:.05s"); }}>{siteText("\n      ")}<div className={siteText("card-hd")}>{siteText("\n        ")}<div>{siteText("\n          ")}<div className={siteText("card-title")}>{siteText("Potentially prescribed debt challenged ")}<button type={siteText("button")} className={siteText("metric-info")} data-metric={siteText("prescription")} aria-label={siteText("What is prescribed debt recovery?")}>{siteText("i")}</button></div>{siteText("\n          ")}<div className={siteText("card-note")}>{siteText("Old debt employees may no longer legally owe Not available identified and contested")}</div>{siteText("\n        ")}</div>{siteText("\n        ")}<span className={siteText("card-tag")}>{siteText("Recovery")}</span>{siteText("\n      ")}</div>{siteText("\n      ")}<div id="prescription"><Prescription/></div>{siteText("\n    ")}</div>{siteText("\n\n    ")}<div className={siteText("card reveal")} style={{"gridColumn":"span 5","animationDelay":".1s"}} ref={node => { if(node) node.setAttribute("style", "grid-column:span 5;animation-delay:.1s"); }}>{siteText("\n      ")}<div className={siteText("card-hd")}>{siteText("\n        ")}<div>{siteText("\n          ")}<div className={siteText("card-title")}>{siteText("Financial Risk Signals ")}<button type={siteText("button")} className={siteText("metric-info")} data-metric={siteText("riskSignals")} aria-label={siteText("What are Financial Risk Signals?")}>{siteText("i")}</button></div>{siteText("\n          ")}<div className={siteText("card-note")}>{siteText("Exposure detected across your workforce Not available your early-warning list")}</div>{siteText("\n        ")}</div>{siteText("\n        ")}<span className={siteText("card-tag")}>{siteText("Diagnostic")}</span>{siteText("\n      ")}</div>{siteText("\n      ")}<div id="risk-signals"><RiskSignals/></div>{siteText("\n    ")}</div>{siteText("\n  ")}</div>{siteText("\n  ")}</section>{siteText("\n\n  ")}{siteText("\n  ")}<section className={siteText("dash-section")} data-section={siteText("opportunities")}>{siteText("\n  ")}<div className={siteText("head")} style={{"padding":"36px 0 14px"}} ref={node => { if(node) node.setAttribute("style", "padding:36px 0 14px;"); }}>{siteText("\n    ")}<div>{siteText("\n      ")}<div className={siteText("head-eyebrow")}>{siteText("What to do next")}</div>{siteText("\n      ")}<h1 style={{"fontSize":"27px"}} ref={node => { if(node) node.setAttribute("style", "font-size:27px;"); }}>{siteText("Opportunities identified")}</h1>{siteText("\n      ")}<div className={siteText("head-sub")}>{siteText("The programme has already mapped the next wave of value sitting in your workforce Not available eligible employees who haven't yet been helped.")}</div>{siteText("\n    ")}</div>{siteText("\n  ")}</div>{siteText("\n  ")}<div id="opportunities"><Opportunities/></div>{siteText("\n  ")}</section>{siteText("\n\n  ")}{siteText("\n  ")}<EmployeeChat/>{siteText("\n\n  ")}<div className={siteText("footnote")} id={siteText("footnote")}/>{siteText("\n\n ")}</div>{siteText("\n\n  ")}<div className={siteText("pdf-print-footer")} aria-hidden={siteText("true")}>{siteText("\n    empower-fin · Workforce Financial Wellbeing · Confidential employer report · Generated ")}<span id={siteText("pdf-footer-date")}/>{siteText("\n  ")}</div>{siteText("\n\n  ")}{siteText("\n  ")}<div id="portfolio-view" style={{display:"none"}}><Portfolio/></div>{siteText("\n\n")}</div>
+<div className={siteText("wrap")}>{siteText("\n\n  ")}<div className={siteText("pdf-print-header")} aria-hidden={siteText("true")}>{siteText("\n    ")}<div className={siteText("pdf-brand")}>{siteText("\n      ")}<img src={siteText("/static/the-fixer-logo.svg?v=6")} className={siteText("efs-brand-logo")} alt={siteText("The Fixer logo")}/>{siteText("\n      ")}<div>{siteText("\n        ")}<div className={siteText("pdf-kicker")}>{siteText("empower-fin · Workforce Financial Wellbeing")}</div>{siteText("\n        ")}<div className={siteText("pdf-title")} id={siteText("pdf-report-title")}>{siteText("Employer Insights")}</div>{siteText("\n      ")}</div>{siteText("\n    ")}</div>{siteText("\n    ")}<div className={siteText("pdf-meta")}>{siteText("\n      ")}<div id={siteText("pdf-report-period")}>{siteText("Reporting period")}</div>{siteText("\n      ")}<div id={siteText("pdf-report-generated")}/>{siteText("\n      ")}<span className={siteText("pdf-score")} id={siteText("pdf-report-score")}>{siteText("Workforce Financial Wellness Score Not available")}</span>{siteText("\n    ")}</div>{siteText("\n  ")}</div>{siteText("\n\n  ")}<DashboardViewport>{siteText("\n\n  ")}{siteText("\n  ")}<div className="head"><DashboardHeading/></div><DashboardNotices/>{siteText("\n\n  ")}{siteText("\n  ")}<DashboardFilters/>{siteText("\n\n  ")}<div className={siteText("enterprise-toolbar")} aria-label={siteText("Dashboard tools")}>{siteText("\n    ")}<div id="executive-insight"><ExecutiveInsight/></div>{siteText("\n    ")}<div className={siteText("enterprise-toolbar-actions")}>{siteText("\n      ")}<DashboardButton id="btn-save-view"/>{siteText("\n      ")}<DashboardButton id="btn-command"/>{siteText("\n    ")}</div>{siteText("\n    ")}<div id="data-trust"><DataTrust/></div>{siteText("\n  ")}</div>{siteText("\n  ")}{siteText("\n  ")}<div id="exec-summary"><ExecSummary/></div>{siteText("\n\n  ")}{siteText("\n  ")}<div className={siteText("card reveal wellness-card section-gap")} style={{"animationDelay":".04s"}} ref={node => { if(node) node.setAttribute("style", "animation-delay:.04s"); }}>{siteText("\n    ")}<div className={siteText("card-hd")}>{siteText("\n      ")}<div>{siteText("\n        ")}<div className={siteText("card-title")}>{siteText("Workforce Financial Wellness Score ")}<button type={siteText("button")} className={siteText("metric-info")} data-metric={siteText("wellness")} aria-label={siteText("What is the Workforce Financial Wellness Score?")}>{siteText("i")}</button></div>{siteText("\n        ")}<div className={siteText("card-note")}>{siteText("The single number that tracks your people's financial health Not available and its trajectory")}</div>{siteText("\n      ")}</div>{siteText("\n      ")}<span className={siteText("card-tag")}>{siteText("Index · modelled")}</span>{siteText("\n    ")}</div>{siteText("\n    ")}<div id="wellness"><Wellness/></div>{siteText("\n  ")}</div>{siteText("\n\n  ")}{siteText("\n  ")}<div id="kpis" className="grid g-4"><EmployerKpis/></div>{siteText("\n\n  ")}{siteText("\n  ")}<div className={siteText("grid g-12 section-gap")}>{siteText("\n    ")}<div className={siteText("card reveal")} style={{"gridColumn":"span 7","animationDelay":".05s"}} ref={node => { if(node) node.setAttribute("style", "grid-column:span 7;animation-delay:.05s"); }}>{siteText("\n      ")}<div className={siteText("card-hd")}>{siteText("\n        ")}<div>{siteText("\n          ")}<div className={siteText("card-title")}>{siteText("From enrolled to better off ")}<button type={siteText("button")} className={siteText("metric-info")} data-metric={siteText("funnel")} aria-label={siteText("What is the engagement funnel?")}>{siteText("i")}</button></div>{siteText("\n          ")}<div className={siteText("card-note")}>{siteText("The journey every employee can take Not available and where they are on it")}</div>{siteText("\n        ")}</div>{siteText("\n        ")}<span className={siteText("card-tag")}>{siteText("Engagement funnel")}</span>{siteText("\n      ")}</div>{siteText("\n      ")}<div id="funnel" className="funnel"><EngagementFunnel/></div>{siteText("\n    ")}</div>{siteText("\n    ")}<div className={siteText("card reveal")} style={{"gridColumn":"span 5","animationDelay":".1s"}} ref={node => { if(node) node.setAttribute("style", "grid-column:span 5;animation-delay:.1s"); }}>{siteText("\n      ")}<div className={siteText("card-hd")}>{siteText("\n        ")}<div>{siteText("\n          ")}<div className={siteText("card-title")}>{siteText("Financial problems resolved ")}<button type={siteText("button")} className={siteText("metric-info")} data-metric={siteText("outcomes")} aria-label={siteText("What are financial problems resolved?")}>{siteText("i")}</button></div>{siteText("\n          ")}<div className="card-note" id="outcomes-note"><OutcomesNote/></div>{siteText("\n        ")}</div>{siteText("\n        ")}<span className={siteText("card-tag")}>{siteText("Outcomes")}</span>{siteText("\n      ")}</div>{siteText("\n      ")}<div id="outcomes"><Outcomes/></div>{siteText("\n    ")}</div>{siteText("\n  ")}</div>{siteText("\n\n  ")}{siteText("\n  ")}<DashboardSection name="valueDelivered">{siteText("\n  ")}<div className={siteText("head")} style={{"padding":"36px 0 14px"}} ref={node => { if(node) node.setAttribute("style", "padding:36px 0 14px;"); }}>{siteText("\n    ")}<div>{siteText("\n      ")}<div className={siteText("head-eyebrow")}>{siteText("The bottom line")}</div>{siteText("\n      ")}<h1 style={{"fontSize":"27px"}} ref={node => { if(node) node.setAttribute("style", "font-size:27px;"); }}>{siteText("Value delivered to your people")}</h1>{siteText("\n    ")}</div>{siteText("\n  ")}</div>{siteText("\n  ")}<div id="value-strip"><ValueStrip/></div>{siteText("\n\n  ")}<div className={siteText("grid g-12 section-gap")}>{siteText("\n    ")}<div className={siteText("card reveal")} style={{"gridColumn":"span 5","animationDelay":".05s"}} ref={node => { if(node) node.setAttribute("style", "grid-column:span 5;animation-delay:.05s"); }}>{siteText("\n      ")}<div className={siteText("card-hd")}>{siteText("\n        ")}<div>{siteText("\n          ")}<div className={siteText("card-title")}>{siteText("Monthly cash freed up ")}<button type={siteText("button")} className={siteText("metric-info")} data-metric={siteText("saving")} aria-label={siteText("What is monthly cash freed up?")}>{siteText("i")}</button></div>{siteText("\n          ")}<div className={siteText("card-note")}>{siteText("Recurring savings unlocked, cumulative run-rate")}</div>{siteText("\n        ")}</div>{siteText("\n        ")}<span className={siteText("card-tag")}>{siteText("Run-rate")}</span>{siteText("\n      ")}</div>{siteText("\n      ")}<div id="savings-chart"><SavingsChart/></div>{siteText("\n    ")}</div>{siteText("\n\n    ")}<div className={siteText("card reveal")} style={{"gridColumn":"span 7","animationDelay":".1s"}} ref={node => { if(node) node.setAttribute("style", "grid-column:span 7;animation-delay:.1s"); }}>{siteText("\n      ")}<div className={siteText("card-hd")}>{siteText("\n        ")}<div>{siteText("\n          ")}<div className={siteText("card-title")}>{siteText("Debt Pressure Profile ")}<button type={siteText("button")} className={siteText("metric-info")} data-metric={siteText("debtProfile")} aria-label={siteText("What is the Debt Pressure Profile?")}>{siteText("i")}</button></div>{siteText("\n          ")}<div className={siteText("card-note")}>{siteText("Where your people's arrears sit Not available by credit type, then by creditor")}</div>{siteText("\n        ")}</div>{siteText("\n        ")}<span className={siteText("card-tag")}>{siteText("Arrears journey")}</span>{siteText("\n      ")}</div>{siteText("\n      ")}<DebtProfile/>{siteText("\n      ")}{siteText("\n    ")}</div>{siteText("\n  ")}</div>{siteText("\n  ")}</DashboardSection>{siteText("\n\n  ")}{siteText("\n  ")}<DashboardSection name="earlyWageAccess">{siteText("\n  ")}<div className={siteText("head")} style={{"padding":"36px 0 14px"}} ref={node => { if(node) node.setAttribute("style", "padding:36px 0 14px;"); }}>{siteText("\n    ")}<div>{siteText("\n      ")}<div className={siteText("eyebrow")}>{siteText("ON-DEMAND PAY")}</div>{siteText("\n      ")}<h1 style={{"fontSize":"27px"}} ref={node => { if(node) node.setAttribute("style", "font-size:27px;"); }}>{siteText("Early Wage Access")}</h1>{siteText("\n      ")}<div className={siteText("head-sub")}>{siteText("How many employees are drawing earned wages early, and how much Not available a live read on cashflow pressure between paydays.")}</div>{siteText("\n    ")}</div>{siteText("\n  ")}</div>{siteText("\n  ")}<div id="ewa-kpis" className="grid g-4"><EwaKpis/></div>{siteText("\n  ")}<div className={siteText("grid g-12 section-gap")}>{siteText("\n    ")}<div className={siteText("card reveal")} style={{"gridColumn":"span 12"}} ref={node => { if(node) node.setAttribute("style", "grid-column:span 12;"); }}>{siteText("\n      ")}<div className={siteText("card-hd")}>{siteText("\n        ")}<div>{siteText("\n          ")}<div className={siteText("card-title")}>{siteText("Total advanced per month ")}<button type={siteText("button")} className={siteText("metric-info")} data-metric={siteText("ewaTrend")} aria-label={siteText("What is total advanced per month?")}>{siteText("i")}</button></div>{siteText("\n          ")}<div className={siteText("card-note")}>{siteText("Finalised advances only · monthly run-rate")}</div>{siteText("\n        ")}</div>{siteText("\n        ")}<span className={siteText("card-tag")}>{siteText("Trend")}</span>{siteText("\n      ")}</div>{siteText("\n      ")}<div id="ewa-chart"><EwaChart/></div>{siteText("\n    ")}</div>{siteText("\n  ")}</div>{siteText("\n  ")}</DashboardSection>{siteText("\n\n  ")}<DashboardSection name="stressMap">{siteText("\n  ")}<div className={siteText("head")} style={{"padding":"36px 0 14px"}} ref={node => { if(node) node.setAttribute("style", "padding:36px 0 14px;"); }}>{siteText("\n    ")}<div>{siteText("\n      ")}<div className={siteText("head-eyebrow")}>{siteText("Where the pressure sits")}</div>{siteText("\n      ")}<h1 style={{"fontSize":"27px"}} ref={node => { if(node) node.setAttribute("style", "font-size:27px;"); }}>{siteText("Workforce Financial Stress Map")}</h1>{siteText("\n      ")}<div className={siteText("head-sub")}>{siteText("Financial pressure is not evenly spread. This is where it concentrates Not available so you and your broker can direct the programme to the people and sites that need it most.")}</div>{siteText("\n    ")}</div>{siteText("\n  ")}</div>{siteText("\n\n  ")}<div id="stress-strip" className="section-gap"><StressMap/></div>{siteText("\n\n  ")}<div className={siteText("grid g-12 section-gap")}>{siteText("\n    ")}<div className={siteText("card reveal")} style={{"gridColumn":"span 4","animationDelay":".05s"}} ref={node => { if(node) node.setAttribute("style", "grid-column:span 4;animation-delay:.05s"); }}>{siteText("\n      ")}<div className={siteText("card-hd")}>{siteText("\n        ")}<div><div className={siteText("card-title")}>{siteText("Stress index by site ")}<button type={siteText("button")} className={siteText("metric-info")} data-metric={siteText("stressBySite")} aria-label={siteText("What is the stress index by site?")}>{siteText("i")}</button></div><div className={siteText("card-note")}>{siteText("Higher = more financial pressure (arrears, debt load, low resilience)")}</div></div>{siteText("\n        ")}<span className={siteText("card-tag")}>{siteText("By site")}</span>{siteText("\n      ")}</div>{siteText("\n      ")}<div id="region-bars" className="hbar"><Regions/></div>{siteText("\n    ")}</div>{siteText("\n\n    ")}<div className={siteText("card reveal")} style={{"gridColumn":"span 4","animationDelay":".1s"}} ref={node => { if(node) node.setAttribute("style", "grid-column:span 4;animation-delay:.1s"); }}>{siteText("\n      ")}<div className={siteText("card-hd")}>{siteText("\n        ")}<div><div className={siteText("card-title")}>{siteText("Who the programme is reaching ")}<button type={siteText("button")} className={siteText("metric-info")} data-metric={siteText("incomeReach")} aria-label={siteText("What is reach by income band?")}>{siteText("i")}</button></div><div className={siteText("card-note")}>{siteText("Activated employees by income band")}</div></div>{siteText("\n      ")}</div>{siteText("\n      ")}<div id="income-donut"><Income/></div>{siteText("\n    ")}</div>{siteText("\n\n    ")}<div className={siteText("card reveal")} style={{"gridColumn":"span 4","animationDelay":".15s"}} ref={node => { if(node) node.setAttribute("style", "grid-column:span 4;animation-delay:.15s"); }}>{siteText("\n      ")}<div className={siteText("card-hd")}>{siteText("\n        ")}<div><div className={siteText("card-title")}>{siteText("How employees rate us ")}<button type={siteText("button")} className={siteText("metric-info")} data-metric={siteText("rating")} aria-label={siteText("What is the employee experience rating?")}>{siteText("i")}</button></div><div className={siteText("card-note")}>{siteText("From end-of-journey ratings")}</div></div>{siteText("\n        ")}<span className={siteText("card-tag")}>{siteText("Experience")}</span>{siteText("\n      ")}</div>{siteText("\n      ")}<div id="ratings"><Ratings/></div>{siteText("\n    ")}</div>{siteText("\n  ")}</div>{siteText("\n  ")}</DashboardSection>{siteText("\n\n  ")}{siteText("\n  ")}<DashboardSection name="problemDebt">{siteText("\n  ")}<div className={siteText("head")} style={{"padding":"36px 0 14px"}} ref={node => { if(node) node.setAttribute("style", "padding:36px 0 14px;"); }}>{siteText("\n    ")}<div>{siteText("\n      ")}<div className={siteText("head-eyebrow")}>{siteText("Tackling problem debt")}</div>{siteText("\n      ")}<h1 style={{"fontSize":"27px"}} ref={node => { if(node) node.setAttribute("style", "font-size:27px;"); }}>{siteText("How problem debt is being handled")}</h1>{siteText("\n      ")}<div className={siteText("head-sub")}>{siteText("Not all distressed debt is dealt with the same way. Here is exactly what is happening to each rand Not available and we are precise about which debt is under active arrangement versus self-managed with our guidance.")}</div>{siteText("\n    ")}</div>{siteText("\n  ")}</div>{siteText("\n  ")}<div className={siteText("card reveal section-gap")} style={{"marginTop":"0","animationDelay":".04s"}} ref={node => { if(node) node.setAttribute("style", "margin-top:0;animation-delay:.04s"); }}>{siteText("\n    ")}<div className={siteText("card-hd")}>{siteText("\n      ")}<div>{siteText("\n        ")}<div className={siteText("card-title")}>{siteText("Problem debt by how it's being handled ")}<button type={siteText("button")} className={siteText("metric-info")} data-metric={siteText("debtStates")} aria-label={siteText("How is problem debt being handled?")}>{siteText("i")}</button></div>{siteText("\n        ")}<div className={siteText("card-note")}>{siteText("Three honest states Not available only the first is an active arrangement")}</div>{siteText("\n      ")}</div>{siteText("\n      ")}<span className={siteText("card-tag")}>{siteText("Debt intervention")}</span>{siteText("\n    ")}</div>{siteText("\n    ")}<div id="debt-states"><DebtStates/></div>{siteText("\n  ")}</div>{siteText("\n\n  ")}<div className={siteText("grid g-12 section-gap")}>{siteText("\n    ")}<div className={siteText("card reveal")} style={{"gridColumn":"span 7","animationDelay":".05s"}} ref={node => { if(node) node.setAttribute("style", "grid-column:span 7;animation-delay:.05s"); }}>{siteText("\n      ")}<div className={siteText("card-hd")}>{siteText("\n        ")}<div>{siteText("\n          ")}<div className={siteText("card-title")}>{siteText("Potentially prescribed debt challenged ")}<button type={siteText("button")} className={siteText("metric-info")} data-metric={siteText("prescription")} aria-label={siteText("What is prescribed debt recovery?")}>{siteText("i")}</button></div>{siteText("\n          ")}<div className={siteText("card-note")}>{siteText("Old debt employees may no longer legally owe Not available identified and contested")}</div>{siteText("\n        ")}</div>{siteText("\n        ")}<span className={siteText("card-tag")}>{siteText("Recovery")}</span>{siteText("\n      ")}</div>{siteText("\n      ")}<div id="prescription"><Prescription/></div>{siteText("\n    ")}</div>{siteText("\n\n    ")}<div className={siteText("card reveal")} style={{"gridColumn":"span 5","animationDelay":".1s"}} ref={node => { if(node) node.setAttribute("style", "grid-column:span 5;animation-delay:.1s"); }}>{siteText("\n      ")}<div className={siteText("card-hd")}>{siteText("\n        ")}<div>{siteText("\n          ")}<div className={siteText("card-title")}>{siteText("Financial Risk Signals ")}<button type={siteText("button")} className={siteText("metric-info")} data-metric={siteText("riskSignals")} aria-label={siteText("What are Financial Risk Signals?")}>{siteText("i")}</button></div>{siteText("\n          ")}<div className={siteText("card-note")}>{siteText("Exposure detected across your workforce Not available your early-warning list")}</div>{siteText("\n        ")}</div>{siteText("\n        ")}<span className={siteText("card-tag")}>{siteText("Diagnostic")}</span>{siteText("\n      ")}</div>{siteText("\n      ")}<div id="risk-signals"><RiskSignals/></div>{siteText("\n    ")}</div>{siteText("\n  ")}</div>{siteText("\n  ")}</DashboardSection>{siteText("\n\n  ")}{siteText("\n  ")}<DashboardSection name="opportunities">{siteText("\n  ")}<div className={siteText("head")} style={{"padding":"36px 0 14px"}} ref={node => { if(node) node.setAttribute("style", "padding:36px 0 14px;"); }}>{siteText("\n    ")}<div>{siteText("\n      ")}<div className={siteText("head-eyebrow")}>{siteText("What to do next")}</div>{siteText("\n      ")}<h1 style={{"fontSize":"27px"}} ref={node => { if(node) node.setAttribute("style", "font-size:27px;"); }}>{siteText("Opportunities identified")}</h1>{siteText("\n      ")}<div className={siteText("head-sub")}>{siteText("The programme has already mapped the next wave of value sitting in your workforce Not available eligible employees who haven't yet been helped.")}</div>{siteText("\n    ")}</div>{siteText("\n  ")}</div>{siteText("\n  ")}<div id="opportunities"><Opportunities/></div>{siteText("\n  ")}</DashboardSection>{siteText("\n\n  ")}{siteText("\n  ")}<DashboardSection name="voiceOfEmployee"><EmployeeChat/></DashboardSection>{siteText("\n\n  ")}<DashboardFootnote/>{siteText("\n\n ")}</DashboardViewport>{siteText("\n\n  ")}<div className={siteText("pdf-print-footer")} aria-hidden={siteText("true")}>{siteText("\n    empower-fin · Workforce Financial Wellbeing · Confidential employer report · Generated ")}<span id={siteText("pdf-footer-date")}/>{siteText("\n  ")}</div>{siteText("\n\n  ")}{siteText("\n  ")}<DashboardViewport portfolio><Portfolio/></DashboardViewport>{siteText("\n\n")}</div>
 {siteText("\n\n")}
 
 {siteText("\n")}
@@ -36,12 +37,7 @@ export function Page(){return <>{siteText("\n\n")}
 {siteText("\n\n\n")}</>;}
 let started=false;
 export function start(){if(started)return;started=true;
-actions=[event => {
-  switchEmployer(event.currentTarget.value);
-},
-event => {
-  switchPeriod(event.currentTarget.value);
-}];
+actions=[];
 /* Shared HTML-escaping helper. Every value that originates from the API or the
    user (names, e-mails, filenames, error text) must pass through esc() before
    it is interpolated into an innerHTML template. */
@@ -62,101 +58,6 @@ event => {
 })(window);
 ;
 window.BrandEngine = BrandEngine;
-;
-setTimeout(function () {
-  var e = document.getElementById('welcome-splash');
-  if (e) e.classList.add('hide');
-}, 4500);
-;
-// ════════════════════════════════════════════════════════════════════
-//  ENGAGEMENT BEACON
-//  Minimal, best-effort client-reach tracking used by Administration >
-//  Client Reach & Engagement. No third-party tracking — everything goes to
-//  our own /api/analytics/event endpoint and is tied to the signed-in user.
-// ════════════════════════════════════════════════════════════════════
-(function () {
-  'use strict';
-
-  var ENDPOINT = '/api/analytics/event';
-  var path = location.pathname;
-  var startedAt = Date.now();
-  var thresholdsSent = {};
-  function send(type, value) {
-    var body = JSON.stringify({
-      type: type,
-      path: path,
-      value: value
-    });
-    try {
-      if (navigator.sendBeacon) {
-        navigator.sendBeacon(ENDPOINT, new Blob([body], {
-          type: 'application/json'
-        }));
-        return;
-      }
-    } catch (_) {}
-    try {
-      fetch(ENDPOINT, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: body,
-        keepalive: true
-      });
-    } catch (_) {}
-  }
-  function labelFor(el) {
-    if (!el) return '';
-    return (el.getAttribute('aria-label') || el.getAttribute('name') || el.textContent || el.href || '').replace(/\s+/g, ' ').trim().slice(0, 180);
-  }
-  document.addEventListener('click', function (event) {
-    var target = event.target && event.target.closest ? event.target.closest('button, [role="button"], a') : null;
-    if (!target) return;
-    if (target.tagName === 'A' && target.hostname && target.hostname !== location.hostname) send('OUTBOUND_CLICK', null);else if (target.tagName === 'BUTTON' || target.getAttribute('role') === 'button') send('CTA_CLICK', null);
-  }, true);
-  document.addEventListener('submit', function () {
-    send('FORM_SUBMIT', null);
-  }, true);
-  window.addEventListener('error', function () {
-    send('CLIENT_ERROR', null);
-  });
-  function scrollDepthPct() {
-    var doc = document.documentElement;
-    var scrollable = Math.max(1, (doc.scrollHeight || 0) - (window.innerHeight || 0));
-    var pct = (window.scrollY || doc.scrollTop || 0) / scrollable * 100;
-    return Math.max(0, Math.min(100, Math.round(pct)));
-  }
-  function checkScroll() {
-    var pct = scrollDepthPct();
-    [25, 50, 75, 100].forEach(function (t) {
-      if (pct >= t && !thresholdsSent[t]) {
-        thresholdsSent[t] = true;
-        send('SCROLL_DEPTH', t);
-      }
-    });
-  }
-  var scrollTimer = null;
-  window.addEventListener('scroll', function () {
-    if (scrollTimer) return;
-    scrollTimer = setTimeout(function () {
-      scrollTimer = null;
-      checkScroll();
-    }, 400);
-  }, {
-    passive: true
-  });
-  function endSession() {
-    send('SESSION_END', Math.round((Date.now() - startedAt) / 1000));
-  }
-  document.addEventListener('visibilitychange', function () {
-    if (document.visibilityState === 'hidden') endSession();
-  });
-  window.addEventListener('pagehide', endSession);
-
-  // initial pageview beacon
-  send('PAGEVIEW', null);
-})();
 ;
 ;
 
@@ -1489,7 +1390,6 @@ function initials(n) {
 
 /* ─────────────────── ACT 6: webchat engagement ─────────────────── */
 /* ─────────────────── footnote ─────────────────── */
-renderMarkup(document.getElementById('footnote'), '<strong>How we define the headline numbers.</strong> &nbsp;<em>Employees better off</em> = unique employees who completed at least one journey with a concrete result: a lower monthly premium or instalment, a settlement or arrangement put in place, a prescribed-debt challenge lodged, or an interest-free emergency cash advance set up. It counts people, not actions (one person who fixed two things counts once). Employees who only received guidance, without a completed fix, are not included. &nbsp;<em>Debt under active intervention</em> = arrears where a settlement or reduced-instalment arrangement has actually been sent; it excludes prescribed debt being contested (shown separately) and debt the employee could not afford to arrange, where we instead educated them on prescription to self-manage (also shown separately).<br><br>' + 'Simulated demonstration data for the empower-fin Dashboard Portal. Figures are illustrative and reconciled to the consumer journey model. Employee-level data is aggregated and de-identified; individual financial information is never exposed to the employer. Underwriting by Guardrisk Life Insurance Company Limited. Intermediary services: EmpowerFS (Pty) Ltd, FSP 53395.');
 
 /* ════════════════════════════════════════════════════════════════════
    INTERACTION LAYER
@@ -1497,8 +1397,6 @@ renderMarkup(document.getElementById('footnote'), '<strong>How we define the hea
 
 /* keep a pristine copy so filters can re-derive from source */
 let BASE = JSON.parse(JSON.stringify(DATA));
-let LIVE_REQUEST_SEQ = 0;
-
 /* view state */
 const STATE = {
   period: 'all',
@@ -1613,22 +1511,6 @@ function randMoney(v, f) {
   abs *= f;
   return 'R ' + Math.round(abs).toLocaleString('en-ZA');
 }
-function saveCurrentView() {
-  const key = 'empower-fin.savedViews';
-  const views = JSON.parse(localStorage.getItem(key) || '[]');
-  const name = window.prompt('Name this saved view', DATA.filterContext?.label || 'Saved view');
-  if (!name) return;
-  const item = {
-    id: Date.now().toString(36),
-    name: name.trim().slice(0, 80),
-    url: location.pathname + location.search
-  };
-  localStorage.setItem(key, JSON.stringify([item, ...views].slice(0, 20)));
-  showToast('Saved view', 'This view is saved on this browser.');
-}
-function openQuickActions() {
-  showQuickActions();
-}
 /* rebuild DATA from BASE according to STATE, then re-render everything */
 function applyState() {
   // When real data is loaded from the API, render it directly. The period /
@@ -1638,11 +1520,6 @@ function applyState() {
     clearAll();
     [renderExec, renderWellness].forEach(safeRender);
     safeRender(() => wireMetricTips(document.getElementById('employer-view')));
-    updateContextLine();
-    const siteLabel = document.querySelector('#region-filter .tag-label');
-    const incomeLabel = document.querySelector('#income-filter .tag-label');
-    if (siteLabel) siteLabel.textContent = DATA.filterContext?.site || (STATE.region === 'all' ? 'All regions' : STATE.region);
-    if (incomeLabel) incomeLabel.textContent = DATA.filterContext?.incomeLabel || (STATE.income === 'all' ? 'All income bands' : STATE.income);
     requestAnimationFrame(() => fitResponsiveDataValues());
     return;
   }
@@ -1801,7 +1678,6 @@ function applyState() {
   // reads the current nodes, so a late demo callback cannot retain old metrics.
   requestAnimationFrame(() => fitResponsiveDataValues());
   wireMetricTips(document.getElementById('employer-view'));
-  updateContextLine();
 }
 function fitResponsiveDataValues(root = document) {
   const nodes = root.querySelectorAll?.('.kpi-value,.stat-value,.metric-value,.stat-cell .v,.rating-big,.stress-v,.hbar-val,.rb-val,.dp-pct') || [];
@@ -1840,136 +1716,13 @@ window.addEventListener('resize', () => {
 }, {
   passive: true
 });
-onReady(() => {
-  document.getElementById('btn-save-view')?.addEventListener('click', saveCurrentView);
-  document.getElementById('btn-command')?.addEventListener('click', openQuickActions);
-});
-function updateContextLine() {
-  const parts = [];
-  if (window.__LIVE__ && DATA.filterContext) {
-    parts.push(DATA.filterContext.label || 'Programme to date');
-    if (DATA.filterContext.site) parts.push(DATA.filterContext.site);
-    if (DATA.filterContext.incomeLabel) parts.push(DATA.filterContext.incomeLabel);
-  } else {
-    parts.push(PERIOD[STATE.period].label);
-    if (STATE.region !== 'all') parts.push(STATE.region);
-    if (STATE.income !== 'all') parts.push(STATE.income);
-  }
-  const sub = document.getElementById('ctx-sub');
-  if (sub) sub.textContent = parts.join(' · ');
-  const tag = document.getElementById('emp-tag');
-  if (tag) tag.lastChild.textContent = hasValue(DATA.kpis?.takeUp?.enrolled) ? ' ' + fmtCount(DATA.kpis.takeUp.enrolled) + ' enrolled' : ' Enrolment data not loaded';
-}
 
 /* ─────── wire: period segmented control ─────── */
 /* ─────── sync: period selector reflects current state ─────── */
-function syncPeriodControl() {
-  const sel = document.getElementById('month-select');
-  if (!sel) return;
-  if (window.__LIVE__) {
-    const quarter = quarterFromUrl(),
-      period = periodFromUrl();
-    const rangeParam = new URLSearchParams(location.search).get('range');
-    if (quarter && sel.querySelector(`option[value="q:${quarter}"]`)) sel.value = 'q:' + quarter;else if (period && sel.querySelector(`option[value="${period}"]`)) sel.value = period;else if (rangeParam === '30d') sel.value = '30d';else if (rangeParam === 'quarter') sel.value = 'qtd';else if (rangeParam === 'all') sel.value = 'all';else sel.value = ''; // no params, or range=latest Not available both mean "Latest period"
-  } else {
-    sel.value = STATE.period === '30' ? '30d' : STATE.period === 'q' ? 'qtd' : 'all';
-  }
-  updatePeriodControlTone();
-}
 
 /* ─────── wire: filter dropdowns ─────── */
-function buildDropdown(tagId, options, currentValue, onPick) {
-  const tag = document.getElementById(tagId);
-  if (!tag) return;
-  // Rebuild the menu every time live data is refreshed (including when an
-  // admin changes employer). The previous implementation appended a second
-  // menu and left the old employer's region/income choices attached.
-  tag.querySelector('.dropdown-menu')?.remove();
-  const menu = el('<div class="dropdown-menu"></div>');
-  options.forEach(o => {
-    const item = el(`<button class="dropdown-item${o.value === currentValue ? ' on' : ''}" data-v="${o.value}">${o.label}</button>`);
-    item.addEventListener('click', e => {
-      e.stopPropagation();
-      menu.querySelectorAll('.dropdown-item').forEach(x => x.classList.remove('on'));
-      item.classList.add('on');
-      tag.querySelector('.tag-label').textContent = o.label;
-      menu.classList.remove('open');
-      onPick(o.value);
-    });
-    menu.appendChild(item);
-  });
-  tag.appendChild(menu);
-  tag.onclick = e => {
-    e.stopPropagation();
-    document.querySelectorAll('.dropdown-menu.open').forEach(m => {
-      if (m !== menu) m.classList.remove('open');
-    });
-    menu.classList.toggle('open');
-  };
-}
-function wireFilters() {
-  const siteOptions = window.__LIVE__ && DATA.filterOptions ? DATA.filterOptions.sites || DATA.filterOptions.regions || [] : BASE.regions.map(r => ({
-    value: r.name,
-    label: r.name
-  }));
-  const incomeOptions = window.__LIVE__ && DATA.filterOptions ? DATA.filterOptions.incomes || [] : BASE.income.map(b => ({
-    value: b.value || b.name,
-    label: b.name
-  }));
-  buildDropdown('region-filter', [{
-    value: 'all',
-    label: 'All regions'
-  }].concat(siteOptions), STATE.region, v => {
-    if (window.__LIVE__) switchFilter('site', v);else {
-      STATE.region = v;
-      applyState();
-    }
-  });
-  buildDropdown('income-filter', [{
-    value: 'all',
-    label: 'All income bands'
-  }].concat(incomeOptions), STATE.income, v => {
-    if (window.__LIVE__) switchFilter('income', v);else {
-      STATE.income = v;
-      applyState();
-    }
-  });
-  const siteLabel = document.querySelector('#region-filter .tag-label');
-  const incomeLabel = document.querySelector('#income-filter .tag-label');
-  if (siteLabel && DATA.filterContext?.site) siteLabel.textContent = DATA.filterContext.site;
-  if (incomeLabel && DATA.filterContext?.incomeLabel) incomeLabel.textContent = DATA.filterContext.incomeLabel;
-  document.addEventListener('click', () => document.querySelectorAll('.dropdown-menu.open').forEach(m => m.classList.remove('open')));
-}
 
 /* ─────── wire: view switch (employer / portfolio) ─────── */
-let PF_RENDERED = false;
-function wireAudience() {
-  document.querySelectorAll('#audience-switch button').forEach(b => {
-    b.addEventListener('click', () => {
-      document.querySelectorAll('#audience-switch button').forEach(x => x.classList.remove('on'));
-      b.classList.add('on');
-      const portfolio = b.dataset.a === 'portfolio';
-      const showEl = document.getElementById(portfolio ? 'portfolio-view' : 'employer-view');
-      const hideEl = document.getElementById(portfolio ? 'employer-view' : 'portfolio-view');
-      if (typeof window.__uiViewTransition === 'function') {
-        window.__uiViewTransition(hideEl, showEl);
-      } else {
-        hideEl.style.display = 'none';
-        showEl.style.display = '';
-      }
-      // hide employer-only filters in portfolio mode
-      document.querySelector('.filters').style.display = portfolio ? 'none' : '';
-      if (portfolio && !PF_RENDERED) {
-        renderPortfolio();
-        PF_RENDERED = true;
-      }
-      window.scrollTo({
-        top: 0,
-        behavior: 'smooth'
-      });
-    });
-  });
-}
 
 /* ─────── PORTFOLIO render ─────── */
 const pfEsc = esc;
@@ -2072,53 +1825,8 @@ function preparePdfPrint() {
 window.addEventListener('beforeprint', preparePdfPrint);
 
 /* ─────── wire: header buttons ─────── */
-function wireHeaderBtns() {
-  const exp = document.getElementById('btn-export');
-  if (exp) exp.addEventListener('click', () => {
-    exp.classList.add('loading');
-    exp.textContent = 'Preparing…';
-    preparePdfPrint();
-    requestAnimationFrame(() => setTimeout(() => {
-      exp.textContent = 'Export PDF';
-      exp.classList.remove('loading');
-      window.print();
-    }, 180));
-  });
-  const pfExp = document.getElementById('btn-pf-export');
-  if (pfExp) pfExp.addEventListener('click', () => {
-    pfExp.classList.add('loading');
-    pfExp.textContent = 'Preparing…';
-    preparePdfPrint();
-    setTimeout(() => {
-      pfExp.textContent = 'Export book';
-      pfExp.classList.remove('loading');
-      window.print();
-    }, 500);
-  });
-  const sch = document.getElementById('btn-schedule');
-  if (sch) sch.addEventListener('click', openScheduleReport);
-}
-function openScheduleReport() {
-  showScheduleReport({
-    me: window.__ME__ || {},
-    data: DATA,
-    employerId: employerIdFromUrl(),
-    period: periodFromUrl()
-  });
-}
+
 /* ─────── toast ─────── */
-let toastT;
-function openToast(msg) {
-  document.querySelectorAll('.toast').forEach(t => t.remove());
-  const t = el(`<div class="toast">${msg}</div>`);
-  document.body.appendChild(t);
-  requestAnimationFrame(() => t.classList.add('show'));
-  clearTimeout(toastT);
-  toastT = setTimeout(() => {
-    t.classList.remove('show');
-    setTimeout(() => t.remove(), 300);
-  }, 3400);
-}
 
 /* ─────── boot: fetch real data from the API, then render ─────── */
 // Which employer to show. Default to the first the user can see; allow ?employer=ID.
@@ -2142,309 +1850,10 @@ function syncStateFromUrl() {
   STATE.region = new URLSearchParams(location.search).get('site') || 'all';
   STATE.income = new URLSearchParams(location.search).get('income') || 'all';
 }
-function apiFilterQuery() {
-  const page = new URLSearchParams(location.search);
-  const api = new URLSearchParams();
-  ['period', 'quarter', 'range', 'site', 'income'].forEach(k => {
-    const v = page.get(k);
-    if (v) api.set(k, v);
-  });
-  if (!api.has('period') && !api.has('quarter') && !api.has('range')) api.set('range', 'latest');
-  const q = api.toString();
-  return q ? '?' + q : '';
-}
-function switchFilter(name, value, opts = {}) {
-  const params = new URLSearchParams(location.search);
-  if (value && value !== 'all') params.set(name, value);else if (name === 'range') params.set(name, 'all');else params.delete(name);
-  if (opts.clearPeriod) {
-    params.delete('period');
-    params.delete('quarter');
-  }
-  if (name === 'period' || name === 'quarter') params.delete('range');
-  history.replaceState(null, '', '?' + params.toString());
-  syncStateFromUrl();
-  if (window.__LIVE__) loadLiveData({
-    refreshOnly: true
-  });
-}
-async function loadLiveData({
-  refreshOnly = false
-} = {}) {
-  const requestSeq = ++LIVE_REQUEST_SEQ;
-  let me = window.__ME__ || null;
-  const view = document.getElementById('employer-view');
-  const splash = document.getElementById('welcome-splash');
-  if (refreshOnly && view) {
-    view.setAttribute('aria-busy', 'true');
-    view.classList.add('is-refreshing');
-  }
-  if (!refreshOnly) {
-    try {
-      const r = await fetch('/api/auth/me');
-      if (!r.ok) {
-        location.href = '/login';
-        return;
-      }
-      me = await r.json();
-    } catch (e) {
-      location.href = '/login';
-      return;
-    }
-    window.__ME__ = me;
-    addAuthBar(me);
-    applyTheme(me.theme, me);
-    handleWelcomeSplash(me);
-    applySectionVisibility(me);
-    populateEmployerSelect(me);
-    applySyntheticDataNotice(me);
-  }
-  try {
-    let id = employerIdFromUrl();
-    if (!id && me?.employers?.length) id = me.employers[0].id;
-    const employerSelect = document.getElementById('employer-select');
-    if (employerSelect && id) employerSelect.value = id;
-    syncStateFromUrl();
-    const period = periodFromUrl(),
-      quarter = quarterFromUrl();
-    const qs = apiFilterQuery();
-    const url = id ? `${API_BASE}/api/employers/${id}/dashboard${qs}` : `${API_BASE}/api/dashboard/first${qs}`;
-    // Do not make the dashboard wait for the period picker or portfolio.
-    // Mobile users get the actual visual payload as soon as it arrives.
-    const periodsPromise = id ? populateMonthSelect(id, period, quarter).catch(() => {}) : Promise.resolve();
-    const dashboardPromise = fetch(url, {
-      cache: 'no-store'
-    }).then(async r => {
-      const body = await r.json().catch(() => ({}));
-      if (!r.ok) {
-        const error = new Error(body.error || 'no data');
-        error.syncStatus = body.syncStatus || null;
-        throw error;
-      }
-      return body;
-    });
-    const live = await dashboardPromise;
-    if (requestSeq !== LIVE_REQUEST_SEQ) return;
-    // Employer branding applies to normal branded users. Admin/Superadmin
-    // remain on the empower-fin control-plane palette even while viewing client data.
-    applyTheme(live.theme, me);
-    DATA = live;
-    BASE = JSON.parse(JSON.stringify(DATA));
-    window.__LIVE__ = true;
-    if (live.employer) {
-      const h1 = document.querySelector('.head h1');
-      if (h1) h1.firstChild.textContent = live.employer + ' ';
-    }
-    const sourceAt = live.sourceDataUpdatedAt || live.dataAsOf;
-    renderRefreshStatus(live.syncStatus, sourceAt);
-    renderMonthActivity(live.monthActivity, live.filterContext);
-    renderDataQuality(live.dataQuality);
-    setLiveFootnote(live.filterContext);
-    document.getElementById('demo-banner')?.remove();
-    applyState();
-    updatePeriodControlTone();
-    syncPeriodControl();
-    wireFilters();
-    if (!refreshOnly) {
-      wireAudience();
-      wireHeaderBtns();
-    }
-    if (refreshOnly && view) {
-      view.removeAttribute('aria-busy');
-      view.classList.remove('is-refreshing');
-    }
-    // Secondary portfolio work happens after the dashboard has painted.
-    if (me?.modules?.portfolio) fetchPortfolioInBackground(requestSeq);
-    await periodsPromise;
-    if (requestSeq === LIVE_REQUEST_SEQ) {
-      syncPeriodControl();
-      updatePeriodControlTone();
-    }
-  } catch (e) {
-    const demoMode = new URLSearchParams(location.search).get('demo') === '1';
-    if (demoMode) {
-      showDemoBanner();
-      const fl = document.getElementById('data-fresh-label');
-      if (fl) fl.textContent = 'Demo data';
-      window.__LIVE__ = false;
-      applyState();
-    } else {
-      showLiveError(e);
-      wireAudience();
-      wireHeaderBtns();
-    }
-  } finally {
-    if (splash && (window.__LIVE__ || new URLSearchParams(location.search).get('demo') === '1')) splash.classList.add('hide');
-    if (refreshOnly && view) {
-      view.removeAttribute('aria-busy');
-      view.classList.remove('is-refreshing');
-    }
-  }
-}
-async function fetchPortfolioInBackground(requestSeq) {
-  try {
-    const pfParams = new URLSearchParams(),
-      pageParams = new URLSearchParams(location.search);
-    ['period', 'quarter', 'range'].forEach(k => {
-      const v = pageParams.get(k);
-      if (v) pfParams.set(k, v);
-    });
-    if (!pfParams.has('period') && !pfParams.has('quarter') && !pfParams.has('range')) pfParams.set('range', 'latest');
-    const pf = await fetch(`${API_BASE}/api/portfolio?${pfParams.toString()}`).then(async r => {
-      if (!r.ok) throw new Error('portfolio unavailable');
-      return r.json();
-    });
-    if (requestSeq !== LIVE_REQUEST_SEQ) return;
-    if (Array.isArray(pf.employers)) {
-      PORTFOLIO.employers = pf.employers;
-      PORTFOLIO.filterContext = pf.filterContext || null;
-      PORTFOLIO.live = true;
-      PF_RENDERED = false;
-      renderPortfolio();
-    }
-  } catch (_) {
-    PORTFOLIO.live = false;
-    PORTFOLIO.error = true;
-    if (!PORTFOLIO.explicitDemo) PORTFOLIO.employers = [];
-    PF_RENDERED = false;
-    renderPortfolio();
-  }
-}
 
 // month picker Not available populated from the snapshots that actually exist
-const PERIOD_SCORE_TONE = {
-  strong: {
-    c: '#137a47',
-    bg: '#e3f6ec',
-    border: '#b8e6cc'
-  },
-  risk: {
-    c: '#8a5a10',
-    bg: '#fff2df',
-    border: '#f3cf98'
-  },
-  critical: {
-    c: '#a3271c',
-    bg: '#fdeceb',
-    border: '#f3b8b1'
-  }
-};
-function periodScoreTone(score) {
-  const n = Number(score);
-  if (!Number.isFinite(n)) return null;
-  if (n >= 60) return PERIOD_SCORE_TONE.strong;
-  if (n >= 40) return PERIOD_SCORE_TONE.risk;
-  return PERIOD_SCORE_TONE.critical;
-}
-function updatePeriodControlTone() {
-  const sel = document.getElementById('month-select');
-  if (!sel) return;
-  const opt = sel.options[sel.selectedIndex];
-  let score = opt?.dataset?.score;
-  if (!score && (!opt?.value || opt.value === '')) score = DATA?.wellness?.score;
-  const tone = periodScoreTone(score);
-  sel.style.color = tone?.c || '';
-  sel.style.borderColor = tone?.border || '';
-  sel.style.backgroundColor = tone?.bg || '';
-}
-async function populateMonthSelect(employerId, selected, selectedQuarter) {
-  const sel = document.getElementById('month-select');
-  if (!sel) return;
-  sel.querySelectorAll('optgroup').forEach(g => g.remove());
-  try {
-    const qs = new URLSearchParams();
-    const page = new URLSearchParams(location.search);
-    if (page.get('site')) qs.set('site', page.get('site'));
-    if (page.get('income')) qs.set('income', page.get('income'));
-    const suffix = qs.toString() ? `?${qs.toString()}` : '';
-    const periods = await fetch(`${API_BASE}/api/employers/${employerId}/periods${suffix}`, {
-      cache: 'no-store'
-    }).then(r => r.json());
-    if (!Array.isArray(periods) || periods.length < 1) {
-      updatePeriodControlTone();
-      return;
-    }
-    const fmt = p => {
-      const [y, m] = p.split('-');
-      return ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][+m - 1] + ' ' + y;
-    };
-    const scoreText = score => Number.isFinite(Number(score)) ? ` · Score ${Math.round(Number(score))}` : ' · Score unavailable';
-    const quarters = new Map();
-    periods.forEach(p => {
-      const [y, m] = p.period.split('-').map(Number);
-      const q = Math.floor((m - 1) / 3) + 1,
-        key = `${y}-Q${q}`;
-      const bucket = quarters.get(key) || {
-        label: `Q${q} ${y}`,
-        scores: []
-      };
-      if (Number.isFinite(Number(p.optimiseScore))) bucket.scores.push(Number(p.optimiseScore));
-      quarters.set(key, bucket);
-    });
-    const quarterKeys = [...quarters.keys()].sort().reverse();
-    const avg = arr => arr.length ? Math.round(arr.reduce((s, v) => s + v, 0) / arr.length) : null;
-    let extra = '';
-    if (quarterKeys.length) {
-      extra += `<optgroup label="Quarters">` + quarterKeys.map(key => {
-        const q = quarters.get(key),
-          score = avg(q.scores);
-        return `<option value="q:${key}" data-score="${score ?? ''}" ${key === selectedQuarter ? 'selected' : ''}>${q.label}${scoreText(score).replace(" · Score ", ": Score ")}</option>`;
-      }).join('') + `</optgroup>`;
-    }
-    extra += `<optgroup label="Months / dates">` + periods.map(p => {
-      const score = Number.isFinite(Number(p.optimiseScore)) ? Math.round(Number(p.optimiseScore)) : null;
-      return `<option value="${esc(p.period)}" data-score="${score ?? ''}" ${p.period === selected ? 'selected' : ''}>${fmt(p.period)}${scoreText(score).replace(" · Score ", ": Score ")}</option>`;
-    }).join('') + `</optgroup>`;
-    insertMarkup(sel, 'beforeend', extra);
-  } catch (e) {/* static options still work fine without a periods list */}
-  updatePeriodControlTone();
-}
-function switchPeriod(value) {
-  if (!window.__LIVE__) {
-    // Demo/pre-load mode: no real quarter/month data yet, only the relative
-    // buckets (which is all the static options offer) apply. "Latest" has no
-    // distinct demo bucket of its own, so it reads as the all-time demo view.
-    STATE.period = value === '30d' ? '30' : value === 'qtd' ? 'q' : 'all';
-    applyState();
-    return;
-  }
-  const id = employerIdFromUrl();
-  const params = new URLSearchParams(location.search);
-  params.delete('period');
-  params.delete('quarter');
-  params.delete('range');
-  if (value === '30d') params.set('range', '30d');else if (value === 'qtd') params.set('range', 'quarter');else if (value === 'all') params.set('range', 'all');else if (value.startsWith('q:')) params.set('quarter', value.slice(2));else if (value) params.set('period', value);
-  // else "" (Latest period): leave every filter param cleared Not available that's
-  // exactly the state apiFilterQuery() resolves to range=latest itself, so
-  // it always matches whatever the server considers the newest period.
-  if (id) params.set('employer', id);
-  history.replaceState(null, '', '?' + params.toString());
-  loadLiveData({
-    refreshOnly: true
-  });
-}
 
 // activity strip for the selected flow window
-function renderMonthActivity(a, context) {
-  const host = document.querySelector('.head');
-  if (!host) return;
-  document.getElementById('month-activity')?.remove();
-  if (!a) return;
-  const label = a && a.label || context && context.label || 'selected period';
-  const value = (v, fallback = 'Not available') => v === null || v === undefined || v === '' ? fallback : v;
-  const enrolled = value(a.enrolled),
-    completed = value(a.completed),
-    savings = value(a.savingUnlocked);
-  const advances = value(a.advancesCount),
-    advanceTotal = value(a.advancesTotal);
-  const strip = el(`<div id="month-activity" style="margin-top:14px;display:flex;flex-wrap:wrap;gap:22px;padding:13px 18px;background:#f7f4ff;border:1px solid var(--brand-soft);border-radius:12px;font:600 13px Manrope,sans-serif;color:var(--brand-primary);">
-    <span style="color:#5b6b7a;font-weight:700;">${label}:</span>
-    <span><b>${enrolled}</b> newly enrolled</span>
-    <span><b>${completed}</b> fixes completed</span>
-    <span><b>${savings}</b>${savings === 'Not available' ? '' : '/mo'} new savings</span>
-    <span><b>${advances}</b> wage advances${advanceTotal === 'Not available' ? '' : ' · <b>' + advanceTotal + '</b>'}</span>
-  </div>`);
-  host.appendChild(strip);
-}
 
 // employer selector in the filter row
 function populateEmployerSelect(me) {
@@ -2455,45 +1864,12 @@ function populateEmployerSelect(me) {
   // always show the field (even with one employer) so it's clearly filterable
   sel.style.display = 'inline-block';
 }
-function switchEmployer(id) {
-  const p = new URLSearchParams(location.search);
-  p.set('employer', id);
-  p.delete('period');
-  p.delete('site');
-  p.delete('income');
-  history.replaceState(null, '', '?' + p.toString());
-  if (window.__LIVE__) loadLiveData({
-    refreshOnly: true
-  });
-}
-function renderDataQuality(q) {
-  document.getElementById('data-quality-note')?.remove();
-  if (!q || !Array.isArray(q.warnings) || !q.warnings.length) return;
-  const host = document.querySelector('.head');
-  if (!host) return;
-  const note = el(`<div id="data-quality-note" style="margin-top:12px;padding:10px 14px;border-radius:10px;background:#fff8e8;border:1px solid #efd49b;color:#7a5512;font:600 12px Manrope,sans-serif;">Data quality: ${q.warnings.join(' ')}</div>`);
-  host.appendChild(note);
-}
-function setLiveFootnote(context) {
-  const f = document.getElementById('footnote');
-  if (!f) return;
-  const stock = context?.semantics?.stock || 'Stock measures are measured as at the selected end date.';
-  const flow = context?.semantics?.flow || 'Activity measures are measured inside the selected range.';
-  renderMarkup(f, '<strong>How the dashboard filters.</strong> ' + stock + ' ' + flow + ' Employee-level data remains aggregated and de-identified; individual financial information is not exposed to the employer.');
-}
 
 // apply the channel partner's white-label theme (colours, logo, name)
 // hide dashboard sections the signed-in user isn't permitted to see (server
 // also redacts the underlying data for gated sections Not available this just matches
 // the UI to it, and skips wasted rendering work for hidden sections).
-function applySectionVisibility(me) {
-  const sections = me.sections || {};
-  document.querySelectorAll('.dash-section[data-section]').forEach(el => {
-    const key = el.getAttribute('data-section');
-    const visible = key in sections ? !!sections[key] : true; // unknown key -> fail open, don't hide
-    el.style.display = visible ? '' : 'none';
-  });
-}
+
 const BrandTheme = window.BrandEngine ? BrandEngine.themeController() : null; // owns light/dark brand tokens
 const DEFAULT_PORTAL_BRAND = {
   accentColor: '0FC79B',
@@ -2532,7 +1908,6 @@ function restoreDefaultPortalIdentity() {
     img.removeAttribute('data-custom-logo');
   });
   const sub = document.querySelector('#employer-view > .head .head-sub');
-  if (sub) sub.textContent = DEFAULT_HEAD_SUB;
   document.title = 'empower-fin Dashboard Portal';
 }
 function applyDefaultPortalTheme() {
@@ -2725,10 +2100,6 @@ function applyTheme(theme, user) {
     if (brandName) brandName.textContent = theme.name && theme.name !== baseName ? theme.name : '';
   }
   document.title = (theme.name || baseName) + ' Not available Employer Insights';
-  if (theme.tagline) {
-    const sub = document.querySelector('#employer-view > .head .head-sub');
-    if (sub) sub.textContent = theme.tagline;
-  }
 }
 window.addEventListener('portal-theme-change', () => {
   const t = window.__dashboardActiveTheme,
@@ -2863,221 +2234,7 @@ function tint(hex, pct) {
 
 // brief "Hi <name>" splash right after sign-in Not available shown once per browser tab
 // session so repeat navigation within the dashboard doesn't keep re-showing it
-function handleWelcomeSplash(me) {
-  var el = document.getElementById('welcome-splash');
-  if (!el) return;
-  var already = false;
-  try {
-    already = sessionStorage.getItem('ef_splash_shown') === '1';
-  } catch (_) {}
-  if (already) {
-    el.classList.add('hide');
-    return;
-  }
-  var greet = document.getElementById('welcome-splash-greeting');
-  var first = (me.name || '').trim().split(/\s+/)[0] || 'there';
-  var hour = new Date().getHours();
-  var daypart = hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening';
-  if (greet) greet.textContent = daypart + ', ' + first + ' \uD83D\uDC4B';
-  var sub = document.getElementById('welcome-splash-sub');
-  if (sub) sub.textContent = 'The Fixer hopes you have a good day.';
-  var logo = document.getElementById('welcome-splash-logo');
-  var privileged = ['ADMIN', 'SUPERADMIN'].includes(String(me?.role || '').toUpperCase());
-  if (logo) {
-    if (privileged) {
-      logo.src = document.documentElement.classList.contains('portal-dark') ? '/static/the-fixer-logo-reversed.svg?v=1' : '/static/the-fixer-logo.svg?v=6';
-      logo.removeAttribute('data-custom-logo');
-    } else if (me.theme && me.theme.logoDataUrl) {
-      logo.src = me.theme.logoDataUrl;
-      logo.setAttribute('data-custom-logo', '1');
-    }
-  }
-  try {
-    sessionStorage.setItem('ef_splash_shown', '1');
-    sessionStorage.removeItem('ef_fresh_login');
-  } catch (_) {}
-  setTimeout(function () {
-    el.classList.add('hide');
-  }, 1400);
-}
-function addAuthBar(me) {
-  const roleIndicator = document.getElementById('role-indicator');
-  if (roleIndicator) {
-    const role = String(me?.role || '').toUpperCase();
-    if (role === 'SUPERADMIN') {
-      roleIndicator.textContent = '★ SUPER ADMIN';
-      roleIndicator.className = 'role-indicator superadmin';
-    } else if (role === 'ADMIN') {
-      roleIndicator.textContent = 'ADMIN';
-      roleIndicator.className = 'role-indicator admin';
-    } else {
-      roleIndicator.remove();
-    }
-  }
-  const meta = document.querySelector('.topbar-meta');
-  if (!meta) return;
-  if (!me.modules.portfolio) {
-    // no portfolio access → there's nothing to switch between, so the whole
-    // toggle (including "Employer view") is redundant, not just the
-    // Portfolio button. Hide it entirely rather than leaving a one-option
-    // switcher taking up space.
-    const sw = document.querySelector('.audience-switch');
-    if (sw) sw.style.display = 'none';
-    const div = sw && sw.previousElementSibling;
-    if (div && div.classList.contains('topbar-divider')) div.style.display = 'none';
-  }
-  let nav = document.getElementById('portal-nav');
-  if (!nav) {
-    nav = document.createElement('div');
-    nav.id = 'portal-nav';
-    meta.insertBefore(nav, meta.firstChild);
-  }
-  if (window.EmpowerPortalNav) {
-    window.EmpowerPortalNav.render({
-      me,
-      navSelector: '#portal-nav',
-      accountSelector: '#portal-account',
-      active: 'dashboard',
-      includeDashboard: false
-    });
-  }
-}
-function renderRefreshStatus(status, sourceAt) {
-  document.getElementById('refresh-status-note')?.remove();
-  const freshness = document.querySelector('.data-fresh');
-  const fl = document.getElementById('data-fresh-label');
-  if (!fl) return;
-  const state = String(status?.lastSyncStatus || '');
-  const syncAt = status?.lastSuccessfulSyncAt || status?.publishedDataAt || null;
-  const syncNote = String(status?.lastSyncNote || '');
-  const rebuilding = state === 'REBUILDING';
-  const issue = ['FULL_REFRESH_FAILED', 'FULL_REFRESH_PRECHECK_FAILED', 'FAILED', 'PARTIAL'].includes(state);
-  const showingPublished = Boolean(status?.servingLastSuccessful) || rebuilding || issue;
-  const fmt = d => new Date(d).toLocaleString('en-ZA', {
-    day: 'numeric',
-    month: 'short',
-    hour: '2-digit',
-    minute: '2-digit'
-  });
-  freshness?.classList.remove('is-error', 'is-rebuilding', 'is-stale');
-  if (rebuilding) {
-    freshness?.classList.add('is-rebuilding');
-    fl.textContent = syncAt ? 'Purging & rebuilding · showing ' + fmt(syncAt) : 'Purging & rebuilding';
-  } else if (issue) {
-    freshness?.classList.add('is-stale');
-    fl.textContent = syncAt ? 'Refresh issue · showing ' + fmt(syncAt) : 'Refresh issue';
-  } else if (syncAt && syncNote.startsWith('Full refresh completed')) {
-    fl.textContent = 'Purged & overwritten ' + fmt(syncAt);
-  } else if (syncAt) {
-    fl.textContent = 'Last synced ' + new Date(syncAt).toLocaleDateString('en-ZA', {
-      day: 'numeric',
-      month: 'short',
-      year: 'numeric'
-    });
-  } else if (sourceAt) {
-    fl.textContent = 'Source updated ' + new Date(sourceAt).toLocaleDateString('en-ZA', {
-      day: 'numeric',
-      month: 'short',
-      year: 'numeric'
-    });
-  } else {
-    fl.textContent = 'Live data';
-  }
-  const titleParts = [];
-  if (syncNote) titleParts.push(syncNote);
-  if (sourceAt) titleParts.push('Source data updated ' + new Date(sourceAt).toLocaleString('en-ZA', {
-    dateStyle: 'medium',
-    timeStyle: 'short'
-  }));
-  fl.removeAttribute('title');
-  if (titleParts.length) fl.title = titleParts.join(' ');
-  if ((rebuilding || issue) && showingPublished) {
-    const host = document.querySelector('.head');
-    if (host) {
-      const note = document.createElement('div');
-      note.id = 'refresh-status-note';
-      note.className = 'refresh-status-note';
-      const reason = syncNote || 'No additional refresh detail was recorded.';
-      note.textContent = rebuilding ? 'Refresh in progress. The dashboard is staying on the last successful data until the new dataset is fully rebuilt. ' + reason : 'Refresh did not complete. The dashboard is still showing the last successful data. Reason: ' + reason;
-      host.insertAdjacentElement('afterend', note);
-    }
-  }
-}
-function showLiveError(error) {
-  const status = error?.syncStatus?.lastSyncStatus || null;
-  const rebuilding = status === 'REBUILDING';
-  const failed = status === 'FULL_REFRESH_FAILED';
-  const title = rebuilding ? 'Dashboard refresh in progress' : failed ? 'Full refresh failed — last published dashboard unavailable' : 'Live dashboard data is unavailable';
-  const copy = rebuilding ? 'The refresh is rebuilding the source data. Normally the last successful dashboard remains visible; this fallback is shown only because no published snapshot could be loaded.' : failed ? 'The authoritative reload did not complete, and no last-successful published dashboard snapshot could be loaded for this request.' : 'The portal has not substituted demonstration figures. Check the latest sync/import status in Administration, then reload this page.';
-  const view = document.getElementById('employer-view');
-  if (view) renderMarkup(view, `<div class="card" style="max-width:760px;margin:48px auto;padding:34px">
-    <div style="font:800 23px Manrope,sans-serif;color:var(--brand-primary)">${title}</div>
-    <p style="margin:12px 0 0;color:#5b6b7a;line-height:1.65">${copy}</p>
-    <div style="margin-top:16px;padding:10px 12px;background:#f7f9fb;border-radius:8px;color:#7b8792;font:600 12px Manrope,sans-serif">${String(error?.message || error || 'Unknown data error').replace(/[<>&]/g, '')}</div>
-  </div>`);
-  const fl = document.getElementById('data-fresh-label');
-  const freshness = document.querySelector('.data-fresh');
-  freshness?.classList.remove('is-error', 'is-rebuilding');
-  if (rebuilding) {
-    if (fl) fl.textContent = 'Purging & rebuilding';
-    freshness?.classList.add('is-rebuilding');
-  } else {
-    if (fl) fl.textContent = failed ? 'Refresh failed — data withheld' : 'Data unavailable';
-    freshness?.classList.add('is-error');
-  }
-}
-function applySyntheticDataNotice(me) {
-  document.getElementById('synthetic-data-notice')?.remove();
-  if (!me?.syntheticDataMode) return;
-  const host = document.querySelector('.head') || document.querySelector('.topbar') || document.body;
-  if (!host) return;
-  const notice = document.createElement('div');
-  notice.id = 'synthetic-data-notice';
-  notice.setAttribute('role', 'alert');
-  notice.style.cssText = 'margin:12px 0;padding:13px 16px;border:1px solid #d6a94f;background:#fff8e8;color:#6b4b08;border-radius:10px;font:700 13px/1.5 Manrope,sans-serif;box-shadow:0 2px 8px rgba(0,0,0,.04);';
-  renderMarkup(notice, '<strong>⚠ Synthetic test data</strong><br><span style="font-weight:500;">All figures and information shown in this portal are synthetic test data. They must not be treated as factual, financial, operational, customer, or other real-world information.</span>');
-  host.parentNode?.insertBefore(notice, host.nextSibling);
-}
-function showDemoBanner() {
-  if (document.getElementById('demo-banner')) return;
-  const b = document.createElement('div');
-  b.id = 'demo-banner';
-  b.style.cssText = 'position:fixed;bottom:18px;left:50%;transform:translateX(-50%);background:#fdf3e2;color:#8a5a00;border:1px solid #f0d8a8;padding:10px 18px;border-radius:12px;font:600 13px Manrope,sans-serif;box-shadow:0 8px 24px rgba(0,0,0,.12);z-index:999;';
-  b.textContent = 'Explicit demonstration mode Not available these figures are not live source data.';
-  document.body.appendChild(b);
-}
-loadLiveData();
-let __SOURCE_VERSION__ = null;
-let __SOURCE_REFRESH_BUSY__ = false;
-async function checkSourceVersion() {
-  if (document.visibilityState !== 'visible' || __SOURCE_REFRESH_BUSY__) return;
-  try {
-    const r = await fetch('/api/dashboard/version', {
-      cache: 'no-store'
-    });
-    if (!r.ok) return;
-    const d = await r.json();
-    const status = d.syncStatus?.lastSyncStatus || null;
-    renderRefreshStatus(d.syncStatus);
-    if (status === 'REBUILDING' || status === 'FULL_REFRESH_FAILED') return;
-    if (!__SOURCE_VERSION__) {
-      __SOURCE_VERSION__ = d.version || null;
-      return;
-    }
-    if (d.version && d.version !== __SOURCE_VERSION__) {
-      __SOURCE_VERSION__ = d.version;
-      __SOURCE_REFRESH_BUSY__ = true;
-      try {
-        await loadLiveData({
-          refreshOnly: true
-        });
-      } finally {
-        __SOURCE_REFRESH_BUSY__ = false;
-      }
-    }
-  } catch (_) {}
-}
-setInterval(checkSourceVersion, 30000);
+
 ;
 
 /* Employer chart recolouring pass: applies to all present and future chart marks,
@@ -3157,80 +2314,6 @@ setInterval(checkSourceVersion, 30000);
   if (document.readyState === 'loading') onReady(start);else start();
 })();
 ;
-/* Shared shell: global loading indicator + cookie notice. No third parties. */
-(function () {
-  'use strict';
-
-  // ── loading state: thin progress bar while any app API request is in flight ──
-  var bar = document.createElement('div');
-  bar.id = 'ent-progress';
-  bar.setAttribute('role', 'progressbar');
-  bar.setAttribute('aria-hidden', 'true');
-  var pending = 0,
-    tick = null,
-    w = 0;
-  function start() {
-    if (pending++ > 0) return;
-    w = 8;
-    bar.classList.add('on');
-    bar.style.width = w + '%';
-    tick = setInterval(function () {
-      w += (90 - w) * 0.12;
-      bar.style.width = w + '%';
-    }, 250);
-  }
-  function done() {
-    if (--pending > 0) return;
-    pending = 0;
-    clearInterval(tick);
-    bar.style.width = '100%';
-    setTimeout(function () {
-      bar.classList.remove('on');
-      bar.style.width = '0';
-    }, 250);
-  }
-  function mount() {
-    if (!bar.parentNode && document.body) document.body.appendChild(bar);
-  }
-  if (document.body) mount();else onReady(mount);
-  var nativeFetch = window.fetch;
-  if (nativeFetch) window.fetch = function (input) {
-    var url = typeof input === 'string' ? input : input && input.url || '';
-    var track = url.indexOf('/api/') !== -1 && url.indexOf('/api/analytics/') === -1;
-    if (track) start();
-    var p = nativeFetch.apply(this, arguments);
-    if (track) p.then(done, done);
-    return p;
-  };
-
-  // ── cookie notice (only when the page has not rendered its own) ──
-  var KEY = 'cookieNoticeDismissed';
-  function dismissed() {
-    try {
-      return localStorage.getItem(KEY) === '1';
-    } catch (_) {
-      return false;
-    }
-  }
-  function showCookie() {
-    if (dismissed() || document.getElementById('cookie-banner') || document.getElementById('ent-cookie')) return;
-    var el = document.createElement('div');
-    el.id = 'ent-cookie';
-    el.className = 'ent-cookie';
-    el.setAttribute('role', 'region');
-    el.setAttribute('aria-label', 'Cookie notice');
-    renderMarkup(el, '<div class="inner"><p>We use one strictly necessary cookie to keep you signed in. There are no advertising or cross-site tracking cookies. See our <a href="/cookies">Cookie Notice</a>.</p><button type="button">Got it</button></div>');
-    el.querySelector('button').addEventListener('click', function () {
-      try {
-        localStorage.setItem(KEY, '1');
-      } catch (_) {}
-      el.remove();
-    });
-    document.body.appendChild(el);
-  }
-  if (document.readyState === 'loading') onReady(showCookie);else showCookie();
-})();
-;
 function renderExec() {
   updateEmployerCharts({
     ...DATA,
@@ -3263,4 +2346,42 @@ function renderExec() {
     fit: () => requestAnimationFrame(() => fitResponsiveDataValues())
   });
 }
+configureDashboard({
+  session(me) {
+    window.__ME__ = me;
+    applyTheme(me.theme, me);
+    window.EmpowerPortalNav?.render({
+      me,
+      navSelector: '#portal-nav',
+      accountSelector: '#portal-account',
+      active: 'dashboard',
+      includeDashboard: false
+    });
+  },
+  publish(value, query, live) {
+    if (live) {
+      DATA = value;
+      BASE = JSON.parse(JSON.stringify(value));
+      applyTheme(value.theme, window.__ME__);
+    }
+    window.__LIVE__ = live;
+    syncStateFromUrl();
+    applyState();
+    return DATA;
+  },
+  portfolio(value) {
+    if (value && Array.isArray(value.employers)) {
+      PORTFOLIO.employers = value.employers;
+      PORTFOLIO.filterContext = value.filterContext || null;
+      PORTFOLIO.live = true;
+      PORTFOLIO.error = false;
+    } else {
+      PORTFOLIO.live = false;
+      PORTFOLIO.error = true;
+      if (!PORTFOLIO.explicitDemo) PORTFOLIO.employers = [];
+    }
+    renderPortfolio();
+  },
+  preparePrint: preparePdfPrint
+});
 }

@@ -1989,3 +1989,85 @@ for(const width of [1440,390])test(`React employer charts match source in dark m
   expect(pixelmatch(a.data,b.data,null,a.width,a.height,{threshold:.15})/(a.width*a.height),selector).toBeLessThan(.005);
  }
 });
+
+for(const malformed of [false,true])test(`React dashboard session validates permissions before protected reads (${malformed?'malformed':'delayed'})`,async({page})=>{
+ await mockApi(page);let release,protectedReads=0;
+ await page.route('**/api/auth/me',async route=>{await new Promise(resolve=>{release=resolve;});await route.fulfill({json:malformed?{...me,modules:{dashboard:'yes'}}:me});});
+ page.on('request',request=>{if(/\/api\/(?:employers|portfolio|dashboard\/version)/.test(request.url()))protectedReads++;});
+ await page.goto(url+'/dashboard');await expect(page.locator('#welcome-splash')).toBeVisible();await expect.poll(()=>typeof release).toBe('function');expect(protectedReads).toBe(0);release();
+ if(malformed){await expect(page).toHaveURL(/\/login$/);expect(protectedReads).toBe(0);}else{await expect(page.locator('#data-fresh-label')).toContainText('Source updated');expect(protectedReads).toBeGreaterThan(0);}
+});
+
+test('React dashboard cancels older filter requests and does not wait for periods',async({page})=>{
+ await mockApi(page);let slow,periodRoute;
+ await page.route('**/api/employers/*/periods**',route=>{periodRoute=route;});
+ await page.route('**/api/employers/*/dashboard**',route=>{const params=new URL(route.request().url()).searchParams;if(params.get('range')==='30d'){slow=route;return;}return route.fulfill({json:{...dashboard,filterContext:{label:params.get('range')==='quarter'?'Newest quarter':'Initial view'}}});});
+ await page.goto(url+'/dashboard');await expect(page.locator('#exec-period')).toContainText('Initial view');await expect.poll(()=>!!periodRoute).toBe(true);
+ await page.locator('#month-select').selectOption('30d');await expect.poll(()=>!!slow).toBe(true);await expect(page.locator('#employer-view')).toHaveAttribute('aria-busy','true');
+ await page.locator('#month-select').selectOption('qtd');await expect(page.locator('#exec-period')).toContainText('Newest quarter');await expect(page.locator('#employer-view')).not.toHaveAttribute('aria-busy','true');
+ await slow.fulfill({json:{...dashboard,filterContext:{label:'Obsolete response'}}}).catch(()=>{});await page.waitForTimeout(100);await expect(page.locator('#exec-period')).toContainText('Newest quarter');
+ await periodRoute.fulfill({json:[{period:'2026-09',optimiseScore:80},{period:'2026-08',optimiseScore:null}]}).catch(()=>{});
+ await expect(page.locator('#month-select option[value="2026-09"]')).toHaveText('Sep 2026: Score 80');await expect(page.locator('#month-select option[value="2026-08"]')).toContainText('Score unavailable');
+});
+
+test('React dashboard filters keep URL scope, refresh choices and escape API labels',async({page})=>{
+ await mockApi(page,{'/api/auth/me':{...me,employers:[...me.employers,{id:'employer-2',name:'<img src=x>'}]}});const requests=[];
+ await page.route('**/api/employers/*/periods**',route=>route.fulfill({json:[{period:'2026-09',optimiseScore:75},{period:'2026-08',optimiseScore:null}]}));
+ await page.route('**/api/employers/*/dashboard**',route=>{const u=new URL(route.request().url());requests.push(u);const second=u.pathname.includes('employer-2');return route.fulfill({json:{...dashboard,filterOptions:{sites:[{value:second?'new-site':'<site>',label:second?'New site':'<img src=x>'}],incomes:[{value:'low',label:'Low income'}]},filterContext:{label:second?'Second employer':'First employer',site:u.searchParams.get('site'),incomeLabel:u.searchParams.has('income')?'Low income':null}}});});
+ await page.goto(url+'/dashboard');await expect(page.locator('#month-select option[value="q:2026-Q3"]')).toHaveText('Q3 2026: Score 75');
+ await page.locator('#region-filter').click();await page.locator('#region-filter .dropdown-item').last().click();await expect(page).toHaveURL(/site=%3Csite%3E/);await expect(page.locator('#ctx-sub')).toContainText('<site>');
+ await page.locator('#income-filter').click();await page.locator('#income-filter .dropdown-item').last().click();await expect(page).toHaveURL(/income=low/);
+ await page.locator('#month-select').selectOption('q:2026-Q3');await expect.poll(()=>requests.at(-1)?.searchParams.get('quarter')).toBe('2026-Q3');expect(requests.at(-1).searchParams.get('site')).toBe('<site>');expect(requests.at(-1).searchParams.get('income')).toBe('low');
+ await page.locator('#employer-select').selectOption('employer-2');await expect(page.locator('#exec-period')).toContainText('Second employer');expect(new URL(page.url()).searchParams.has('site')).toBe(false);expect(new URL(page.url()).searchParams.has('income')).toBe(false);
+ await page.locator('#region-filter').click();await expect(page.locator('#region-filter .dropdown-item')).toContainText(['All regions','New site']);await expect(page.locator('.filters img')).toHaveCount(0);
+ await page.keyboard.press('Escape');await expect(page.locator('#region-filter')).toBeFocused();await expect(page.locator('#region-filter .dropdown-menu')).not.toHaveClass(/open/);
+});
+
+test('React dashboard recovers API errors without replacing React containers or duplicating export actions',async({page})=>{
+ await mockApi(page);let fail=true;await page.route('**/api/employers/*/dashboard**',route=>route.fulfill(fail?{status:503,json:{error:'<img src=x> offline',syncStatus:{lastSyncStatus:'FULL_REFRESH_FAILED'}}}:{json:dashboard}));
+ await page.goto(url+'/dashboard');await expect(page.locator('#employer-view')).toContainText('Full refresh failed');await expect(page.locator('#employer-view')).toContainText('<img src=x> offline');await expect(page.locator('#employer-view img')).toHaveCount(0);await expect(page.locator('#demo-banner')).toHaveCount(0);
+ await page.locator('[data-a="portfolio"]').click();await expect(page.locator('#pf-heatmap')).not.toBeEmpty();await page.locator('[data-a="employer"]').click();
+ fail=false;await page.getByRole('button',{name:'Retry dashboard'}).click();await expect(page.locator('#data-fresh-label')).toContainText('Source updated');await expect(page.locator('#kpis .kpi')).toHaveCount(4);
+ await page.evaluate(()=>{window.__printCount=0;window.print=()=>window.__printCount++;});await page.locator('#btn-export').click();await expect(page.locator('#btn-export')).toBeDisabled();await expect.poll(()=>page.evaluate(()=>window.__printCount)).toBe(1);
+ await page.locator('#btn-schedule').click();await expect(page.locator('.schedule-modal')).toBeVisible();await page.keyboard.press('Escape');
+ fail=true;await page.locator('#month-select').selectOption('30d');await expect(page.getByRole('button',{name:'Retry dashboard'})).toBeVisible();fail=false;await page.getByRole('button',{name:'Retry dashboard'}).click();await expect(page.locator('#btn-export')).toBeVisible();await page.locator('#btn-export').click();await expect.poll(()=>page.evaluate(()=>window.__printCount)).toBe(2);
+});
+
+test('React dashboard polling preserves published charts during rebuilds and refreshes changed versions',async({page})=>{
+ await mockApi(page);let revision='one',syncStatus={},loads=0,versionReads=0;
+ await page.route('**/api/dashboard/version',route=>{versionReads++;return route.fulfill({json:{version:revision,syncStatus}});});
+ await page.route('**/api/employers/*/dashboard**',route=>{loads++;return route.fulfill({json:{...dashboard,filterContext:{label:'Version '+revision}}});});
+ await page.goto(url+'/dashboard');await expect(page.locator('#exec-period')).toContainText('Version one');
+ const visible=()=>page.evaluate(()=>document.dispatchEvent(new Event('visibilitychange')));
+ await visible();await expect.poll(()=>versionReads).toBe(1);await page.waitForTimeout(30);
+ syncStatus={lastSyncStatus:'REBUILDING',lastSyncNote:'<img src=x> rebuilding'};revision='two';await visible();await expect(page.locator('#refresh-status-note')).toContainText('<img src=x> rebuilding');await expect(page.locator('#exec-period')).toContainText('Version one');expect(loads).toBe(1);await expect(page.locator('#refresh-status-note img')).toHaveCount(0);
+ syncStatus={lastSyncStatus:'OK'};await visible();await expect(page.locator('#exec-period')).toContainText('Version two');expect(loads).toBe(2);await expect(page.locator('#refresh-status-note')).toHaveCount(0);
+});
+
+test('React dashboard saved views handle storage errors and shared analytics sends one pageview',async({page})=>{
+ await mockApi(page);const pageviews=[];page.on('request',request=>{if(request.url().includes('/api/analytics/event')&&request.postDataJSON()?.type==='PAGEVIEW')pageviews.push(request.postDataJSON());});
+ await page.goto(url+'/dashboard?range=30d');await expect(page.locator('#data-fresh-label')).toContainText('Source updated');
+ await page.evaluate(()=>localStorage.setItem('empower-fin.savedViews','invalid'));page.on('dialog',dialog=>dialog.accept(' My view '));await page.locator('#btn-save-view').click();await expect(page.getByRole('status')).toContainText('Could not save');
+ await page.evaluate(()=>localStorage.setItem('empower-fin.savedViews','[]'));await page.locator('#btn-save-view').click();await expect(page.getByRole('status')).toContainText('saved on this browser');const views=await page.evaluate(()=>JSON.parse(localStorage.getItem('empower-fin.savedViews')));expect(views[0].name).toBe('My view');expect(views[0].url).toBe('/dashboard?range=30d');expect(pageviews).toHaveLength(1);
+ await expect(page.locator('#ent-cookie')).toHaveCount(1);await page.locator('#ent-cookie button').click();await expect(page.locator('#ent-cookie')).toHaveCount(0);
+});
+
+for(const width of [1440,390])test(`React dashboard header metadata matches source in dark mode at ${width}px`,async({browser})=>{
+ const captures=[];
+ for(const port of [4101,4100]){
+  const page=await browser.newPage({viewport:{width,height:1000},timezoneId:'Africa/Johannesburg'});await mockApi(page,{'/api/auth/me':{...me,syntheticDataMode:true}});
+  await page.route('**/api/employers/*/dashboard**',route=>route.fulfill({json:{...dashboard,monthActivity:{label:'September 2026',enrolled:0,completed:2,savingUnlocked:'R 500',advancesCount:0,advancesTotal:'Not available'},dataQuality:{warnings:['Two feeds missing.']},syncStatus:{lastSyncStatus:'PARTIAL',lastSuccessfulSyncAt:'2026-10-01T00:00:00Z',lastSyncNote:'Source is temporarily unavailable.'}}}));
+  await page.addInitScript(()=>{localStorage.setItem('cookieNoticeDismissed','1');localStorage.setItem('portalTheme','dark');});await page.goto(`http://127.0.0.1:${port}/dashboard`);await expect(page.locator('#month-activity')).toBeVisible();
+  if(!await page.locator('html').evaluate(node=>node.classList.contains('portal-dark')))await page.locator('.portal-theme-quick').click();
+  await page.waitForTimeout(1500);await page.addStyleTag({content:'*,*::before,*::after{animation:none!important;transition:none!important;caret-color:transparent!important}.reveal{opacity:1!important;transform:none!important}'});
+  const images=[];for(const selector of ['#employer-view>.head','#refresh-status-note','#synthetic-data-notice'])images.push({selector,png:PNG.sync.read(await page.locator(selector).screenshot())});captures.push(images);await page.close();
+ }
+ for(let i=0;i<captures[0].length;i++){const {selector,png:a}=captures[0][i],b=captures[1][i].png;expect(b.width,selector).toBe(a.width);expect(b.height,selector).toBe(a.height);expect(pixelmatch(a.data,b.data,null,a.width,a.height,{threshold:.15})/(a.width*a.height),selector).toBeLessThan(.005);}
+});
+
+test('React dashboard uses seeded figures only in explicit demo mode and keeps demo filters local',async({page})=>{
+ await mockApi(page);let calls=0;await page.route('**/api/employers/*/dashboard**',route=>{calls++;return route.fulfill({status:503,json:{error:'No published data'}});});
+ await page.goto(url+'/dashboard?demo=1');await expect(page.locator('#demo-banner')).toBeVisible();await expect(page.locator('#data-fresh-label')).toHaveText('Demo data');await expect(page.locator('#kpis .kpi')).toHaveCount(4);const baseline=await page.locator('#kpis .kpi-num').nth(2).textContent();
+ await page.locator('#month-select').selectOption('30d');await expect(page.locator('#exec-period')).toContainText('Last 30 days');await page.waitForTimeout(1100);expect(await page.locator('#kpis .kpi-num').nth(2).textContent()).not.toBe(baseline);expect(calls).toBe(1);
+ await page.goto(url+'/dashboard');await expect(page.getByRole('button',{name:'Retry dashboard'})).toBeVisible();await expect(page.locator('#demo-banner')).toHaveCount(0);await expect(page.locator('#kpis')).toHaveCount(0);
+});

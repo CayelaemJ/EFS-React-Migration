@@ -2,6 +2,7 @@
  * The source HTML remains a reference fixture; production renders the JSX pages.
  */
 import fs from 'node:fs';
+import {migrateDashboardState} from './dashboard-state.mjs';
 import {compilePreviewTemplate} from './preview-template.mjs';
 import path from 'node:path';
 import { parse as htmlParse } from 'parse5';
@@ -77,11 +78,26 @@ for(const file of fs.readdirSync('public').filter(x=>x.endsWith('.html'))){
  const html=doc.childNodes.find(n=>n.tagName==='html'),head=html.childNodes.find(n=>n.tagName==='head'),body=html.childNodes.find(n=>n.tagName==='body');
  const handlers=[],scripts=[];
  let adminSectionCard=false,integrationLayout=false,securityLayout=false,emailLayout=false,portfolioLayout=false,insightsLayout=false,governanceLayout=false;
- function collect(n){if(n.tagName==='script'){if(name==='users')return;const src=n.attrs.find(a=>a.name==='src')?.value; const inline=n.childNodes.map(n=>n.value||'').join(''); if(name==='users'&&!src&&inline.includes('async function addUser()'))return; scripts.push((src?.includes('portal-nav-v080.js')||src?.includes('admin-source-status.js'))?'':src?.includes('brand-engine.js')?'window.BrandEngine=BrandEngine;':src?fs.readFileSync('public/'+src.split('/').pop().split('?')[0],'utf8'):inline);}else n.childNodes?.forEach(collect)} collect(head);collect(body);
+ function collect(n){if(n.tagName==='script'){if(name==='users')return;const src=n.attrs.find(a=>a.name==='src')?.value; const inline=n.childNodes.map(n=>n.value||'').join(''); if(name==='dashboard'&&(/(?:engagement-v1|shell)\.js/.test(src||'')||inline.includes("setTimeout(function(){var e=document.getElementById('welcome-splash')")))return; if(name==='users'&&!src&&inline.includes('async function addUser()'))return; scripts.push((src?.includes('portal-nav-v080.js')||src?.includes('admin-source-status.js'))?'':src?.includes('brand-engine.js')?'window.BrandEngine=BrandEngine;':src?fs.readFileSync('public/'+src.split('/').pop().split('?')[0],'utf8'):inline);}else n.childNodes?.forEach(collect)} collect(head);collect(body);
  function jsx(n){
   if(n.nodeName==='#comment'||n.tagName==='script')return '';
   if(n.nodeName==='#text')return n.value?`{siteText(${json(n.value)})}`:'';
   if(!n.tagName)return '';
+  if(name==='dashboard'){
+   const id=n.attrs?.find(a=>a.name==='id')?.value,cls=n.attrs?.find(a=>a.name==='class')?.value;
+   if(id==='welcome-splash')return '<DashboardWelcome/>';
+   if(id==='role-indicator')return '<DashboardRole/>';
+   if(id==='audience-switch')return '<DashboardAudience/>';
+   if(cls==='topbar-divider')return '';
+   if(cls==='data-fresh')return '<DashboardFreshness/>';
+   if(id==='employer-view')return '<DashboardViewport>'+n.childNodes.map(jsx).join('')+'</DashboardViewport>';
+   if(id==='portfolio-view'&&!portfolioLayout)return '<DashboardViewport portfolio><Portfolio/></DashboardViewport>';
+   if(cls==='head'&&n.parentNode?.attrs?.some(a=>a.name==='id'&&a.value==='employer-view'))return '<div className="head"><DashboardHeading/></div><DashboardNotices/>';
+   if(cls==='filters')return '<DashboardFilters/>';
+   if(id==='footnote')return '<DashboardFootnote/>';
+   if(['btn-schedule','btn-export','btn-pf-export','btn-save-view','btn-command'].includes(id))return '<DashboardButton id="'+id+'"/>';
+   if(n.tagName==='section'&&cls==='dash-section'){const key=n.attrs.find(a=>a.name==='data-section')?.value;if(key==='voiceOfEmployee')return '<DashboardSection name="voiceOfEmployee"><EmployeeChat/></DashboardSection>';return '<DashboardSection name="'+key+'">'+n.childNodes.map(jsx).join('')+'</DashboardSection>';}
+  }
   if(name==='dashboard'&&n.tagName==='section'&&n.attrs?.some(a=>a.name==='data-section'&&a.value==='voiceOfEmployee'))return '<EmployeeChat/>';
   if(name==='dashboard'){const id=n.attrs?.find(a=>a.name==='id')?.value;const components={'exec-summary':'ExecSummary','kpis':'EmployerKpis','funnel':'EngagementFunnel','value-strip':'ValueStrip'};if(components[id])return `<div id="${id}"${id==='kpis'?' className="grid g-4"':id==='funnel'?' className="funnel"':''}><${components[id]}/></div>`;}
   if(name==='dashboard'){
@@ -148,6 +164,7 @@ for(const file of fs.readdirSync('public').filter(x=>x.endsWith('.html'))){
   n.attrs=originalAttrs;
   if(n.tagName==='select'&&!insightsLayout){const option=n.childNodes?.find(x=>x.tagName==='option'&&x.attrs?.some(a=>a.name==='selected'));if(option)attrs+=` defaultValue={${json(option.attrs.find(a=>a.name==='value')?.value||'')}}`;}
   let children=(n.childNodes||[]).map(jsx).join('');
+  if(name==='dashboard'&&originalAttrs.some(a=>a.name==='class'&&a.value==='topbar-meta'))children='<div id="portal-nav"/>'+children;
   if(integrationLayout){
    if(settingsClasses&&!originalAttrs.some(a=>a.name==='class'))attrs+=` className={${json(settingsClasses)}}`;
    if(['input','select'].includes(n.tagName)){
@@ -223,7 +240,7 @@ for(const file of fs.readdirSync('public').filter(x=>x.endsWith('.html'))){
  if(name==='dashboard'){
   function findPortfolio(n){if(n.attrs?.some(a=>a.name==='id'&&a.value==='portfolio-view'))return n;for(const child of n.childNodes||[]){const found=findPortfolio(child);if(found)return found;}}
   portfolioLayout=true;const layout=findPortfolio(body).childNodes.map(jsx).join('');portfolioLayout=false;
-  fs.writeFileSync(`${out}/portfolio-layout.jsx`,`// NewChanges portfolio layout; data and interactions are React-owned.\nimport React from 'react';\nimport {siteText} from '../native/site-config.js';\nexport function PortfolioLayout({state,actions}){return <>${layout}</>;}\n`);
+  fs.writeFileSync(`${out}/portfolio-layout.jsx`,`// NewChanges portfolio layout; data and interactions are React-owned.\nimport React from 'react';\nimport {DashboardButton} from '../native/DashboardState.jsx';\nimport {siteText} from '../native/site-config.js';\nexport function PortfolioLayout({state,actions}){return <>${layout}</>;}\n`);
  }
  if(name==='admin'){
   function findNode(n,predicate){if(predicate(n))return n;for(const child of n.childNodes||[]){const result=findNode(child,predicate);if(result)return result;}}
@@ -353,6 +370,7 @@ for(const file of fs.readdirSync('public').filter(x=>x.endsWith('.html'))){
   controllerSource+="\nfunction renderExec(){updateEmployerCharts({...DATA,live:window.__LIVE__,sentimentColours:Object.fromEntries((DATA.chat?.byJourney||[]).map(j=>[j.key,brandSeries(Math.round(j.sentiment/20))])),definitions:EMPLOYER_METRIC_INFO,colours:Array.from({length:Math.max(DATA.debtProfile?.length||0,DATA.income?.length||0)},(_,i)=>brandSeries(i)),keys:{stress:(DATA.stressMap||[]).map(item=>employerMetricKey(item.l))},fit:()=>requestAnimationFrame(()=>fitResponsiveDataValues())});updateEmployerOverview({exec:DATA.exec,wellness:DATA.wellness,kpis:DATA.kpis,funnel:DATA.funnel,valueStrip:DATA.valueStrip,live:window.__LIVE__,period:window.__LIVE__?(DATA.filterContext?.label||'Latest'):PERIOD[STATE.period].label,comparison:DATA.filterContext?.comparison?.label,definitions:EMPLOYER_METRIC_INFO,keys:{exec:(DATA.exec?.items||[]).map(item=>employerMetricKey(item.l)),funnel:(DATA.funnel||[]).map(item=>employerMetricKey(item.label)),value:(DATA.valueStrip||[]).map(item=>employerMetricKey(item.l))},fit:()=>requestAnimationFrame(()=>fitResponsiveDataValues())});}\n";
 
  }
+ if(name==='dashboard')controllerSource=migrateDashboardState(controllerSource);
  const control=name==='admin'?'':transform(controllerSource);
  let code=`// Ported from New Changes ${file}; keep source structure and CSS selectors intact.\nimport React from 'react';\n${name==='users'?"import {AddUser,UsersList,RevokedUsers} from '../native/UsersManagement.jsx';\nimport {SecurityCenter} from '../native/SecurityCenter.jsx';\n":''}${name==='dashboard'?"import {showQuickActions,showScheduleReport} from '../native/DashboardDialogs.jsx';\n":''}import BrandEngine from '../lib/brand-engine.js';\nimport {renderMarkup,insertMarkup,registerAction,decodeAttribute,onReady,createMarkupElement} from './runtime.jsx';\nimport {siteText} from '../native/site-config.js';\nlet actions=[];\nexport function Page(){return <>${markup}</>;}\nlet started=false;\nexport function start(){if(started)return;started=true;\nactions=[${handlers.join(',\n')}];\n${control}\n}\n`;
  if(name==='admin')code=`// Source layout rendered by native React administration components.\nimport React from 'react';\nimport {siteText} from '../native/site-config.js';\nimport {WelcomeSplash,PrivilegedAdmin,chooseIngestion} from '../native/AdminShell.jsx';\nexport function Page(){return <>${markup}</>;}\nexport function start(){}\n`;
@@ -361,6 +379,7 @@ for(const file of fs.readdirSync('public').filter(x=>x.endsWith('.html'))){
  if(name==='admin')fs.writeFileSync(`${out}/${name}.jsx`,code.replace("import React from 'react';", "import React from 'react';\nimport {AdminEmailPanel,AdminAutomationPanel} from '../native/AdminSettings.jsx';\nimport {AdminSections} from '../native/AdminSections.jsx';\nimport {ReportPicker,ReportWorkspace,ImportHistoryRows,initializeReports,refreshImportHistory} from '../native/AdminReports.jsx';"));
  const native=fs.existsSync(`frontend/src/native/${name}.jsx`);
  if(name==='admin')fs.writeFileSync(`${out}/${name}.jsx`,fs.readFileSync(`${out}/${name}.jsx`,'utf8').replace("import React from 'react';","import React from 'react';\nimport {AdminPartners} from '../native/AdminPartners.jsx';\nimport {AdminIntegration,setIntegrationMode as setIntegMode,refreshIntegration} from '../native/AdminIntegration.jsx';\nimport {AdminReset,configureResetRefresh} from '../native/AdminReset.jsx';\nimport {EnterpriseOperations} from '../native/EnterpriseOperations.jsx';"));
+ if(name==='dashboard')fs.writeFileSync(`${out}/${name}.jsx`,fs.readFileSync(`${out}/${name}.jsx`,'utf8').replace("import React from 'react';","import React from 'react';\nimport {configureDashboard,DashboardWelcome,DashboardRole,DashboardAudience,DashboardFreshness,DashboardViewport,DashboardHeading,DashboardNotices,DashboardFilters,DashboardFootnote,DashboardButton,DashboardSection} from '../native/DashboardState.jsx';"));
  if(name==='dashboard')fs.writeFileSync(`${out}/${name}.jsx`,fs.readFileSync(`${out}/${name}.jsx`,'utf8').replace("import React from 'react';","import React from 'react';\nimport {ExecutiveInsight,DataTrust,EmployeeChat,Outcomes,OutcomesNote,SavingsChart,EwaChart,EwaKpis,DebtProfile,Regions,StressMap,Income,Ratings,DebtStates,Prescription,RiskSignals,Opportunities,updateEmployerCharts} from '../native/EmployerCharts.jsx';"));
  if(name==='dashboard')fs.writeFileSync(`${out}/${name}.jsx`,fs.readFileSync(`${out}/${name}.jsx`,'utf8').replace("import React from 'react';","import React from 'react';\nimport {ExecSummary,EmployerKpis,EngagementFunnel,ValueStrip,updateEmployerOverview} from '../native/EmployerOverview.jsx';\nimport {Wellness,updateWellness} from '../native/Wellness.jsx';"));
  if(name==='admin')fs.writeFileSync(`${out}/${name}.jsx`,fs.readFileSync(`${out}/${name}.jsx`,'utf8').replace("import React from 'react';","import React from 'react';\nimport {AdminSecurity,Compliance,MLOpsAlert,refreshGovernance} from '../native/AdminGovernance.jsx';"));
@@ -376,6 +395,7 @@ for(const file of fs.readdirSync('public').filter(x=>x.endsWith('.html'))){
  if(name==='users')entry="import {UsersProvider} from '../native/UsersManagement.jsx';\n"+entry.replace('<><Page/><PortalNavigation/><SourceStatus/></>','<UsersProvider><Page/><PortalNavigation/><SourceStatus/></UsersProvider>');
  if(name==='admin')entry="import {AdminReportsProvider} from '../native/AdminReports.jsx';\n"+entry.replace('<><Page/><PortalNavigation/><SourceStatus/></>','<AdminReportsProvider><Page/><PortalNavigation/><SourceStatus/></AdminReportsProvider>');
  if(name==='admin')entry="import {AdminSettingsProvider} from '../native/AdminSettings.jsx';\n"+entry.replace('<AdminReportsProvider>','<AdminSettingsProvider><AdminReportsProvider>').replace('</AdminReportsProvider>','</AdminReportsProvider></AdminSettingsProvider>');
+ if(name==='dashboard')entry=`import React from 'react';\nimport {mountPage} from './mount.jsx';\nimport {Page,start} from './dashboard.jsx';\nimport {Shared} from '../native/Shared.jsx';\nimport {DashboardProvider,DashboardAuthenticated,DashboardDemoBanner} from '../native/DashboardState.jsx';\nimport {PortalNavigation,installPortalNavigation} from '../native/PortalNavigation.jsx';\nimport {DashboardDialogs} from '../native/DashboardDialogs.jsx';\nimport {SourceStatus} from '../native/SourceStatus.jsx';\ninstallPortalNavigation();\nmountPage(()=> <Shared><DashboardProvider><Page/><PortalNavigation/><DashboardAuthenticated><DashboardDialogs/><SourceStatus/></DashboardAuthenticated><DashboardDemoBanner/></DashboardProvider></Shared>,start);\n`;
  if(name==='admin')entry=`import React from 'react';\nimport {mountPage} from './mount.jsx';\nimport {Page} from './admin.jsx';\nimport {Shared} from '../native/Shared.jsx';\nimport {AdminSession,AdminBootstrap} from '../native/AdminShell.jsx';\nimport {AdminSettingsProvider} from '../native/AdminSettings.jsx';\nimport {AdminReportsProvider} from '../native/AdminReports.jsx';\nimport {PortalNavigation,installPortalNavigation} from '../native/PortalNavigation.jsx';\nimport {SourceStatus} from '../native/SourceStatus.jsx';\ninstallPortalNavigation();\nmountPage(()=> <Shared><PortalNavigation/><AdminSession><AdminSettingsProvider><AdminReportsProvider><Page/><SourceStatus/><AdminBootstrap/></AdminReportsProvider></AdminSettingsProvider></AdminSession></Shared>,()=>{});\n`;
  fs.writeFileSync(`${out}/${name}.entry.jsx`,entry);
  let skeleton=source.replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi,'');

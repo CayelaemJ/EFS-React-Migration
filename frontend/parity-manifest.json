@@ -36,8 +36,8 @@
     "source": "dashboard.html",
     "implementation": "transitional-controller",
     "navigation": "declarative-react",
-    "staticHandlers": 2,
-    "scripts": 9
+    "staticHandlers": 0,
+    "scripts": 6
   },
   {
     "page": "home",
