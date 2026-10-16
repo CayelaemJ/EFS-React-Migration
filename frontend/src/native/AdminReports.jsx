@@ -33,11 +33,14 @@ async function request(path, options = {}) {
     throw new Error(data?.error || `server error ${response.status}`);
   return { data, status: response.status };
 }
-export async function initializeReports(onManifest = manifestCallback) {
+export async function initializeReports(
+  onManifest = manifestCallback,
+  options = {},
+) {
   manifestCallback = onManifest;
   publish({ loading: true, error: "" });
   try {
-    const { data } = await request("/api/admin/reports");
+    const { data } = await request("/api/admin/reports", options);
     if (
       !Array.isArray(data.loadOrder) ||
       !Array.isArray(data.reports) ||
@@ -50,7 +53,8 @@ export async function initializeReports(onManifest = manifestCallback) {
     publish({ manifest: data, loading: false });
     return data;
   } catch (error) {
-    publish({ error: error.message, loading: false });
+    if (!options.signal?.aborted)
+      publish({ error: error.message, loading: false });
     throw error;
   }
 }

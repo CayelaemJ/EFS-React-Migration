@@ -2529,7 +2529,7 @@ function updateContextLine(){
   const sub=document.getElementById('ctx-sub');
   if(sub) sub.textContent = parts.join(' · ');
   const tag=document.getElementById('emp-tag');
-  if(tag) tag.lastChild.textContent = ' '+DATA.kpis.takeUp.enrolled.toLocaleString()+' enrolled';
+  if(tag) tag.lastChild.textContent = hasValue(DATA.kpis?.takeUp?.enrolled) ? ' '+fmtCount(DATA.kpis.takeUp.enrolled)+' enrolled' : ' Enrolment data not loaded';
 }
 
 /* ─────── wire: period segmented control ─────── */

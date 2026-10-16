@@ -21,6 +21,7 @@ Brand Engine 1.4, supplied The Fixer normal/reversed SVG assets, updated styles,
 | Dashboard dialogs | React Quick Actions and scheduled reports | Authenticated delivery and SMTP verification |
 | Portfolio dashboard | React employer selection, KPI totals, heatmap, rankings and metric explanations | Shared dashboard authentication, data-fetching, audience switch and export controllers remain; broader role/data verification |
 | Employer wellness | Native React gauge, status colours, driver rows and incomplete-data handling | Shared dashboard data/theme controller still supplies snapshots |
+| Employer overview | React impact summary, animated KPI cards, engagement funnel and value strip | Shared data/calculation/filter/theme controller still supplies snapshots |
 | Remaining employer dashboard | React JSX with retained imperative calculation/render controllers | Full conversion to React state/components; broader data permutations |
 | Administration reports/imports | React report selection, templates, file/drop upload progress, validation, background jobs, commit and live import history | Authenticated database import/revert verification |
 | Dashboard section permissions | React visibility, role checkboxes, user grants/revocations, loading/error recovery | Authenticated permission-write verification |
@@ -31,7 +32,7 @@ Brand Engine 1.4, supplied The Fixer normal/reversed SVG assets, updated styles,
 | Reset and rebuild | React confirmation, pending state, error recovery and dependent-panel refresh | Authenticated migration-environment verification |
 | Live data integration | React controlled API/SQL/replica fields, save/test/sync/full-refresh actions, progress and history | Newer source-switch/incremental-refresh contract reconciliation and authenticated source verification |
 | Partners and client preview | Native React creation/presets, branding edits, logo detection, assignments, deletion and synthetic preview | Authenticated branding and assignment verification |
-| Administration shell | Retained theme, welcome, role-posture and report-manifest bootstrap | Convert remaining shell lifecycle and privileged-card visibility to React |
+| Administration shell | React session gate, default branding, welcome lifecycle, privileged-panel mounting, report bootstrap and shared cookie/progress/analytics | Authenticated role and environment verification |
 
 The users entry no longer starts the legacy users or user-security scripts. Source HTML remains a reference fixture. Default Admin/Superadmin shells use The Fixer; custom partner dashboards show the partner identity alone, matching the latest source product decision.
 
@@ -106,3 +107,13 @@ The previous integration checkpoint `36010a83aedc24b47972189072a296d52dcd2464` p
 NewChanges main was rechecked on 16 October and remains `499a9d9598d0eced1ce8ebebb06bcaff983215c5`. The pending 43-commit backend/schema/source-activation delta remains outside this checkpoint. No database schema changes or Railway actions were executed.
 
 Local verification for this checkpoint: all 76 browser checks passed before the final logo retry refinement; the affected creation/edit checks and added same-file logo retry then passed with the rebuilt frontend. Hosted CI runs the complete 77-test suite for the published commit.
+
+## October 16 administration startup and employer overview
+
+Administration no longer executes the converted legacy boot function or shared shell scripts. React validates the session and module shape before mounting admin panels, redirects invalid sessions, mounts privileged panels only for Super Admins, applies the canonical admin theme with observer cleanup, and owns the welcome timer, shared cookie/progress/analytics lifecycle and report-manifest bootstrap. The existing static layout and native panel components are retained. Dead role-posture DOM code is removed; the source admin page does not contain that panel, so no new UI is added. The generated admin entry is marked declarative React.
+
+The employer impact summary, four KPI cards, engagement funnel and value strip now render from React snapshots. Count-up and funnel-width animations retain the source timing, and cleanup cancels old animations when the selected data changes. Missing KPI/funnel values remain unavailable; valid zero/negative values are preserved, comparison text remains source-compatible, and metric explanations use native tooltips. The period caption is part of the snapshot rather than a later DOM text write. The shared legacy data/filter/calculation/theme pipeline and other charts remain to be converted.
+
+Focused verification passed for admin session gating, malformed permissions, restricted-panel requests, welcome/cookie behaviour and single pageview tracking; existing admin visual and branding checks also passed. Employer checks cover missing/zero values, comparison text, escaped content, refreshed periods and stable missing values after an old animation would have completed. Dashboard light and dark comparisons pass at desktop/mobile sizes using the unchanged 0.5% visual gate. The full hosted suite is the acceptance check for the published checkpoint. The preceding partner commit `06e1218995556ac0bc0004936ccdcb414ba97c44` passed hosted CI run `38871829423` with 77 tests.
+
+The backend can return a null enrolment count when that feed is unavailable. The retained header formatter now handles that value rather than throwing and replacing the entire dashboard with an unavailable screen. The missing-data workflow exercises that actual response shape. Admin scroll padding/margins also keep automation controls clear of the sticky header/source badge; the previously blocked workflow passed three consecutive checks after the change. The loading splash remains visible while session verification is pending.

@@ -10,9 +10,9 @@
   {
     "page": "admin",
     "source": "admin.html",
-    "implementation": "transitional-controller",
+    "implementation": "declarative-react",
     "navigation": "declarative-react",
-    "staticHandlers": 3,
+    "staticHandlers": 0,
     "scripts": 10
   },
   {

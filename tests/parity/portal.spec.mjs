@@ -1847,3 +1847,63 @@ test('React partner logo upload retries the same file after a failed save',async
  await card.locator('input[type=file]').setInputFiles({name:'brand.png',mimeType:'image/png',buffer:PNG.sync.write(logo)});await expect(page.locator('#channel-partners-card')).toContainText('Logo storage unavailable');await expect(card.getByRole('button',{name:'Retry logo upload',exact:true})).toBeVisible();
  fail=false;await card.getByRole('button',{name:'Retry logo upload',exact:true}).click();await expect(card.locator('.partner-preview-logo')).toHaveAttribute('src',/^data:image\/png;base64,/);await expect(card.getByRole('button',{name:'Retry logo upload',exact:true})).toHaveCount(0);expect(patches).toHaveLength(2);expect(patches[1].logoDataUrl).toBe(patches[0].logoDataUrl);
 });
+
+test('React admin startup gates panels until the session is verified and excludes privileged reads for admins',async({page})=>{
+ await mockApi(page);let held,verified=false,protectedReads=[];
+ await page.route('**/api/**',route=>{const path=new URL(route.request().url()).pathname;
+  if(path==='/api/auth/me'){if(!verified){held=route;return;}return route.fulfill({json:{...me,role:'ADMIN'}});}
+  if(path.startsWith('/api/admin/'))protectedReads.push(path);
+  return route.fulfill({json:fixture(route.request().url(),route.request().method())});
+ });
+ await page.goto(url+'/admin');await expect.poll(()=>Boolean(held)).toBe(true);expect(protectedReads).toEqual([]);await expect(page.locator('#rep-list')).toHaveCount(0);await expect(page.locator('#welcome-splash-greeting')).toHaveText('Welcome');
+ verified=true;await held.fulfill({json:{...me,role:'ADMIN'}});await expect(page.locator('#rep-list .rep')).toHaveCount(10);
+ await expect(page.locator('#admin-security-strip,#admin-mlops-alert,#reset-btn,#sec-list')).toHaveCount(0);
+ expect(protectedReads).not.toContain('/api/admin/security/overview');expect(protectedReads.some(path=>path.startsWith('/api/admin/mlops/'))).toBe(false);expect(protectedReads).not.toContain('/api/admin/sections');
+ await expect(page.getByRole('link',{name:'Dashboard',exact:true}).first()).toBeVisible();
+});
+
+test('React admin startup rejects malformed session permissions before loading admin data',async({page})=>{
+ await mockApi(page);let adminReads=0;
+ await page.route('**/api/**',route=>{const path=new URL(route.request().url()).pathname;if(path==='/api/auth/me')return route.fulfill({json:{id:'broken',role:'SUPERADMIN'}});if(path.startsWith('/api/admin/'))adminReads++;return route.fulfill({json:fixture(route.request().url(),route.request().method())});});
+ await page.goto(url+'/admin');await expect(page).toHaveURL(url+'/login');expect(adminReads).toBe(0);
+});
+
+test('React admin welcome and cookie notice retain session behaviour without duplicate analytics',async({page})=>{
+ await mockApi(page);let views=0;
+ await page.route('**/api/analytics/event',route=>{if(route.request().postDataJSON()?.type==='PAGEVIEW')views++;return route.fulfill({json:{ok:true}});});
+ await page.addInitScript(()=>localStorage.setItem('empower-fin-theme','dark'));
+ await page.goto(url+'/admin');await expect(page.locator('#welcome-splash-greeting')).toContainText('Test');await expect(page.locator('#welcome-splash-logo')).toHaveAttribute('src',/logo-reversed/);await expect(page.locator('#ent-cookie')).toHaveCount(1);expect(views).toBe(1);
+ await page.getByRole('button',{name:'Got it',exact:true}).click();await expect(page.locator('#ent-cookie')).toHaveCount(0);await expect(page.locator('#welcome-splash')).toHaveClass('hide');
+ await page.reload();await expect(page.locator('#rep-list .rep')).toHaveCount(10);await expect(page.locator('#welcome-splash')).toHaveClass('hide');await expect(page.locator('#ent-cookie')).toHaveCount(0);expect(views).toBe(2);
+});
+
+test('React employer overview preserves missing/zero values, escaped content and refreshed periods',async({page})=>{
+ await mockApi(page);let updated=false;
+ await page.route('**/api/employers/*/dashboard**',route=>route.fulfill({json:{...dashboard,
+  filterContext:{...dashboard.filterContext,label:updated?'Updated window':'Initial window',comparison:{label:'Last year'}},
+  wellness:{...dashboard.wellness,score:updated?null:80,complete:!updated},
+  exec:{items:[{v:'<img src=x>',l:'employees enrolled'}]},
+  kpis:{takeUp:{...dashboard.kpis.takeUp,enrolled:updated?null:0,pct:updated?null:0,available:!updated,delta:0,trend:[5,5]},activated:{...dashboard.kpis.activated,pct:52,delta:'New',trend:[1,2]},monthlySaving:{...dashboard.kpis.monthlySaving,rand:-500,delta:-125,trend:[3,2]},avgRating:{...dashboard.kpis.avgRating,val:null,available:false}},
+  funnel:[{label:'Eligible workforce',n:0,pct:0,sub:'None yet'},{label:'Enrolled',n:null,pct:null,available:false}],
+  valueStrip:[{l:'Monthly cash freed up',v:'<img src=x>',d:'Source text'}]
+ }}));
+ await page.goto(url+'/dashboard');await expect(page.locator('#data-fresh-label')).toContainText('Source updated');
+ await expect(page.locator('#exec-summary .exec-verdict')).toHaveText('Strong');await expect(page.locator('#exec-period')).toHaveText('Initial window · at a glance');
+ await expect(page.locator('#kpis .kpi-num').nth(0)).toHaveText('0');await expect(page.locator('#kpis .kpi-num').nth(1)).toHaveText('52');await expect(page.locator('#kpis .kpi-num').nth(2)).toHaveText('-500');await expect(page.locator('#kpis .kpi-num').nth(3)).toHaveText('Not available');
+ await expect(page.locator('#kpis .delta').nth(1)).toContainText('New vs. Last year');await expect(page.locator('#kpis .delta').nth(2)).toContainText('-R 125 vs. Last year');
+ await expect(page.locator('#funnel .funnel-val').first()).toHaveText('0');await expect(page.locator('#funnel .funnel-val').last()).toHaveText('Not available');
+ await expect(page.locator('#exec-summary,#value-strip')).toContainText(['<img src=x>','<img src=x>']);await expect(page.locator('#exec-summary img,#value-strip img')).toHaveCount(0);
+ await page.locator('#kpis .metric-info').first().click();await expect(page.getByRole('tooltip')).toContainText('Enrolled employees');await page.keyboard.press('Escape');
+ updated=true;await page.locator('#month-select').selectOption('30d');await expect(page.locator('#exec-summary .exec-verdict')).toHaveText('Data incomplete');await expect(page.locator('#exec-period')).toHaveText('Updated window · at a glance');await expect(page.locator('#data-fresh-label')).toContainText('Source updated');await expect(page.locator('#emp-tag')).toContainText('Enrolment data not loaded');await expect(page.locator('#kpis .kpi-num').first()).toHaveText('Not available');
+ await page.waitForTimeout(1100);await expect(page.locator('#kpis .kpi-num').first()).toHaveText('Not available');
+});
+
+for(const width of [1440,390])test(`React employer overview matches source in dark mode at ${width}px`,async({browser},testInfo)=>{
+ const captures=[[],[],[],[]];
+ for(const port of [4101,4100]){
+  const page=await browser.newPage({viewport:{width,height:1000},timezoneId:'Africa/Johannesburg'});await mockApi(page,{'/api/employers/employer-1/dashboard':{...dashboard,kpis:{...dashboard.kpis,avgRating:{...dashboard.kpis.avgRating,val:null,available:false}}}});await page.addInitScript(()=>{localStorage.setItem('empower-fin-theme','dark');localStorage.setItem('cookieNoticeDismissed','1');});await page.goto(`http://127.0.0.1:${port}/dashboard`);await expect(page.locator('#data-fresh-label')).toContainText('Source updated');await page.waitForTimeout(1400);
+  await page.addStyleTag({content:'*,*::before,*::after{transition:none!important;animation:none!important;caret-color:transparent!important}.reveal{opacity:1!important;transform:none!important}#welcome-splash{display:none!important}'});await page.evaluate(()=>document.fonts.ready);
+  let i=0;for(const selector of ['#exec-summary','#kpis','#funnel','#value-strip'])captures[i++].push(PNG.sync.read(await page.locator(selector).screenshot()));await page.close();
+ }
+ for(let i=0;i<captures.length;i++){const [a,b]=captures[i];expect({width:b.width,height:b.height}).toEqual({width:a.width,height:a.height});const diff=new PNG({width:a.width,height:a.height}),ratio=pixelmatch(a.data,b.data,diff.data,a.width,a.height,{threshold:.15})/(a.width*a.height);if(ratio>.005){for(const [name,value]of [['source',a],['react',b],['diff',diff]])await testInfo.attach(`overview-${i}-${name}`,{body:PNG.sync.write(value),contentType:'image/png'});}expect(ratio).toBeLessThanOrEqual(.005);}
+});
