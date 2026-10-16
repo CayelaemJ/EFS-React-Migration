@@ -1907,3 +1907,84 @@ for(const width of [1440,390])test(`React employer overview matches source in da
  }
  for(let i=0;i<captures.length;i++){const [a,b]=captures[i];expect({width:b.width,height:b.height}).toEqual({width:a.width,height:a.height});const diff=new PNG({width:a.width,height:a.height}),ratio=pixelmatch(a.data,b.data,diff.data,a.width,a.height,{threshold:.15})/(a.width*a.height);if(ratio>.005){for(const [name,value]of [['source',a],['react',b],['diff',diff]])await testInfo.attach(`overview-${i}-${name}`,{body:PNG.sync.write(value),contentType:'image/png'});}expect(ratio).toBeLessThanOrEqual(.005);}
 });
+
+test('React employer charts update comparisons and preserve unavailable and zero values',async({page})=>{
+ await mockApi(page);let changed=false;
+ await page.route('**/api/employers/*/dashboard**',route=>route.fulfill({json:{...dashboard,
+  filterContext:{...dashboard.filterContext,period:'2026-09',label:changed?'New window':'Old window'},
+  periodComparison:{current:{label:changed?'New window':'Old window',monthlyCashFreedUp:changed?null:0,totalAdvanced:0},previous:{label:'Prior window',monthlyCashFreedUp:500,totalAdvanced:50}},
+  savings:changed?[]:dashboard.savings,comparison:{...dashboard.comparison,previous:{...dashboard.comparison?.previous,savings:changed?[]:dashboard.savings}},
+  income:changed?[]:[{name:'<img src=x>',count:0}],
+  regions:[{name:'<img src=x>',stress:changed?10:90}],
+  prescription:{...dashboard.prescription,statusBars:[{l:'<img src=x>',pct:changed?0:100,n:0,c:'var(--chart-cashflow)'}]},
+  debtStates:{active:{rand:0,employees:0,label:'<img src=x>'},challenged:{rand:0,employees:0},guided:{rand:0,employees:0}},
+  riskSignals:[{sev:'high',sig:'<img src=x>',note:'<script>bad</script>',n:0}],
+ } }));
+ await page.goto(url+'/dashboard');
+ await expect(page.locator('#savings-chart .comparison-value-card.current')).toContainText('R 0');
+ await expect(page.locator('#ewa-chart .comparison-value-card.current')).toContainText('R 0');
+ await expect(page.locator('#income-donut')).toContainText('No activated employees');
+ await expect(page.locator('#risk-signals .risk-n')).toHaveText('0');
+ await expect(page.locator('#risk-signals')).toContainText('<script>bad</script>');
+ await expect(page.locator('#debt-states .ds-bar>div').first()).toHaveAttribute('style',/width: 0%/);
+ await expect(page.locator('#prescription img,#region-bars img,#risk-signals img,#debt-states img')).toHaveCount(0);
+ changed=true;await page.locator('#month-select').selectOption('30d');
+ await expect(page.locator('#savings-chart')).toContainText('No data is available for this period.');
+ await expect(page.locator('#ewa-chart svg')).toHaveAttribute('aria-label','New window compared with Prior window');
+ await expect(page.locator('#income-donut')).toContainText('Income-band data is not available');
+ await page.waitForTimeout(1100);
+ await expect(page.locator('#region-bars .hbar-fill')).toHaveAttribute('style',/width: 10%/);
+ await expect(page.locator('#prescription .hbar-fill')).toHaveAttribute('style',/width: 0%/);
+});
+
+test('React employer drilldowns support keyboard, focus return and safe data quality content',async({page})=>{
+ await mockApi(page,{'/api/employers/employer-1/dashboard':{...dashboard,outcomes:dashboard.outcomes.map((o,i)=>i?o:{...o,trend:[0,3,5],trendLabels:['Jul 2026','Aug 2026','Sep 2026']}),dataQuality:{warnings:['<img src=x>'],loadedFeedCount:0}}});
+ await page.goto(url+'/dashboard');
+ const first=page.locator('#outcomes .outcome').first();await expect(first).toBeVisible();await first.focus();await page.keyboard.press('Enter');
+ await expect(page.getByRole('dialog')).toContainText('Fixes completed');
+ await expect(page.locator('.outcome-trend-chart')).toHaveAttribute('aria-label','Completion trend comparison');
+ await expect(page.getByRole('button',{name:'Close',exact:true})).toBeFocused();
+ await page.keyboard.press('Tab');await expect(page.getByRole('button',{name:'Close',exact:true})).toBeFocused();
+ await page.keyboard.press('Escape');await expect(page.getByRole('dialog')).toHaveCount(0);await expect(first).toBeFocused();
+ await page.locator('#dp-toggle').click();await expect(page.locator('#dp-toggle')).toHaveAttribute('aria-expanded','true');
+ const creditor=page.locator('#creditor-table .ct-row').first();await creditor.focus();await page.keyboard.press('Space');
+ await expect(page.getByRole('dialog')).toContainText('Accounts in journey');await page.locator('.drawer-backdrop').click({position:{x:10,y:10}});
+ await expect(creditor).toBeFocused();await expect(page.getByRole('dialog')).toHaveCount(0);
+ await page.locator('#data-trust button').click();await expect(page.getByRole('dialog')).toContainText('<img src=x>');await expect(page.locator('.drawer img')).toHaveCount(0);
+ await page.keyboard.press('Escape');await expect(page.locator('#data-trust button')).toBeFocused();
+});
+
+test('React chat changes journey themes with keyboard and removes stale content when unavailable',async({page})=>{
+ await mockApi(page);let unavailable=false;
+ await page.route('**/api/employers/*/dashboard**',route=>route.fulfill({json:{...dashboard,chat:{...dashboard.chat,available:!unavailable,byJourney:[{key:'credit',name:'Credit',convos:0,sentiment:75,themes:[{t:'First theme',n:0}]},{key:'funeral',name:'<img src=x>',convos:5,sentiment:60,themes:[{t:'<script>second</script>',n:5}]}],trending:[{q:'<img src=x>',journey:'Credit',n:0,trend:'flat'}]}}}));
+ await page.goto(url+'/dashboard');
+ await expect(page.locator('#chat-themes')).toContainText('First theme');
+ await page.locator('.chat-jrow').last().focus();await page.keyboard.press('Enter');
+ await expect(page.locator('.chat-jrow').last()).toHaveAttribute('aria-pressed','true');
+ await expect(page.locator('#chat-theme-title')).toContainText('<img src=x>');await expect(page.locator('#chat-themes')).toContainText('<script>second</script>');
+ await expect(page.locator('#chat-trending')).toContainText('"<img src=x>"');await expect(page.locator('[data-section="voiceOfEmployee"] img')).toHaveCount(0);
+ unavailable=true;await page.locator('#month-select').selectOption('30d');
+ await expect(page.locator('#chat-count-tag')).toHaveText('Data unavailable');
+ await expect(page.locator('#chat-themes')).toContainText('separate chat integration');await expect(page.locator('.chat-jrow')).toHaveCount(0);
+ await expect(page.locator('#chat-themes')).not.toContainText('second');
+});
+
+for(const width of [1440,390])test(`React employer charts match source in dark mode at ${width}px`,async({browser})=>{
+ const captures=[];
+ for(const port of [4101,4100]){
+  const page=await browser.newPage({viewport:{width,height:1000},timezoneId:'Africa/Johannesburg'});await mockApi(page);
+  await page.addInitScript(()=>{localStorage.setItem('cookieNoticeDismissed','1');localStorage.setItem('portalTheme','dark');});
+  await page.goto(`http://127.0.0.1:${port}/dashboard`);await expect(page.locator('#data-fresh-label')).toContainText('Source updated');
+  if(!await page.locator('html').evaluate(node=>node.classList.contains('portal-dark')))await page.locator('.portal-theme-quick').click();
+  await page.locator('#dp-toggle').click();await page.waitForTimeout(1500);
+  await page.addStyleTag({content:'*,*::before,*::after{transition:none!important;animation:none!important;caret-color:transparent!important}.reveal{opacity:1!important;transform:none!important}'});
+  const images=[];
+  for(const selector of ['#outcomes','#savings-chart','#debt-profile','#creditor-table','#ewa-kpis','#ewa-chart','#stress-strip','#region-bars','#income-donut','#ratings','#debt-states','#prescription','#risk-signals','#opportunities','[data-section="voiceOfEmployee"]'])images.push({selector,png:PNG.sync.read(await page.locator(selector).screenshot())});
+  captures.push(images);await page.close();
+ }
+ for(let i=0;i<captures[0].length;i++){
+  const {selector,png:a}=captures[0][i],b=captures[1][i].png;
+  expect(b.width,selector).toBe(a.width);expect(b.height,selector).toBe(a.height);
+  expect(pixelmatch(a.data,b.data,null,a.width,a.height,{threshold:.15})/(a.width*a.height),selector).toBeLessThan(.005);
+ }
+});

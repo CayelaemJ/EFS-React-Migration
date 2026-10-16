@@ -18,6 +18,8 @@ for(const {page}of manifest){
  for(const [,asset]of built.matchAll(/(?:src|href)="(\/static\/[^"?]+)(?:\?[^\"]*)?"/g))assert.ok(fs.existsSync('public/'+asset.slice(8)),`${page}: missing ${asset}`);
 }
 const server=read('src/server.ts');
+assert.doesNotMatch(read('frontend/src/parity/dashboard.jsx'), /function (renderOutcomes|renderPeriodLineChart|renderSavings|renderEwa|renderDebtProfile|renderCreditors|renderRegions|renderStressMap|renderIncome|renderRatings|renderDebtStates|renderPrescription|renderRiskSignals|renderOpportunities|renderChat|renderChatThemes|openDrawer|closeDrawer|outcomeDrill|creditorDrill|renderExecutiveInsight|renderDataTrust)\(/, 'Employer visuals, chat interactions and drilldowns must remain React-owned');
+
 assert.doesNotMatch(read('frontend/src/parity/admin.jsx'), /renderMarkup|registerAction|function boot\(|querySelectorAll|setInterval/, 'Admin bootstrap and shared shell must remain React-owned');
 assert.doesNotMatch(read('frontend/src/parity/dashboard.jsx'), /function (renderKPIs|renderFunnel|renderValueStrip)\(/, 'Employer overview rendering must remain React-owned');
 assert.doesNotMatch(read('frontend/src/parity/admin.jsx'), /function (loadPartners|renderPartners|editPartner|createPartner|uploadPartnerLogo|assignToPartner|deletePartner|openClientPreview|closeClientPreview|toggleChannelPartners)\(/, 'Partner controllers and preview must remain React-owned');
@@ -26,7 +28,7 @@ assert.doesNotMatch(read('frontend/src/parity/admin.jsx'), /function (openReset|
 assert.doesNotMatch(read('frontend/src/parity/admin.jsx'), /function (loadAuditLog|loadEngagement)\(/, 'Admin insights controllers must not return to production');
 assert.doesNotMatch(read('frontend/src/parity/admin.jsx'), /function (openCompliancePanel|loadComplianceSummary|loadComplianceDetail|loadMLOpsAlert|loadAdminSecuritySummary|loadEnterpriseOperations)\(/, 'Governance panels must remain React-owned');
 assert.doesNotMatch(read('frontend/src/parity/dashboard.jsx'), /function (renderPfKpis|renderPfHeatmap|renderPfLeague|renderPfPicker|renderPfEmployerOptions|renderPortfolioBody)\(/, 'Portfolio rendering must remain React-owned');
-for(const file of ['Portfolio','Wellness','AdminInsights','AdminGovernance','EnterpriseOperations','AdminReset','AdminIntegration','AdminPartners','PartnerPreview','AdminShell','EmployerOverview'])assert.doesNotMatch(read(`frontend/src/native/${file}.jsx`), /innerHTML|renderMarkup|document\.getElementById/, `${file}: render from React state`);
+for(const file of ['EmployerCharts','DashboardDrawer','Portfolio','Wellness','AdminInsights','AdminGovernance','EnterpriseOperations','AdminReset','AdminIntegration','AdminPartners','PartnerPreview','AdminShell','EmployerOverview'])assert.doesNotMatch(read(`frontend/src/native/${file}.jsx`), /innerHTML|renderMarkup|document\.getElementById/, `${file}: render from React state`);
 assert.doesNotMatch(read('frontend/src/parity/admin.jsx'), /function (emailDraft|loadEmailSettings|saveEmailSettings|testEmailSettings|saveAutomations|runAutomationNow|loadScheduledReportsAdmin|loadEmailDeliveries)\(/, 'Email/automation controllers must not return to production');
 assert.doesNotMatch(read('frontend/src/native/AdminSettings.jsx'), /innerHTML|querySelector|document\.getElementById/, 'Native settings must render from React state');
 assert.ok(server.includes('join(PUBLIC_DIR, "react", "pages", file)'),'Canonical routes must serve built React pages');

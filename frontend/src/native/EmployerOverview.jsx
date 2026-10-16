@@ -157,7 +157,7 @@ function Icon({ index }) {
     </span>
   );
 }
-function Sparkline({ points, colour }) {
+export function Sparkline({ points, colour }) {
   if (
     !Array.isArray(points) ||
     points.length < 2 ||
@@ -197,7 +197,7 @@ function Sparkline({ points, colour }) {
     </svg>
   );
 }
-function AnimatedNumber({ target, decimals = 0, index, refresh }) {
+export function AnimatedNumber({ target, decimals = 0, index, refresh }) {
   const [value, setValue] = useState(0);
   useEffect(() => {
     let frame;

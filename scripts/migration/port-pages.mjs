@@ -82,7 +82,15 @@ for(const file of fs.readdirSync('public').filter(x=>x.endsWith('.html'))){
   if(n.nodeName==='#comment'||n.tagName==='script')return '';
   if(n.nodeName==='#text')return n.value?`{siteText(${json(n.value)})}`:'';
   if(!n.tagName)return '';
+  if(name==='dashboard'&&n.tagName==='section'&&n.attrs?.some(a=>a.name==='data-section'&&a.value==='voiceOfEmployee'))return '<EmployeeChat/>';
   if(name==='dashboard'){const id=n.attrs?.find(a=>a.name==='id')?.value;const components={'exec-summary':'ExecSummary','kpis':'EmployerKpis','funnel':'EngagementFunnel','value-strip':'ValueStrip'};if(components[id])return `<div id="${id}"${id==='kpis'?' className="grid g-4"':id==='funnel'?' className="funnel"':''}><${components[id]}/></div>`;}
+  if(name==='dashboard'){
+   const id=n.attrs?.find(a=>a.name==='id')?.value;
+   const charts={'executive-insight':'ExecutiveInsight','data-trust':'DataTrust','outcomes':'Outcomes','outcomes-note':'OutcomesNote','savings-chart':'SavingsChart','ewa-chart':'EwaChart','ewa-kpis':'EwaKpis','region-bars':'Regions','stress-strip':'StressMap','income-donut':'Income','ratings':'Ratings','debt-states':'DebtStates','prescription':'Prescription','risk-signals':'RiskSignals','opportunities':'Opportunities'};
+   if(id==='debt-profile')return '<DebtProfile/>';
+   if(id==='creditor-table')return '';
+   if(charts[id]){const attrs=(n.attrs||[]).filter(a=>a.name!=='style').map(a=>` ${attrName(a.name)}=${json(a.value)}`).join('');return `<${n.tagName}${attrs}><${charts[id]}/></${n.tagName}>`;}
+  }
   if(name==='dashboard'&&n.attrs?.some(a=>a.name==='id'&&a.value==='wellness'))return '<div id="wellness"><Wellness/></div>';
   if(name==='dashboard'&&!portfolioLayout&&n.attrs?.some(a=>a.name==='id'&&a.value==='portfolio-view'))return '<div id="portfolio-view" style={{display:"none"}}><Portfolio/></div>';
   if(portfolioLayout&&n.attrs?.some(a=>a.name==='data-metric'&&a.value==='measureGuide'))return '{state.guide}';
@@ -329,7 +337,20 @@ for(const file of fs.readdirSync('public').filter(x=>x.endsWith('.html'))){
   controllerSource=controllerSource.replace('renderWellness,renderKPIs,renderFunnel,renderOutcomes,renderValueStrip,','renderWellness,renderOutcomes,').replace('renderKPIs(); renderFunnel(); renderOutcomes(); renderValueStrip();','renderOutcomes();');
   controllerSource=controllerSource.replace("['exec-summary','kpis','funnel','outcomes','value-strip'","['outcomes'").replace('  updateWellness(null);','  updateWellness(null);\n  updateEmployerOverview(null);');
   controllerSource=controllerSource.replace(/    const ep0=.*\n    if\(ep0\).*;\n/g,'').replace(/  const ep=document\.getElementById\('exec-period'\); if\(ep\).*;\n/g,'');
-  controllerSource+="\nfunction renderExec(){updateEmployerOverview({exec:DATA.exec,wellness:DATA.wellness,kpis:DATA.kpis,funnel:DATA.funnel,valueStrip:DATA.valueStrip,live:window.__LIVE__,period:window.__LIVE__?(DATA.filterContext?.label||'Latest'):PERIOD[STATE.period].label,comparison:DATA.filterContext?.comparison?.label,definitions:EMPLOYER_METRIC_INFO,keys:{exec:(DATA.exec?.items||[]).map(item=>employerMetricKey(item.l)),funnel:(DATA.funnel||[]).map(item=>employerMetricKey(item.label)),value:(DATA.valueStrip||[]).map(item=>employerMetricKey(item.l))},fit:()=>requestAnimationFrame(()=>fitResponsiveDataValues())});}\n";
+  const drawerStart=controllerSource.indexOf('/* ─────── drill-down drawer'),drawerEnd=controllerSource.indexOf('/* ─────── toast',drawerStart);
+  if(drawerStart<0||drawerEnd<0)throw new Error('Missing drawer migration boundary');
+  controllerSource=controllerSource.slice(0,drawerStart)+controllerSource.slice(drawerEnd);
+  const chatStart=controllerSource.indexOf('const JOURNEY_COLOR ='),chatEnd=controllerSource.indexOf('/* ─────────────────── footnote',chatStart);
+  if(chatStart<0||chatEnd<0)throw new Error('Missing chat migration boundary');
+  controllerSource=controllerSource.slice(0,chatStart)+controllerSource.slice(chatEnd);
+  const chartNames=['renderExecutiveInsight','renderDataTrust','renderChat','countUp','renderOutcomes','renderPeriodLineChart','getMonthFinancialComparison','renderSavings','renderEwa','renderDebtProfile','renderCreditors','renderRegions','renderStressMap','renderIncome','renderRatings','renderDebtStates','renderPrescription','renderRiskSignals','renderOpportunities'];
+  const chartFunctions=parse(controllerSource,{sourceType:'script'}).program.body.filter(n=>n.type==='FunctionDeclaration'&&chartNames.includes(n.id.name));
+  for(const node of chartFunctions.reverse())controllerSource=controllerSource.slice(0,node.start)+controllerSource.slice(node.end);
+  for(const name of chartNames)controllerSource=controllerSource.replace(new RegExp('\\b'+name+'\\(\\);?','g'),'').replace(new RegExp('\\b'+name+',','g'),'');
+  for(const name of chartNames)controllerSource=controllerSource.replace(new RegExp(',\\s*'+name+'(?=\\])','g'),'');
+  const clearFunction=parse(controllerSource,{sourceType:'script'}).program.body.find(n=>n.type==='FunctionDeclaration'&&n.id.name==='clearAll');
+  controllerSource=controllerSource.slice(0,clearFunction.start)+"function clearAll(){updateWellness(null);updateEmployerOverview(null);updateEmployerCharts(null);}\n"+controllerSource.slice(clearFunction.end);
+  controllerSource+="\nfunction renderExec(){updateEmployerCharts({...DATA,live:window.__LIVE__,sentimentColours:Object.fromEntries((DATA.chat?.byJourney||[]).map(j=>[j.key,brandSeries(Math.round(j.sentiment/20))])),definitions:EMPLOYER_METRIC_INFO,colours:Array.from({length:Math.max(DATA.debtProfile?.length||0,DATA.income?.length||0)},(_,i)=>brandSeries(i)),keys:{stress:(DATA.stressMap||[]).map(item=>employerMetricKey(item.l))},fit:()=>requestAnimationFrame(()=>fitResponsiveDataValues())});updateEmployerOverview({exec:DATA.exec,wellness:DATA.wellness,kpis:DATA.kpis,funnel:DATA.funnel,valueStrip:DATA.valueStrip,live:window.__LIVE__,period:window.__LIVE__?(DATA.filterContext?.label||'Latest'):PERIOD[STATE.period].label,comparison:DATA.filterContext?.comparison?.label,definitions:EMPLOYER_METRIC_INFO,keys:{exec:(DATA.exec?.items||[]).map(item=>employerMetricKey(item.l)),funnel:(DATA.funnel||[]).map(item=>employerMetricKey(item.label)),value:(DATA.valueStrip||[]).map(item=>employerMetricKey(item.l))},fit:()=>requestAnimationFrame(()=>fitResponsiveDataValues())});}\n";
 
  }
  const control=name==='admin'?'':transform(controllerSource);
@@ -340,6 +361,7 @@ for(const file of fs.readdirSync('public').filter(x=>x.endsWith('.html'))){
  if(name==='admin')fs.writeFileSync(`${out}/${name}.jsx`,code.replace("import React from 'react';", "import React from 'react';\nimport {AdminEmailPanel,AdminAutomationPanel} from '../native/AdminSettings.jsx';\nimport {AdminSections} from '../native/AdminSections.jsx';\nimport {ReportPicker,ReportWorkspace,ImportHistoryRows,initializeReports,refreshImportHistory} from '../native/AdminReports.jsx';"));
  const native=fs.existsSync(`frontend/src/native/${name}.jsx`);
  if(name==='admin')fs.writeFileSync(`${out}/${name}.jsx`,fs.readFileSync(`${out}/${name}.jsx`,'utf8').replace("import React from 'react';","import React from 'react';\nimport {AdminPartners} from '../native/AdminPartners.jsx';\nimport {AdminIntegration,setIntegrationMode as setIntegMode,refreshIntegration} from '../native/AdminIntegration.jsx';\nimport {AdminReset,configureResetRefresh} from '../native/AdminReset.jsx';\nimport {EnterpriseOperations} from '../native/EnterpriseOperations.jsx';"));
+ if(name==='dashboard')fs.writeFileSync(`${out}/${name}.jsx`,fs.readFileSync(`${out}/${name}.jsx`,'utf8').replace("import React from 'react';","import React from 'react';\nimport {ExecutiveInsight,DataTrust,EmployeeChat,Outcomes,OutcomesNote,SavingsChart,EwaChart,EwaKpis,DebtProfile,Regions,StressMap,Income,Ratings,DebtStates,Prescription,RiskSignals,Opportunities,updateEmployerCharts} from '../native/EmployerCharts.jsx';"));
  if(name==='dashboard')fs.writeFileSync(`${out}/${name}.jsx`,fs.readFileSync(`${out}/${name}.jsx`,'utf8').replace("import React from 'react';","import React from 'react';\nimport {ExecSummary,EmployerKpis,EngagementFunnel,ValueStrip,updateEmployerOverview} from '../native/EmployerOverview.jsx';\nimport {Wellness,updateWellness} from '../native/Wellness.jsx';"));
  if(name==='admin')fs.writeFileSync(`${out}/${name}.jsx`,fs.readFileSync(`${out}/${name}.jsx`,'utf8').replace("import React from 'react';","import React from 'react';\nimport {AdminSecurity,Compliance,MLOpsAlert,refreshGovernance} from '../native/AdminGovernance.jsx';"));
  if(name==='admin')fs.writeFileSync(`${out}/${name}.jsx`,fs.readFileSync(`${out}/${name}.jsx`,'utf8').replace("import React from 'react';","import React from 'react';\nimport {AuditRows,Engagement} from '../native/AdminInsights.jsx';"));

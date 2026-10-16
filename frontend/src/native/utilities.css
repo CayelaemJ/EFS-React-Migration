@@ -5,3 +5,7 @@
 @source "./";
 /* Match source missing-feed labels after React serializes inline colours. */
 html.portal-dark .overview-unavailable{color:var(--grey-l)!important;}
+
+.chart-inline-muted{color:var(--chart-debt)!important;}
+html.portal-dark .chart-inline-muted{color:var(--grey-l)!important;}
+@media(max-width:640px){.prescription-summary{flex-wrap:wrap;}}

@@ -2,6 +2,7 @@
 import React from 'react';
 import {ExecSummary,EmployerKpis,EngagementFunnel,ValueStrip,updateEmployerOverview} from '../native/EmployerOverview.jsx';
 import {Wellness,updateWellness} from '../native/Wellness.jsx';
+import {ExecutiveInsight,DataTrust,EmployeeChat,Outcomes,OutcomesNote,SavingsChart,EwaChart,EwaKpis,DebtProfile,Regions,StressMap,Income,Ratings,DebtStates,Prescription,RiskSignals,Opportunities,updateEmployerCharts} from '../native/EmployerCharts.jsx';
 import {Portfolio,updatePortfolio} from '../native/Portfolio.jsx';
 import {showQuickActions,showScheduleReport} from '../native/DashboardDialogs.jsx';
 import BrandEngine from '../lib/brand-engine.js';
@@ -19,7 +20,7 @@ export function Page(){return <>{siteText("\n\n")}
 {siteText("\n")}
 <div className={siteText("topbar")}>{siteText("\n  ")}<div className={siteText("topbar-inner")}>{siteText("\n    ")}<div className={siteText("logo portal-brand-lockup")} id={siteText("portal-brand-lockup")}>{siteText("\n      ")}<div className={siteText("portal-brand-default")} id={siteText("portal-brand-default")}>{siteText("\n        ")}<img src={siteText("/static/the-fixer-logo.svg?v=6")} className={siteText("efs-brand-logo")} alt={siteText("The Fixer")}/>{siteText("\n      ")}</div>{siteText("\n      ")}<div className={siteText("portal-brand-partner")} id={siteText("portal-brand-partner")} hidden={true}>{siteText("\n        ")}<div className={siteText("portal-partner-mark")}>{siteText("\n          ")}<img id={siteText("portal-partner-logo")} alt={siteText("")}/>{siteText("\n          ")}<span id={siteText("channel-brand-name")} className={siteText("portal-partner-name")}/>{siteText("\n        ")}</div>{siteText("\n      ")}</div>{siteText("\n    ")}</div>{siteText("\n    ")}<div className={siteText("topbar-divider")}/>{siteText("\n    ")}<div className={siteText("audience-switch")} id={siteText("audience-switch")}>{siteText("\n      ")}<button className={siteText("on")} data-a={siteText("employer")}>{siteText("Employer view")}</button>{siteText("\n      ")}<button data-a={siteText("portfolio")}>{siteText("Portfolio view")}</button>{siteText("\n    ")}</div>{siteText("\n    ")}<div className={siteText("topbar-spacer")}/>{siteText("\n    ")}<div className={siteText("topbar-meta")}>{siteText("\n      ")}<div className={siteText("data-fresh")}><span className={siteText("dot")}/>{siteText(" ")}<span id={siteText("data-fresh-label")}>{siteText("Loading…")}</span></div>{siteText("\n      ")}<div id={siteText("role-indicator")} className={siteText("role-indicator")} aria-label={siteText("Current access role")}/>{siteText("\n      ")}<div id={siteText("portal-account")}/>{siteText("\n    ")}</div>{siteText("\n  ")}</div>{siteText("\n")}</div>
 {siteText("\n\n")}
-<div className={siteText("wrap")}>{siteText("\n\n  ")}<div className={siteText("pdf-print-header")} aria-hidden={siteText("true")}>{siteText("\n    ")}<div className={siteText("pdf-brand")}>{siteText("\n      ")}<img src={siteText("/static/the-fixer-logo.svg?v=6")} className={siteText("efs-brand-logo")} alt={siteText("The Fixer logo")}/>{siteText("\n      ")}<div>{siteText("\n        ")}<div className={siteText("pdf-kicker")}>{siteText("empower-fin · Workforce Financial Wellbeing")}</div>{siteText("\n        ")}<div className={siteText("pdf-title")} id={siteText("pdf-report-title")}>{siteText("Employer Insights")}</div>{siteText("\n      ")}</div>{siteText("\n    ")}</div>{siteText("\n    ")}<div className={siteText("pdf-meta")}>{siteText("\n      ")}<div id={siteText("pdf-report-period")}>{siteText("Reporting period")}</div>{siteText("\n      ")}<div id={siteText("pdf-report-generated")}/>{siteText("\n      ")}<span className={siteText("pdf-score")} id={siteText("pdf-report-score")}>{siteText("Workforce Financial Wellness Score Not available")}</span>{siteText("\n    ")}</div>{siteText("\n  ")}</div>{siteText("\n\n  ")}<div id={siteText("employer-view")}>{siteText("\n\n  ")}{siteText("\n  ")}<div className={siteText("head")}>{siteText("\n    ")}<div>{siteText("\n      ")}<div className={siteText("head-eyebrow")}>{siteText("Employer Insights · Financial Wellbeing Programme")}</div>{siteText("\n      ")}<h1>{siteText("Your workforce ")}<span className={siteText("emp")}/></h1>{siteText("\n      ")}<div className={siteText("head-sub")}>{siteText("How the financial wellbeing programme is landing across your workforce Not available who is using it, the outcomes achieved, and how employees rate the service.")}</div>{siteText("\n      ")}<div id={siteText("ctx-sub")} style={{"fontSize":"12px","fontWeight":"700","color":"var(--blue-d)","marginTop":"10px","letterSpacing":".01em"}} ref={node => { if(node) node.setAttribute("style", "font-size:12px;font-weight:700;color:var(--blue-d);margin-top:10px;letter-spacing:.01em;"); }}>{siteText("Programme to date")}</div>{siteText("\n    ")}</div>{siteText("\n    ")}<div className={siteText("head-actions")}>{siteText("\n      ")}<button className={siteText("btn")} id={siteText("btn-schedule")}>{siteText("Schedule report")}</button>{siteText("\n      ")}<button className={siteText("btn btn-primary")} id={siteText("btn-export")}>{siteText("Export PDF")}</button>{siteText("\n    ")}</div>{siteText("\n  ")}</div>{siteText("\n\n  ")}{siteText("\n  ")}<div className={siteText("filters")}>{siteText("\n    ")}<select className={siteText("filter-emp")} id={siteText("employer-select")} style={{"display":"none"}} ref={node => { if(node) node.setAttribute("style", "display:none;"); }} onChange={event => actions[0]?.(event)}/>{siteText("\n    ")}<label className={siteText("period-picker-label")} htmlFor={siteText("month-select")}>{siteText("Reporting period")}</label>{siteText("\n    ")}<select className={siteText("filter-month")} id={siteText("month-select")} aria-label={siteText("Reporting period")} onChange={event => actions[1]?.(event)}>{siteText("\n      ")}<option value={siteText("")}>{siteText("Latest available period")}</option>{siteText("\n      ")}<option value={siteText("30d")}>{siteText("Last 30 days")}</option>{siteText("\n      ")}<option value={siteText("qtd")}>{siteText("Quarter to date")}</option>{siteText("\n      ")}<option value={siteText("all")}>{siteText("Programme to date")}</option>{siteText("\n    ")}</select>{siteText("\n    ")}<span className={siteText("filter-tag interactive")} id={siteText("region-filter")}>{siteText("\n      ")}<svg width={siteText("13")} height={siteText("13")} viewBox={siteText("0 0 24 24")} fill={siteText("none")}><path d={siteText("M3 6h18M6 12h12M10 18h4")} stroke={siteText("currentColor")} strokeWidth={siteText("2")} strokeLinecap={siteText("round")}/></svg>{siteText("\n      ")}<span className={siteText("tag-label")}>{siteText("All regions")}</span>{siteText("\n      ")}<svg className={siteText("caret")} width={siteText("11")} height={siteText("11")} viewBox={siteText("0 0 24 24")} fill={siteText("none")}><path d={siteText("M6 9l6 6 6-6")} stroke={siteText("currentColor")} strokeWidth={siteText("2.4")} strokeLinecap={siteText("round")} strokeLinejoin={siteText("round")}/></svg>{siteText("\n    ")}</span>{siteText("\n    ")}<span className={siteText("filter-tag interactive")} id={siteText("income-filter")}>{siteText("\n      ")}<svg width={siteText("13")} height={siteText("13")} viewBox={siteText("0 0 24 24")} fill={siteText("none")}><path d={siteText("M3 6h18M6 12h12M10 18h4")} stroke={siteText("currentColor")} strokeWidth={siteText("2")} strokeLinecap={siteText("round")}/></svg>{siteText("\n      ")}<span className={siteText("tag-label")}>{siteText("All income bands")}</span>{siteText("\n      ")}<svg className={siteText("caret")} width={siteText("11")} height={siteText("11")} viewBox={siteText("0 0 24 24")} fill={siteText("none")}><path d={siteText("M6 9l6 6 6-6")} stroke={siteText("currentColor")} strokeWidth={siteText("2.4")} strokeLinecap={siteText("round")} strokeLinejoin={siteText("round")}/></svg>{siteText("\n    ")}</span>{siteText("\n    ")}<span className={siteText("filter-tag")} id={siteText("emp-tag")}>{siteText("\n      ")}<svg width={siteText("13")} height={siteText("13")} viewBox={siteText("0 0 24 24")} fill={siteText("none")}><circle cx={siteText("12")} cy={siteText("8")} r={siteText("4")} stroke={siteText("currentColor")} strokeWidth={siteText("2")}/><path d={siteText("M4 20c0-3.3 3.6-6 8-6s8 2.7 8 6")} stroke={siteText("currentColor")} strokeWidth={siteText("2")} strokeLinecap={siteText("round")}/></svg>{siteText("\n      Not available enrolled\n    ")}</span>{siteText("\n  ")}</div>{siteText("\n\n  ")}<div className={siteText("enterprise-toolbar")} aria-label={siteText("Dashboard tools")}>{siteText("\n    ")}<div id={siteText("executive-insight")}/>{siteText("\n    ")}<div className={siteText("enterprise-toolbar-actions")}>{siteText("\n      ")}<button className={siteText("btn")} id={siteText("btn-save-view")} type={siteText("button")}>{siteText("Save view")}</button>{siteText("\n      ")}<button className={siteText("btn")} id={siteText("btn-command")} type={siteText("button")}>{siteText("Quick actions ")}<span className={siteText("kbd")}>{siteText("Ctrl K")}</span></button>{siteText("\n    ")}</div>{siteText("\n    ")}<div id={siteText("data-trust")}/>{siteText("\n  ")}</div>{siteText("\n  ")}{siteText("\n  ")}<div id="exec-summary"><ExecSummary/></div>{siteText("\n\n  ")}{siteText("\n  ")}<div className={siteText("card reveal wellness-card section-gap")} style={{"animationDelay":".04s"}} ref={node => { if(node) node.setAttribute("style", "animation-delay:.04s"); }}>{siteText("\n    ")}<div className={siteText("card-hd")}>{siteText("\n      ")}<div>{siteText("\n        ")}<div className={siteText("card-title")}>{siteText("Workforce Financial Wellness Score ")}<button type={siteText("button")} className={siteText("metric-info")} data-metric={siteText("wellness")} aria-label={siteText("What is the Workforce Financial Wellness Score?")}>{siteText("i")}</button></div>{siteText("\n        ")}<div className={siteText("card-note")}>{siteText("The single number that tracks your people's financial health Not available and its trajectory")}</div>{siteText("\n      ")}</div>{siteText("\n      ")}<span className={siteText("card-tag")}>{siteText("Index · modelled")}</span>{siteText("\n    ")}</div>{siteText("\n    ")}<div id="wellness"><Wellness/></div>{siteText("\n  ")}</div>{siteText("\n\n  ")}{siteText("\n  ")}<div id="kpis" className="grid g-4"><EmployerKpis/></div>{siteText("\n\n  ")}{siteText("\n  ")}<div className={siteText("grid g-12 section-gap")}>{siteText("\n    ")}<div className={siteText("card reveal")} style={{"gridColumn":"span 7","animationDelay":".05s"}} ref={node => { if(node) node.setAttribute("style", "grid-column:span 7;animation-delay:.05s"); }}>{siteText("\n      ")}<div className={siteText("card-hd")}>{siteText("\n        ")}<div>{siteText("\n          ")}<div className={siteText("card-title")}>{siteText("From enrolled to better off ")}<button type={siteText("button")} className={siteText("metric-info")} data-metric={siteText("funnel")} aria-label={siteText("What is the engagement funnel?")}>{siteText("i")}</button></div>{siteText("\n          ")}<div className={siteText("card-note")}>{siteText("The journey every employee can take Not available and where they are on it")}</div>{siteText("\n        ")}</div>{siteText("\n        ")}<span className={siteText("card-tag")}>{siteText("Engagement funnel")}</span>{siteText("\n      ")}</div>{siteText("\n      ")}<div id="funnel" className="funnel"><EngagementFunnel/></div>{siteText("\n    ")}</div>{siteText("\n    ")}<div className={siteText("card reveal")} style={{"gridColumn":"span 5","animationDelay":".1s"}} ref={node => { if(node) node.setAttribute("style", "grid-column:span 5;animation-delay:.1s"); }}>{siteText("\n      ")}<div className={siteText("card-hd")}>{siteText("\n        ")}<div>{siteText("\n          ")}<div className={siteText("card-title")}>{siteText("Financial problems resolved ")}<button type={siteText("button")} className={siteText("metric-info")} data-metric={siteText("outcomes")} aria-label={siteText("What are financial problems resolved?")}>{siteText("i")}</button></div>{siteText("\n          ")}<div className={siteText("card-note")} id={siteText("outcomes-note")}>{siteText("Financial problems resolved Not available and the value created")}</div>{siteText("\n        ")}</div>{siteText("\n        ")}<span className={siteText("card-tag")}>{siteText("Outcomes")}</span>{siteText("\n      ")}</div>{siteText("\n      ")}<div id={siteText("outcomes")}/>{siteText("\n    ")}</div>{siteText("\n  ")}</div>{siteText("\n\n  ")}{siteText("\n  ")}<section className={siteText("dash-section")} data-section={siteText("valueDelivered")}>{siteText("\n  ")}<div className={siteText("head")} style={{"padding":"36px 0 14px"}} ref={node => { if(node) node.setAttribute("style", "padding:36px 0 14px;"); }}>{siteText("\n    ")}<div>{siteText("\n      ")}<div className={siteText("head-eyebrow")}>{siteText("The bottom line")}</div>{siteText("\n      ")}<h1 style={{"fontSize":"27px"}} ref={node => { if(node) node.setAttribute("style", "font-size:27px;"); }}>{siteText("Value delivered to your people")}</h1>{siteText("\n    ")}</div>{siteText("\n  ")}</div>{siteText("\n  ")}<div id="value-strip"><ValueStrip/></div>{siteText("\n\n  ")}<div className={siteText("grid g-12 section-gap")}>{siteText("\n    ")}<div className={siteText("card reveal")} style={{"gridColumn":"span 5","animationDelay":".05s"}} ref={node => { if(node) node.setAttribute("style", "grid-column:span 5;animation-delay:.05s"); }}>{siteText("\n      ")}<div className={siteText("card-hd")}>{siteText("\n        ")}<div>{siteText("\n          ")}<div className={siteText("card-title")}>{siteText("Monthly cash freed up ")}<button type={siteText("button")} className={siteText("metric-info")} data-metric={siteText("saving")} aria-label={siteText("What is monthly cash freed up?")}>{siteText("i")}</button></div>{siteText("\n          ")}<div className={siteText("card-note")}>{siteText("Recurring savings unlocked, cumulative run-rate")}</div>{siteText("\n        ")}</div>{siteText("\n        ")}<span className={siteText("card-tag")}>{siteText("Run-rate")}</span>{siteText("\n      ")}</div>{siteText("\n      ")}<div id={siteText("savings-chart")}/>{siteText("\n    ")}</div>{siteText("\n\n    ")}<div className={siteText("card reveal")} style={{"gridColumn":"span 7","animationDelay":".1s"}} ref={node => { if(node) node.setAttribute("style", "grid-column:span 7;animation-delay:.1s"); }}>{siteText("\n      ")}<div className={siteText("card-hd")}>{siteText("\n        ")}<div>{siteText("\n          ")}<div className={siteText("card-title")}>{siteText("Debt Pressure Profile ")}<button type={siteText("button")} className={siteText("metric-info")} data-metric={siteText("debtProfile")} aria-label={siteText("What is the Debt Pressure Profile?")}>{siteText("i")}</button></div>{siteText("\n          ")}<div className={siteText("card-note")}>{siteText("Where your people's arrears sit Not available by credit type, then by creditor")}</div>{siteText("\n        ")}</div>{siteText("\n        ")}<span className={siteText("card-tag")}>{siteText("Arrears journey")}</span>{siteText("\n      ")}</div>{siteText("\n      ")}<div id={siteText("debt-profile")}/>{siteText("\n      ")}<div id={siteText("creditor-table")} style={{"marginTop":"18px"}} ref={node => { if(node) node.setAttribute("style", "margin-top:18px"); }}/>{siteText("\n    ")}</div>{siteText("\n  ")}</div>{siteText("\n  ")}</section>{siteText("\n\n  ")}{siteText("\n  ")}<section className={siteText("dash-section")} data-section={siteText("earlyWageAccess")}>{siteText("\n  ")}<div className={siteText("head")} style={{"padding":"36px 0 14px"}} ref={node => { if(node) node.setAttribute("style", "padding:36px 0 14px;"); }}>{siteText("\n    ")}<div>{siteText("\n      ")}<div className={siteText("eyebrow")}>{siteText("ON-DEMAND PAY")}</div>{siteText("\n      ")}<h1 style={{"fontSize":"27px"}} ref={node => { if(node) node.setAttribute("style", "font-size:27px;"); }}>{siteText("Early Wage Access")}</h1>{siteText("\n      ")}<div className={siteText("head-sub")}>{siteText("How many employees are drawing earned wages early, and how much Not available a live read on cashflow pressure between paydays.")}</div>{siteText("\n    ")}</div>{siteText("\n  ")}</div>{siteText("\n  ")}<div id={siteText("ewa-kpis")} className={siteText("grid g-4")}/>{siteText("\n  ")}<div className={siteText("grid g-12 section-gap")}>{siteText("\n    ")}<div className={siteText("card reveal")} style={{"gridColumn":"span 12"}} ref={node => { if(node) node.setAttribute("style", "grid-column:span 12;"); }}>{siteText("\n      ")}<div className={siteText("card-hd")}>{siteText("\n        ")}<div>{siteText("\n          ")}<div className={siteText("card-title")}>{siteText("Total advanced per month ")}<button type={siteText("button")} className={siteText("metric-info")} data-metric={siteText("ewaTrend")} aria-label={siteText("What is total advanced per month?")}>{siteText("i")}</button></div>{siteText("\n          ")}<div className={siteText("card-note")}>{siteText("Finalised advances only · monthly run-rate")}</div>{siteText("\n        ")}</div>{siteText("\n        ")}<span className={siteText("card-tag")}>{siteText("Trend")}</span>{siteText("\n      ")}</div>{siteText("\n      ")}<div id={siteText("ewa-chart")}/>{siteText("\n    ")}</div>{siteText("\n  ")}</div>{siteText("\n  ")}</section>{siteText("\n\n  ")}<section className={siteText("dash-section")} data-section={siteText("stressMap")}>{siteText("\n  ")}<div className={siteText("head")} style={{"padding":"36px 0 14px"}} ref={node => { if(node) node.setAttribute("style", "padding:36px 0 14px;"); }}>{siteText("\n    ")}<div>{siteText("\n      ")}<div className={siteText("head-eyebrow")}>{siteText("Where the pressure sits")}</div>{siteText("\n      ")}<h1 style={{"fontSize":"27px"}} ref={node => { if(node) node.setAttribute("style", "font-size:27px;"); }}>{siteText("Workforce Financial Stress Map")}</h1>{siteText("\n      ")}<div className={siteText("head-sub")}>{siteText("Financial pressure is not evenly spread. This is where it concentrates Not available so you and your broker can direct the programme to the people and sites that need it most.")}</div>{siteText("\n    ")}</div>{siteText("\n  ")}</div>{siteText("\n\n  ")}<div id={siteText("stress-strip")} className={siteText("section-gap")} style={{"marginTop":"0"}} ref={node => { if(node) node.setAttribute("style", "margin-top:0"); }}/>{siteText("\n\n  ")}<div className={siteText("grid g-12 section-gap")}>{siteText("\n    ")}<div className={siteText("card reveal")} style={{"gridColumn":"span 4","animationDelay":".05s"}} ref={node => { if(node) node.setAttribute("style", "grid-column:span 4;animation-delay:.05s"); }}>{siteText("\n      ")}<div className={siteText("card-hd")}>{siteText("\n        ")}<div><div className={siteText("card-title")}>{siteText("Stress index by site ")}<button type={siteText("button")} className={siteText("metric-info")} data-metric={siteText("stressBySite")} aria-label={siteText("What is the stress index by site?")}>{siteText("i")}</button></div><div className={siteText("card-note")}>{siteText("Higher = more financial pressure (arrears, debt load, low resilience)")}</div></div>{siteText("\n        ")}<span className={siteText("card-tag")}>{siteText("By site")}</span>{siteText("\n      ")}</div>{siteText("\n      ")}<div id={siteText("region-bars")} className={siteText("hbar")}/>{siteText("\n    ")}</div>{siteText("\n\n    ")}<div className={siteText("card reveal")} style={{"gridColumn":"span 4","animationDelay":".1s"}} ref={node => { if(node) node.setAttribute("style", "grid-column:span 4;animation-delay:.1s"); }}>{siteText("\n      ")}<div className={siteText("card-hd")}>{siteText("\n        ")}<div><div className={siteText("card-title")}>{siteText("Who the programme is reaching ")}<button type={siteText("button")} className={siteText("metric-info")} data-metric={siteText("incomeReach")} aria-label={siteText("What is reach by income band?")}>{siteText("i")}</button></div><div className={siteText("card-note")}>{siteText("Activated employees by income band")}</div></div>{siteText("\n      ")}</div>{siteText("\n      ")}<div id={siteText("income-donut")}/>{siteText("\n    ")}</div>{siteText("\n\n    ")}<div className={siteText("card reveal")} style={{"gridColumn":"span 4","animationDelay":".15s"}} ref={node => { if(node) node.setAttribute("style", "grid-column:span 4;animation-delay:.15s"); }}>{siteText("\n      ")}<div className={siteText("card-hd")}>{siteText("\n        ")}<div><div className={siteText("card-title")}>{siteText("How employees rate us ")}<button type={siteText("button")} className={siteText("metric-info")} data-metric={siteText("rating")} aria-label={siteText("What is the employee experience rating?")}>{siteText("i")}</button></div><div className={siteText("card-note")}>{siteText("From end-of-journey ratings")}</div></div>{siteText("\n        ")}<span className={siteText("card-tag")}>{siteText("Experience")}</span>{siteText("\n      ")}</div>{siteText("\n      ")}<div id={siteText("ratings")}/>{siteText("\n    ")}</div>{siteText("\n  ")}</div>{siteText("\n  ")}</section>{siteText("\n\n  ")}{siteText("\n  ")}<section className={siteText("dash-section")} data-section={siteText("problemDebt")}>{siteText("\n  ")}<div className={siteText("head")} style={{"padding":"36px 0 14px"}} ref={node => { if(node) node.setAttribute("style", "padding:36px 0 14px;"); }}>{siteText("\n    ")}<div>{siteText("\n      ")}<div className={siteText("head-eyebrow")}>{siteText("Tackling problem debt")}</div>{siteText("\n      ")}<h1 style={{"fontSize":"27px"}} ref={node => { if(node) node.setAttribute("style", "font-size:27px;"); }}>{siteText("How problem debt is being handled")}</h1>{siteText("\n      ")}<div className={siteText("head-sub")}>{siteText("Not all distressed debt is dealt with the same way. Here is exactly what is happening to each rand Not available and we are precise about which debt is under active arrangement versus self-managed with our guidance.")}</div>{siteText("\n    ")}</div>{siteText("\n  ")}</div>{siteText("\n  ")}<div className={siteText("card reveal section-gap")} style={{"marginTop":"0","animationDelay":".04s"}} ref={node => { if(node) node.setAttribute("style", "margin-top:0;animation-delay:.04s"); }}>{siteText("\n    ")}<div className={siteText("card-hd")}>{siteText("\n      ")}<div>{siteText("\n        ")}<div className={siteText("card-title")}>{siteText("Problem debt by how it's being handled ")}<button type={siteText("button")} className={siteText("metric-info")} data-metric={siteText("debtStates")} aria-label={siteText("How is problem debt being handled?")}>{siteText("i")}</button></div>{siteText("\n        ")}<div className={siteText("card-note")}>{siteText("Three honest states Not available only the first is an active arrangement")}</div>{siteText("\n      ")}</div>{siteText("\n      ")}<span className={siteText("card-tag")}>{siteText("Debt intervention")}</span>{siteText("\n    ")}</div>{siteText("\n    ")}<div id={siteText("debt-states")}/>{siteText("\n  ")}</div>{siteText("\n\n  ")}<div className={siteText("grid g-12 section-gap")}>{siteText("\n    ")}<div className={siteText("card reveal")} style={{"gridColumn":"span 7","animationDelay":".05s"}} ref={node => { if(node) node.setAttribute("style", "grid-column:span 7;animation-delay:.05s"); }}>{siteText("\n      ")}<div className={siteText("card-hd")}>{siteText("\n        ")}<div>{siteText("\n          ")}<div className={siteText("card-title")}>{siteText("Potentially prescribed debt challenged ")}<button type={siteText("button")} className={siteText("metric-info")} data-metric={siteText("prescription")} aria-label={siteText("What is prescribed debt recovery?")}>{siteText("i")}</button></div>{siteText("\n          ")}<div className={siteText("card-note")}>{siteText("Old debt employees may no longer legally owe Not available identified and contested")}</div>{siteText("\n        ")}</div>{siteText("\n        ")}<span className={siteText("card-tag")}>{siteText("Recovery")}</span>{siteText("\n      ")}</div>{siteText("\n      ")}<div id={siteText("prescription")}/>{siteText("\n    ")}</div>{siteText("\n\n    ")}<div className={siteText("card reveal")} style={{"gridColumn":"span 5","animationDelay":".1s"}} ref={node => { if(node) node.setAttribute("style", "grid-column:span 5;animation-delay:.1s"); }}>{siteText("\n      ")}<div className={siteText("card-hd")}>{siteText("\n        ")}<div>{siteText("\n          ")}<div className={siteText("card-title")}>{siteText("Financial Risk Signals ")}<button type={siteText("button")} className={siteText("metric-info")} data-metric={siteText("riskSignals")} aria-label={siteText("What are Financial Risk Signals?")}>{siteText("i")}</button></div>{siteText("\n          ")}<div className={siteText("card-note")}>{siteText("Exposure detected across your workforce Not available your early-warning list")}</div>{siteText("\n        ")}</div>{siteText("\n        ")}<span className={siteText("card-tag")}>{siteText("Diagnostic")}</span>{siteText("\n      ")}</div>{siteText("\n      ")}<div id={siteText("risk-signals")}/>{siteText("\n    ")}</div>{siteText("\n  ")}</div>{siteText("\n  ")}</section>{siteText("\n\n  ")}{siteText("\n  ")}<section className={siteText("dash-section")} data-section={siteText("opportunities")}>{siteText("\n  ")}<div className={siteText("head")} style={{"padding":"36px 0 14px"}} ref={node => { if(node) node.setAttribute("style", "padding:36px 0 14px;"); }}>{siteText("\n    ")}<div>{siteText("\n      ")}<div className={siteText("head-eyebrow")}>{siteText("What to do next")}</div>{siteText("\n      ")}<h1 style={{"fontSize":"27px"}} ref={node => { if(node) node.setAttribute("style", "font-size:27px;"); }}>{siteText("Opportunities identified")}</h1>{siteText("\n      ")}<div className={siteText("head-sub")}>{siteText("The programme has already mapped the next wave of value sitting in your workforce Not available eligible employees who haven't yet been helped.")}</div>{siteText("\n    ")}</div>{siteText("\n  ")}</div>{siteText("\n  ")}<div id={siteText("opportunities")}/>{siteText("\n  ")}</section>{siteText("\n\n  ")}{siteText("\n  ")}<section className={siteText("dash-section")} data-section={siteText("voiceOfEmployee")}>{siteText("\n  ")}<div className={siteText("head")} style={{"padding":"36px 0 14px"}} ref={node => { if(node) node.setAttribute("style", "padding:36px 0 14px;"); }}>{siteText("\n    ")}<div>{siteText("\n      ")}<div className={siteText("head-eyebrow")}>{siteText("Voice of the employee")}</div>{siteText("\n      ")}<h1 style={{"fontSize":"27px"}} ref={node => { if(node) node.setAttribute("style", "font-size:27px;"); }}>{siteText("What your people are asking")}</h1>{siteText("\n      ")}<div className={siteText("head-sub")}>{siteText("Every question asked in the in-app chat, categorised by journey. This is your early-warning system for where employees hesitate, what reassurance they need, and which objections to pre-empt.")}</div>{siteText("\n    ")}</div>{siteText("\n  ")}</div>{siteText("\n\n  ")}<div id={siteText("chat-kpis")} className={siteText("grid g-4")}/>{siteText("\n\n  ")}<div className={siteText("grid g-12 section-gap")}>{siteText("\n    ")}<div className={siteText("card reveal")} style={{"gridColumn":"span 7","animationDelay":".05s"}} ref={node => { if(node) node.setAttribute("style", "grid-column:span 7;animation-delay:.05s"); }}>{siteText("\n      ")}<div className={siteText("card-hd")}>{siteText("\n        ")}<div>{siteText("\n          ")}<div className={siteText("card-title")}>{siteText("Conversations by journey ")}<button type={siteText("button")} className={siteText("metric-info")} data-metric={siteText("chatByJourney")} aria-label={siteText("What are conversations by journey?")}>{siteText("i")}</button></div>{siteText("\n          ")}<div className={siteText("card-note")}>{siteText("Where the questions are coming from Not available click a journey for its top themes")}</div>{siteText("\n        ")}</div>{siteText("\n        ")}<span className={siteText("card-tag")} id={siteText("chat-count-tag")}>{siteText("Chat data")}</span>{siteText("\n      ")}</div>{siteText("\n      ")}<div id={siteText("chat-journeys")}/>{siteText("\n    ")}</div>{siteText("\n\n    ")}<div className={siteText("card reveal")} style={{"gridColumn":"span 5","animationDelay":".1s"}} ref={node => { if(node) node.setAttribute("style", "grid-column:span 5;animation-delay:.1s"); }}>{siteText("\n      ")}<div className={siteText("card-hd")}>{siteText("\n        ")}<div>{siteText("\n          ")}<div className={siteText("card-title")}>{siteText("Trending questions ")}<button type={siteText("button")} className={siteText("metric-info")} data-metric={siteText("chatTrending")} aria-label={siteText("What are trending questions?")}>{siteText("i")}</button></div>{siteText("\n          ")}<div className={siteText("card-note")}>{siteText("Rising across the workforce this period")}</div>{siteText("\n        ")}</div>{siteText("\n        ")}<span className={siteText("card-tag")}>{siteText("Themes")}</span>{siteText("\n      ")}</div>{siteText("\n      ")}<div id={siteText("chat-trending")}/>{siteText("\n    ")}</div>{siteText("\n  ")}</div>{siteText("\n\n  ")}<div className={siteText("card reveal section-gap")} style={{"animationDelay":".05s"}} ref={node => { if(node) node.setAttribute("style", "animation-delay:.05s"); }}>{siteText("\n    ")}<div className={siteText("card-hd")}>{siteText("\n      ")}<div>{siteText("\n        ")}<div className={siteText("card-title")} id={siteText("chat-theme-title")}>{siteText("Chat themes ")}<button type={siteText("button")} className={siteText("metric-info")} data-metric={siteText("chatThemes")} aria-label={siteText("What are chat themes?")}>{siteText("i")}</button></div>{siteText("\n        ")}<div className={siteText("card-note")} id={siteText("chat-theme-note")}>{siteText("Themes from the separate chat data source.")}</div>{siteText("\n      ")}</div>{siteText("\n      ")}<span className={siteText("card-tag")}>{siteText("Drill-down")}</span>{siteText("\n    ")}</div>{siteText("\n    ")}<div id={siteText("chat-themes")}/>{siteText("\n  ")}</div>{siteText("\n  ")}</section>{siteText("\n\n  ")}<div className={siteText("footnote")} id={siteText("footnote")}/>{siteText("\n\n ")}</div>{siteText("\n\n  ")}<div className={siteText("pdf-print-footer")} aria-hidden={siteText("true")}>{siteText("\n    empower-fin · Workforce Financial Wellbeing · Confidential employer report · Generated ")}<span id={siteText("pdf-footer-date")}/>{siteText("\n  ")}</div>{siteText("\n\n  ")}{siteText("\n  ")}<div id="portfolio-view" style={{display:"none"}}><Portfolio/></div>{siteText("\n\n")}</div>
+<div className={siteText("wrap")}>{siteText("\n\n  ")}<div className={siteText("pdf-print-header")} aria-hidden={siteText("true")}>{siteText("\n    ")}<div className={siteText("pdf-brand")}>{siteText("\n      ")}<img src={siteText("/static/the-fixer-logo.svg?v=6")} className={siteText("efs-brand-logo")} alt={siteText("The Fixer logo")}/>{siteText("\n      ")}<div>{siteText("\n        ")}<div className={siteText("pdf-kicker")}>{siteText("empower-fin · Workforce Financial Wellbeing")}</div>{siteText("\n        ")}<div className={siteText("pdf-title")} id={siteText("pdf-report-title")}>{siteText("Employer Insights")}</div>{siteText("\n      ")}</div>{siteText("\n    ")}</div>{siteText("\n    ")}<div className={siteText("pdf-meta")}>{siteText("\n      ")}<div id={siteText("pdf-report-period")}>{siteText("Reporting period")}</div>{siteText("\n      ")}<div id={siteText("pdf-report-generated")}/>{siteText("\n      ")}<span className={siteText("pdf-score")} id={siteText("pdf-report-score")}>{siteText("Workforce Financial Wellness Score Not available")}</span>{siteText("\n    ")}</div>{siteText("\n  ")}</div>{siteText("\n\n  ")}<div id={siteText("employer-view")}>{siteText("\n\n  ")}{siteText("\n  ")}<div className={siteText("head")}>{siteText("\n    ")}<div>{siteText("\n      ")}<div className={siteText("head-eyebrow")}>{siteText("Employer Insights · Financial Wellbeing Programme")}</div>{siteText("\n      ")}<h1>{siteText("Your workforce ")}<span className={siteText("emp")}/></h1>{siteText("\n      ")}<div className={siteText("head-sub")}>{siteText("How the financial wellbeing programme is landing across your workforce Not available who is using it, the outcomes achieved, and how employees rate the service.")}</div>{siteText("\n      ")}<div id={siteText("ctx-sub")} style={{"fontSize":"12px","fontWeight":"700","color":"var(--blue-d)","marginTop":"10px","letterSpacing":".01em"}} ref={node => { if(node) node.setAttribute("style", "font-size:12px;font-weight:700;color:var(--blue-d);margin-top:10px;letter-spacing:.01em;"); }}>{siteText("Programme to date")}</div>{siteText("\n    ")}</div>{siteText("\n    ")}<div className={siteText("head-actions")}>{siteText("\n      ")}<button className={siteText("btn")} id={siteText("btn-schedule")}>{siteText("Schedule report")}</button>{siteText("\n      ")}<button className={siteText("btn btn-primary")} id={siteText("btn-export")}>{siteText("Export PDF")}</button>{siteText("\n    ")}</div>{siteText("\n  ")}</div>{siteText("\n\n  ")}{siteText("\n  ")}<div className={siteText("filters")}>{siteText("\n    ")}<select className={siteText("filter-emp")} id={siteText("employer-select")} style={{"display":"none"}} ref={node => { if(node) node.setAttribute("style", "display:none;"); }} onChange={event => actions[0]?.(event)}/>{siteText("\n    ")}<label className={siteText("period-picker-label")} htmlFor={siteText("month-select")}>{siteText("Reporting period")}</label>{siteText("\n    ")}<select className={siteText("filter-month")} id={siteText("month-select")} aria-label={siteText("Reporting period")} onChange={event => actions[1]?.(event)}>{siteText("\n      ")}<option value={siteText("")}>{siteText("Latest available period")}</option>{siteText("\n      ")}<option value={siteText("30d")}>{siteText("Last 30 days")}</option>{siteText("\n      ")}<option value={siteText("qtd")}>{siteText("Quarter to date")}</option>{siteText("\n      ")}<option value={siteText("all")}>{siteText("Programme to date")}</option>{siteText("\n    ")}</select>{siteText("\n    ")}<span className={siteText("filter-tag interactive")} id={siteText("region-filter")}>{siteText("\n      ")}<svg width={siteText("13")} height={siteText("13")} viewBox={siteText("0 0 24 24")} fill={siteText("none")}><path d={siteText("M3 6h18M6 12h12M10 18h4")} stroke={siteText("currentColor")} strokeWidth={siteText("2")} strokeLinecap={siteText("round")}/></svg>{siteText("\n      ")}<span className={siteText("tag-label")}>{siteText("All regions")}</span>{siteText("\n      ")}<svg className={siteText("caret")} width={siteText("11")} height={siteText("11")} viewBox={siteText("0 0 24 24")} fill={siteText("none")}><path d={siteText("M6 9l6 6 6-6")} stroke={siteText("currentColor")} strokeWidth={siteText("2.4")} strokeLinecap={siteText("round")} strokeLinejoin={siteText("round")}/></svg>{siteText("\n    ")}</span>{siteText("\n    ")}<span className={siteText("filter-tag interactive")} id={siteText("income-filter")}>{siteText("\n      ")}<svg width={siteText("13")} height={siteText("13")} viewBox={siteText("0 0 24 24")} fill={siteText("none")}><path d={siteText("M3 6h18M6 12h12M10 18h4")} stroke={siteText("currentColor")} strokeWidth={siteText("2")} strokeLinecap={siteText("round")}/></svg>{siteText("\n      ")}<span className={siteText("tag-label")}>{siteText("All income bands")}</span>{siteText("\n      ")}<svg className={siteText("caret")} width={siteText("11")} height={siteText("11")} viewBox={siteText("0 0 24 24")} fill={siteText("none")}><path d={siteText("M6 9l6 6 6-6")} stroke={siteText("currentColor")} strokeWidth={siteText("2.4")} strokeLinecap={siteText("round")} strokeLinejoin={siteText("round")}/></svg>{siteText("\n    ")}</span>{siteText("\n    ")}<span className={siteText("filter-tag")} id={siteText("emp-tag")}>{siteText("\n      ")}<svg width={siteText("13")} height={siteText("13")} viewBox={siteText("0 0 24 24")} fill={siteText("none")}><circle cx={siteText("12")} cy={siteText("8")} r={siteText("4")} stroke={siteText("currentColor")} strokeWidth={siteText("2")}/><path d={siteText("M4 20c0-3.3 3.6-6 8-6s8 2.7 8 6")} stroke={siteText("currentColor")} strokeWidth={siteText("2")} strokeLinecap={siteText("round")}/></svg>{siteText("\n      Not available enrolled\n    ")}</span>{siteText("\n  ")}</div>{siteText("\n\n  ")}<div className={siteText("enterprise-toolbar")} aria-label={siteText("Dashboard tools")}>{siteText("\n    ")}<div id="executive-insight"><ExecutiveInsight/></div>{siteText("\n    ")}<div className={siteText("enterprise-toolbar-actions")}>{siteText("\n      ")}<button className={siteText("btn")} id={siteText("btn-save-view")} type={siteText("button")}>{siteText("Save view")}</button>{siteText("\n      ")}<button className={siteText("btn")} id={siteText("btn-command")} type={siteText("button")}>{siteText("Quick actions ")}<span className={siteText("kbd")}>{siteText("Ctrl K")}</span></button>{siteText("\n    ")}</div>{siteText("\n    ")}<div id="data-trust"><DataTrust/></div>{siteText("\n  ")}</div>{siteText("\n  ")}{siteText("\n  ")}<div id="exec-summary"><ExecSummary/></div>{siteText("\n\n  ")}{siteText("\n  ")}<div className={siteText("card reveal wellness-card section-gap")} style={{"animationDelay":".04s"}} ref={node => { if(node) node.setAttribute("style", "animation-delay:.04s"); }}>{siteText("\n    ")}<div className={siteText("card-hd")}>{siteText("\n      ")}<div>{siteText("\n        ")}<div className={siteText("card-title")}>{siteText("Workforce Financial Wellness Score ")}<button type={siteText("button")} className={siteText("metric-info")} data-metric={siteText("wellness")} aria-label={siteText("What is the Workforce Financial Wellness Score?")}>{siteText("i")}</button></div>{siteText("\n        ")}<div className={siteText("card-note")}>{siteText("The single number that tracks your people's financial health Not available and its trajectory")}</div>{siteText("\n      ")}</div>{siteText("\n      ")}<span className={siteText("card-tag")}>{siteText("Index · modelled")}</span>{siteText("\n    ")}</div>{siteText("\n    ")}<div id="wellness"><Wellness/></div>{siteText("\n  ")}</div>{siteText("\n\n  ")}{siteText("\n  ")}<div id="kpis" className="grid g-4"><EmployerKpis/></div>{siteText("\n\n  ")}{siteText("\n  ")}<div className={siteText("grid g-12 section-gap")}>{siteText("\n    ")}<div className={siteText("card reveal")} style={{"gridColumn":"span 7","animationDelay":".05s"}} ref={node => { if(node) node.setAttribute("style", "grid-column:span 7;animation-delay:.05s"); }}>{siteText("\n      ")}<div className={siteText("card-hd")}>{siteText("\n        ")}<div>{siteText("\n          ")}<div className={siteText("card-title")}>{siteText("From enrolled to better off ")}<button type={siteText("button")} className={siteText("metric-info")} data-metric={siteText("funnel")} aria-label={siteText("What is the engagement funnel?")}>{siteText("i")}</button></div>{siteText("\n          ")}<div className={siteText("card-note")}>{siteText("The journey every employee can take Not available and where they are on it")}</div>{siteText("\n        ")}</div>{siteText("\n        ")}<span className={siteText("card-tag")}>{siteText("Engagement funnel")}</span>{siteText("\n      ")}</div>{siteText("\n      ")}<div id="funnel" className="funnel"><EngagementFunnel/></div>{siteText("\n    ")}</div>{siteText("\n    ")}<div className={siteText("card reveal")} style={{"gridColumn":"span 5","animationDelay":".1s"}} ref={node => { if(node) node.setAttribute("style", "grid-column:span 5;animation-delay:.1s"); }}>{siteText("\n      ")}<div className={siteText("card-hd")}>{siteText("\n        ")}<div>{siteText("\n          ")}<div className={siteText("card-title")}>{siteText("Financial problems resolved ")}<button type={siteText("button")} className={siteText("metric-info")} data-metric={siteText("outcomes")} aria-label={siteText("What are financial problems resolved?")}>{siteText("i")}</button></div>{siteText("\n          ")}<div className="card-note" id="outcomes-note"><OutcomesNote/></div>{siteText("\n        ")}</div>{siteText("\n        ")}<span className={siteText("card-tag")}>{siteText("Outcomes")}</span>{siteText("\n      ")}</div>{siteText("\n      ")}<div id="outcomes"><Outcomes/></div>{siteText("\n    ")}</div>{siteText("\n  ")}</div>{siteText("\n\n  ")}{siteText("\n  ")}<section className={siteText("dash-section")} data-section={siteText("valueDelivered")}>{siteText("\n  ")}<div className={siteText("head")} style={{"padding":"36px 0 14px"}} ref={node => { if(node) node.setAttribute("style", "padding:36px 0 14px;"); }}>{siteText("\n    ")}<div>{siteText("\n      ")}<div className={siteText("head-eyebrow")}>{siteText("The bottom line")}</div>{siteText("\n      ")}<h1 style={{"fontSize":"27px"}} ref={node => { if(node) node.setAttribute("style", "font-size:27px;"); }}>{siteText("Value delivered to your people")}</h1>{siteText("\n    ")}</div>{siteText("\n  ")}</div>{siteText("\n  ")}<div id="value-strip"><ValueStrip/></div>{siteText("\n\n  ")}<div className={siteText("grid g-12 section-gap")}>{siteText("\n    ")}<div className={siteText("card reveal")} style={{"gridColumn":"span 5","animationDelay":".05s"}} ref={node => { if(node) node.setAttribute("style", "grid-column:span 5;animation-delay:.05s"); }}>{siteText("\n      ")}<div className={siteText("card-hd")}>{siteText("\n        ")}<div>{siteText("\n          ")}<div className={siteText("card-title")}>{siteText("Monthly cash freed up ")}<button type={siteText("button")} className={siteText("metric-info")} data-metric={siteText("saving")} aria-label={siteText("What is monthly cash freed up?")}>{siteText("i")}</button></div>{siteText("\n          ")}<div className={siteText("card-note")}>{siteText("Recurring savings unlocked, cumulative run-rate")}</div>{siteText("\n        ")}</div>{siteText("\n        ")}<span className={siteText("card-tag")}>{siteText("Run-rate")}</span>{siteText("\n      ")}</div>{siteText("\n      ")}<div id="savings-chart"><SavingsChart/></div>{siteText("\n    ")}</div>{siteText("\n\n    ")}<div className={siteText("card reveal")} style={{"gridColumn":"span 7","animationDelay":".1s"}} ref={node => { if(node) node.setAttribute("style", "grid-column:span 7;animation-delay:.1s"); }}>{siteText("\n      ")}<div className={siteText("card-hd")}>{siteText("\n        ")}<div>{siteText("\n          ")}<div className={siteText("card-title")}>{siteText("Debt Pressure Profile ")}<button type={siteText("button")} className={siteText("metric-info")} data-metric={siteText("debtProfile")} aria-label={siteText("What is the Debt Pressure Profile?")}>{siteText("i")}</button></div>{siteText("\n          ")}<div className={siteText("card-note")}>{siteText("Where your people's arrears sit Not available by credit type, then by creditor")}</div>{siteText("\n        ")}</div>{siteText("\n        ")}<span className={siteText("card-tag")}>{siteText("Arrears journey")}</span>{siteText("\n      ")}</div>{siteText("\n      ")}<DebtProfile/>{siteText("\n      ")}{siteText("\n    ")}</div>{siteText("\n  ")}</div>{siteText("\n  ")}</section>{siteText("\n\n  ")}{siteText("\n  ")}<section className={siteText("dash-section")} data-section={siteText("earlyWageAccess")}>{siteText("\n  ")}<div className={siteText("head")} style={{"padding":"36px 0 14px"}} ref={node => { if(node) node.setAttribute("style", "padding:36px 0 14px;"); }}>{siteText("\n    ")}<div>{siteText("\n      ")}<div className={siteText("eyebrow")}>{siteText("ON-DEMAND PAY")}</div>{siteText("\n      ")}<h1 style={{"fontSize":"27px"}} ref={node => { if(node) node.setAttribute("style", "font-size:27px;"); }}>{siteText("Early Wage Access")}</h1>{siteText("\n      ")}<div className={siteText("head-sub")}>{siteText("How many employees are drawing earned wages early, and how much Not available a live read on cashflow pressure between paydays.")}</div>{siteText("\n    ")}</div>{siteText("\n  ")}</div>{siteText("\n  ")}<div id="ewa-kpis" className="grid g-4"><EwaKpis/></div>{siteText("\n  ")}<div className={siteText("grid g-12 section-gap")}>{siteText("\n    ")}<div className={siteText("card reveal")} style={{"gridColumn":"span 12"}} ref={node => { if(node) node.setAttribute("style", "grid-column:span 12;"); }}>{siteText("\n      ")}<div className={siteText("card-hd")}>{siteText("\n        ")}<div>{siteText("\n          ")}<div className={siteText("card-title")}>{siteText("Total advanced per month ")}<button type={siteText("button")} className={siteText("metric-info")} data-metric={siteText("ewaTrend")} aria-label={siteText("What is total advanced per month?")}>{siteText("i")}</button></div>{siteText("\n          ")}<div className={siteText("card-note")}>{siteText("Finalised advances only · monthly run-rate")}</div>{siteText("\n        ")}</div>{siteText("\n        ")}<span className={siteText("card-tag")}>{siteText("Trend")}</span>{siteText("\n      ")}</div>{siteText("\n      ")}<div id="ewa-chart"><EwaChart/></div>{siteText("\n    ")}</div>{siteText("\n  ")}</div>{siteText("\n  ")}</section>{siteText("\n\n  ")}<section className={siteText("dash-section")} data-section={siteText("stressMap")}>{siteText("\n  ")}<div className={siteText("head")} style={{"padding":"36px 0 14px"}} ref={node => { if(node) node.setAttribute("style", "padding:36px 0 14px;"); }}>{siteText("\n    ")}<div>{siteText("\n      ")}<div className={siteText("head-eyebrow")}>{siteText("Where the pressure sits")}</div>{siteText("\n      ")}<h1 style={{"fontSize":"27px"}} ref={node => { if(node) node.setAttribute("style", "font-size:27px;"); }}>{siteText("Workforce Financial Stress Map")}</h1>{siteText("\n      ")}<div className={siteText("head-sub")}>{siteText("Financial pressure is not evenly spread. This is where it concentrates Not available so you and your broker can direct the programme to the people and sites that need it most.")}</div>{siteText("\n    ")}</div>{siteText("\n  ")}</div>{siteText("\n\n  ")}<div id="stress-strip" className="section-gap"><StressMap/></div>{siteText("\n\n  ")}<div className={siteText("grid g-12 section-gap")}>{siteText("\n    ")}<div className={siteText("card reveal")} style={{"gridColumn":"span 4","animationDelay":".05s"}} ref={node => { if(node) node.setAttribute("style", "grid-column:span 4;animation-delay:.05s"); }}>{siteText("\n      ")}<div className={siteText("card-hd")}>{siteText("\n        ")}<div><div className={siteText("card-title")}>{siteText("Stress index by site ")}<button type={siteText("button")} className={siteText("metric-info")} data-metric={siteText("stressBySite")} aria-label={siteText("What is the stress index by site?")}>{siteText("i")}</button></div><div className={siteText("card-note")}>{siteText("Higher = more financial pressure (arrears, debt load, low resilience)")}</div></div>{siteText("\n        ")}<span className={siteText("card-tag")}>{siteText("By site")}</span>{siteText("\n      ")}</div>{siteText("\n      ")}<div id="region-bars" className="hbar"><Regions/></div>{siteText("\n    ")}</div>{siteText("\n\n    ")}<div className={siteText("card reveal")} style={{"gridColumn":"span 4","animationDelay":".1s"}} ref={node => { if(node) node.setAttribute("style", "grid-column:span 4;animation-delay:.1s"); }}>{siteText("\n      ")}<div className={siteText("card-hd")}>{siteText("\n        ")}<div><div className={siteText("card-title")}>{siteText("Who the programme is reaching ")}<button type={siteText("button")} className={siteText("metric-info")} data-metric={siteText("incomeReach")} aria-label={siteText("What is reach by income band?")}>{siteText("i")}</button></div><div className={siteText("card-note")}>{siteText("Activated employees by income band")}</div></div>{siteText("\n      ")}</div>{siteText("\n      ")}<div id="income-donut"><Income/></div>{siteText("\n    ")}</div>{siteText("\n\n    ")}<div className={siteText("card reveal")} style={{"gridColumn":"span 4","animationDelay":".15s"}} ref={node => { if(node) node.setAttribute("style", "grid-column:span 4;animation-delay:.15s"); }}>{siteText("\n      ")}<div className={siteText("card-hd")}>{siteText("\n        ")}<div><div className={siteText("card-title")}>{siteText("How employees rate us ")}<button type={siteText("button")} className={siteText("metric-info")} data-metric={siteText("rating")} aria-label={siteText("What is the employee experience rating?")}>{siteText("i")}</button></div><div className={siteText("card-note")}>{siteText("From end-of-journey ratings")}</div></div>{siteText("\n        ")}<span className={siteText("card-tag")}>{siteText("Experience")}</span>{siteText("\n      ")}</div>{siteText("\n      ")}<div id="ratings"><Ratings/></div>{siteText("\n    ")}</div>{siteText("\n  ")}</div>{siteText("\n  ")}</section>{siteText("\n\n  ")}{siteText("\n  ")}<section className={siteText("dash-section")} data-section={siteText("problemDebt")}>{siteText("\n  ")}<div className={siteText("head")} style={{"padding":"36px 0 14px"}} ref={node => { if(node) node.setAttribute("style", "padding:36px 0 14px;"); }}>{siteText("\n    ")}<div>{siteText("\n      ")}<div className={siteText("head-eyebrow")}>{siteText("Tackling problem debt")}</div>{siteText("\n      ")}<h1 style={{"fontSize":"27px"}} ref={node => { if(node) node.setAttribute("style", "font-size:27px;"); }}>{siteText("How problem debt is being handled")}</h1>{siteText("\n      ")}<div className={siteText("head-sub")}>{siteText("Not all distressed debt is dealt with the same way. Here is exactly what is happening to each rand Not available and we are precise about which debt is under active arrangement versus self-managed with our guidance.")}</div>{siteText("\n    ")}</div>{siteText("\n  ")}</div>{siteText("\n  ")}<div className={siteText("card reveal section-gap")} style={{"marginTop":"0","animationDelay":".04s"}} ref={node => { if(node) node.setAttribute("style", "margin-top:0;animation-delay:.04s"); }}>{siteText("\n    ")}<div className={siteText("card-hd")}>{siteText("\n      ")}<div>{siteText("\n        ")}<div className={siteText("card-title")}>{siteText("Problem debt by how it's being handled ")}<button type={siteText("button")} className={siteText("metric-info")} data-metric={siteText("debtStates")} aria-label={siteText("How is problem debt being handled?")}>{siteText("i")}</button></div>{siteText("\n        ")}<div className={siteText("card-note")}>{siteText("Three honest states Not available only the first is an active arrangement")}</div>{siteText("\n      ")}</div>{siteText("\n      ")}<span className={siteText("card-tag")}>{siteText("Debt intervention")}</span>{siteText("\n    ")}</div>{siteText("\n    ")}<div id="debt-states"><DebtStates/></div>{siteText("\n  ")}</div>{siteText("\n\n  ")}<div className={siteText("grid g-12 section-gap")}>{siteText("\n    ")}<div className={siteText("card reveal")} style={{"gridColumn":"span 7","animationDelay":".05s"}} ref={node => { if(node) node.setAttribute("style", "grid-column:span 7;animation-delay:.05s"); }}>{siteText("\n      ")}<div className={siteText("card-hd")}>{siteText("\n        ")}<div>{siteText("\n          ")}<div className={siteText("card-title")}>{siteText("Potentially prescribed debt challenged ")}<button type={siteText("button")} className={siteText("metric-info")} data-metric={siteText("prescription")} aria-label={siteText("What is prescribed debt recovery?")}>{siteText("i")}</button></div>{siteText("\n          ")}<div className={siteText("card-note")}>{siteText("Old debt employees may no longer legally owe Not available identified and contested")}</div>{siteText("\n        ")}</div>{siteText("\n        ")}<span className={siteText("card-tag")}>{siteText("Recovery")}</span>{siteText("\n      ")}</div>{siteText("\n      ")}<div id="prescription"><Prescription/></div>{siteText("\n    ")}</div>{siteText("\n\n    ")}<div className={siteText("card reveal")} style={{"gridColumn":"span 5","animationDelay":".1s"}} ref={node => { if(node) node.setAttribute("style", "grid-column:span 5;animation-delay:.1s"); }}>{siteText("\n      ")}<div className={siteText("card-hd")}>{siteText("\n        ")}<div>{siteText("\n          ")}<div className={siteText("card-title")}>{siteText("Financial Risk Signals ")}<button type={siteText("button")} className={siteText("metric-info")} data-metric={siteText("riskSignals")} aria-label={siteText("What are Financial Risk Signals?")}>{siteText("i")}</button></div>{siteText("\n          ")}<div className={siteText("card-note")}>{siteText("Exposure detected across your workforce Not available your early-warning list")}</div>{siteText("\n        ")}</div>{siteText("\n        ")}<span className={siteText("card-tag")}>{siteText("Diagnostic")}</span>{siteText("\n      ")}</div>{siteText("\n      ")}<div id="risk-signals"><RiskSignals/></div>{siteText("\n    ")}</div>{siteText("\n  ")}</div>{siteText("\n  ")}</section>{siteText("\n\n  ")}{siteText("\n  ")}<section className={siteText("dash-section")} data-section={siteText("opportunities")}>{siteText("\n  ")}<div className={siteText("head")} style={{"padding":"36px 0 14px"}} ref={node => { if(node) node.setAttribute("style", "padding:36px 0 14px;"); }}>{siteText("\n    ")}<div>{siteText("\n      ")}<div className={siteText("head-eyebrow")}>{siteText("What to do next")}</div>{siteText("\n      ")}<h1 style={{"fontSize":"27px"}} ref={node => { if(node) node.setAttribute("style", "font-size:27px;"); }}>{siteText("Opportunities identified")}</h1>{siteText("\n      ")}<div className={siteText("head-sub")}>{siteText("The programme has already mapped the next wave of value sitting in your workforce Not available eligible employees who haven't yet been helped.")}</div>{siteText("\n    ")}</div>{siteText("\n  ")}</div>{siteText("\n  ")}<div id="opportunities"><Opportunities/></div>{siteText("\n  ")}</section>{siteText("\n\n  ")}{siteText("\n  ")}<EmployeeChat/>{siteText("\n\n  ")}<div className={siteText("footnote")} id={siteText("footnote")}/>{siteText("\n\n ")}</div>{siteText("\n\n  ")}<div className={siteText("pdf-print-footer")} aria-hidden={siteText("true")}>{siteText("\n    empower-fin · Workforce Financial Wellbeing · Confidential employer report · Generated ")}<span id={siteText("pdf-footer-date")}/>{siteText("\n  ")}</div>{siteText("\n\n  ")}{siteText("\n  ")}<div id="portfolio-view" style={{display:"none"}}><Portfolio/></div>{siteText("\n\n")}</div>
 {siteText("\n\n")}
 
 {siteText("\n")}
@@ -1456,637 +1457,37 @@ function renderWellness() {
     definitions: EMPLOYER_METRIC_INFO
   });
 }
-function countUp(el, target, opts = {}) {
-  const dur = 750,
-    dec = opts.decimals || 0,
-    start = performance.now() + (opts.delay || 0);
-  function fmt(v) {
-    if (opts.money) return Math.round(v).toLocaleString();
-    return dec ? v.toFixed(dec) : Math.round(v).toLocaleString();
-  }
-  function tick(now) {
-    if (now < start) {
-      requestAnimationFrame(tick);
-      return;
-    }
-    const t = Math.min(1, (now - start) / dur),
-      e = 1 - Math.pow(1 - t, 3);
-    el.textContent = fmt(target * e);
-    if (t < 1) requestAnimationFrame(tick);else el.textContent = fmt(target);
-  }
-  requestAnimationFrame(tick);
-}
 
 /* ─────────────────── ACT 2: funnel ─────────────────── */
 
 /* ─────────────────── ACT 2: outcomes ─────────────────── */
-function renderOutcomes() {
-  const wrap = document.getElementById('outcomes');
-  const note = document.getElementById('outcomes-note');
-  const available = DATA.availability?.journeys !== false;
-  const rows = Array.isArray(DATA.outcomes) ? DATA.outcomes : [];
-  const total = rows.reduce((sum, o) => sum + (Number(o.count) || 0), 0);
-  if (note) note.textContent = available ? `${total.toLocaleString('en-ZA')} financial ${total === 1 ? 'problem' : 'problems'} resolved Not available and the value created` : 'Journey data not loaded.';
-  if (!available) {
-    renderMarkup(wrap, '<div class="muted" style="padding:22px 8px">Journey data has not been loaded for this employer.</div>');
-    return;
-  }
-  if (!rows.length) {
-    renderMarkup(wrap, '<div class="muted" style="padding:22px 8px">No completed outcomes in the selected reporting window.</div>');
-    return;
-  }
-  rows.forEach(o => {
-    const row = el(`<div class="outcome clickable"><div class="outcome-ico">${svgIco(o.ico)}</div><div><div class="outcome-name">${esc(o.name)}</div><div class="outcome-meta">${fmtCount(o.count)} completed · ${o.meta}</div></div><div class="outcome-stat"><div class="v">${displayMoney(o.stat)}</div><div class="l">${esc(o.statL)}</div></div><div class="row-chevron">›</div></div>`);
-    row.addEventListener('click', () => outcomeDrill(o));
-    wrap.appendChild(row);
-  });
-}
 
 /* ─────────────────── ACT 3: value strip ─────────────────── */
 
 /* ─────────────────── ACT 3: savings area chart ─────────────────── */
-function renderPeriodLineChart(current = [], previous = [], currentLabel = 'Selected period', previousLabel = 'Previous period', valueFormatter = formatRandThousands, colour = 'var(--chart-cashflow)') {
-  const a = Array.isArray(current) ? current.map(Number).filter(Number.isFinite) : [];
-  const b = Array.isArray(previous) ? previous.map(Number).filter(Number.isFinite) : [];
-  if (!a.length && !b.length) return '<div class="muted comparison-empty">No data is available for this period.</div>';
-  if (a.length === 1 && b.length === 1) {
-    const vals = [b[0], a[0]],
-      labels = [previousLabel, currentLabel];
-    const w = 760,
-      h = 240,
-      axisLeft = 112,
-      plotLeft = 132,
-      right = 22,
-      top = 22,
-      bottom = 46,
-      plotRight = w - right;
-    const ticks = niceTicks(vals, 4),
-      max = ticks[ticks.length - 1] || 1;
-    const px = i => plotLeft + i * (plotRight - plotLeft),
-      py = v => h - bottom - v / max * (h - bottom - top);
-    const line = `M${px(0).toFixed(1)} ${py(vals[0]).toFixed(1)} L${px(1).toFixed(1)} ${py(vals[1]).toFixed(1)}`;
-    const yaxis = ticks.map(v => {
-      const y = py(v);
-      return `<line x1="${plotLeft}" x2="${plotRight}" y1="${y}" y2="${y}" stroke="var(--line-soft)"/><text x="${axisLeft}" y="${y + 3}" text-anchor="end" font-size="9.5" font-weight="700" fill="#8497a7">${valueFormatter(v)}</text>`;
-    }).join('');
-    const points = vals.map((v, i) => `<circle cx="${px(i)}" cy="${py(v)}" r="${i === 1 ? 5.5 : 4.5}" fill="${i === 1 ? colour : 'var(--chart-engagement)'}" stroke="#fff" stroke-width="2"><title>${esc(labels[i])}: ${valueFormatter(v)}</title></circle>`).join('');
-    const xlabels = labels.map((label, i) => {
-      // Anchor edge labels inward so long period names never escape the SVG/card boundary.
-      const anchor = i === 0 ? 'start' : 'end';
-      const x = i === 0 ? plotLeft : plotRight;
-      return `<text x="${x}" y="${h - 13}" text-anchor="${anchor}" font-size="10" font-weight="800" fill="${i === 1 ? 'var(--brand-primary)' : '#8497a7'}">${esc(label)}</text>`;
-    }).join('');
-    const valueCards = vals.map((v, i) => `<div class="comparison-value-card ${i === 1 ? 'current' : 'previous'}"><span class="comparison-value-period">${esc(labels[i])}</span><strong>${valueFormatter(v)}</strong></div>`).join('');
-    return `<div class="comparison-chart"><div class="comparison-value-row">${valueCards}</div><div class="comparison-legend"><span><i class="comparison-dot current"></i>${esc(currentLabel)}</span><span><i class="comparison-dot previous"></i>${esc(previousLabel)}</span></div><svg viewBox="0 0 ${w} ${h}" role="img" aria-label="${esc(currentLabel)} compared with ${esc(previousLabel)}"><line x1="${plotLeft}" x2="${plotRight}" y1="${h - bottom}" y2="${h - bottom}" stroke="var(--line)"/>${yaxis}<path d="${line}" fill="none" stroke="${colour}" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>${points}${xlabels}</svg></div>`;
-  }
-  const n = Math.max(a.length, b.length);
-  const currentAligned = Array.from({
-    length: n
-  }, (_, i) => a[i - (n - a.length)] ?? null);
-  const previousAligned = Array.from({
-    length: n
-  }, (_, i) => b[i - (n - b.length)] ?? null);
-  const values = [...a, ...b];
-  const w = 760,
-    h = 240,
-    axisLeft = 112,
-    plotLeft = 132,
-    right = 22,
-    top = 22,
-    bottom = 46,
-    plotRight = w - right;
-  const ticks = niceTicks(values, 5),
-    max = ticks[ticks.length - 1] || 1;
-  const px = i => plotLeft + i * (plotRight - plotLeft) / Math.max(1, n - 1),
-    py = v => h - bottom - v / max * (h - bottom - top);
-  const lineOf = series => {
-    let started = false;
-    return series.map((v, i) => {
-      if (v == null) return '';
-      const cmd = started ? 'L' : 'M';
-      started = true;
-      return cmd + px(i).toFixed(1) + ' ' + py(v).toFixed(1);
-    }).filter(Boolean).join(' ');
-  };
-  const currentLine = lineOf(currentAligned),
-    previousLine = lineOf(previousAligned);
-  const yaxis = ticks.map(v => {
-    const y = py(v);
-    return `<line x1="${plotLeft}" x2="${plotRight}" y1="${y}" y2="${y}" stroke="var(--line-soft)"/><text x="${axisLeft}" y="${y + 3}" text-anchor="end" font-size="9.5" font-weight="700" fill="#8497a7">${valueFormatter(v)}</text>`;
-  }).join('');
-  return `<div class="comparison-chart"><div class="comparison-legend"><span><i class="comparison-dot current"></i>${esc(currentLabel)}</span><span><i class="comparison-dot previous"></i>${esc(previousLabel)}</span></div><svg viewBox="0 0 ${w} ${h}" role="img" aria-label="${esc(currentLabel)} and ${esc(previousLabel)} trend"><path d="${currentLine}" fill="none" stroke="${colour}" stroke-width="3" stroke-linecap="round"/><path d="${previousLine}" fill="none" stroke="var(--chart-engagement)" stroke-width="2.2" stroke-dasharray="6 5" stroke-linecap="round"/>${yaxis}</svg></div>`;
-}
-function getMonthFinancialComparison(kind) {
-  const period = DATA.filterContext?.period;
-  if (!period) return null;
-  const pc = DATA.periodComparison;
-  if (!pc || !pc.current || !pc.previous) return null;
-  const currentLabel = pc.current.label || DATA.filterContext?.label || period;
-  const previousLabel = pc.previous.label || 'Previous month';
-  if (kind === 'savings') {
-    const current = Number(pc.current.monthlyCashFreedUp);
-    const previous = Number(pc.previous.monthlyCashFreedUp);
-    if (Number.isFinite(current) && Number.isFinite(previous)) return {
-      current,
-      previous,
-      currentLabel,
-      previousLabel
-    };
-  }
-  if (kind === 'ewa') {
-    const current = Number(pc.current.totalAdvanced);
-    const previous = Number(pc.previous.totalAdvanced);
-    if (Number.isFinite(current) && Number.isFinite(previous)) return {
-      current,
-      previous,
-      currentLabel,
-      previousLabel
-    };
-  }
-  return null;
-}
-function renderEwa() {
-  const e = DATA.ewa,
-    wrap = document.getElementById('ewa-chart'),
-    kpiWrap = document.getElementById('ewa-kpis');
-  if (kpiWrap) {
-    renderMarkup(kpiWrap, '');
-    if (!e || !e.advances) kpiWrap.appendChild(el('<div class="muted" style="padding:8px 2px;font-size:13.5px;">No early wage access activity recorded yet.</div>'));else [{
-      v: e.clients.toLocaleString('en-ZA'),
-      l: 'Employees took up',
-      k: 'ewaEmployees',
-      s: e.advances.toLocaleString('en-ZA') + ' advances total',
-      bg: 'var(--brand-soft)'
-    }, {
-      v: e.total,
-      l: 'Total advanced',
-      k: 'ewaTotal',
-      s: 'All finalised advances',
-      bg: '#e7f7ef'
-    }, {
-      v: e.avg,
-      l: 'Average advance',
-      k: 'ewaAverage',
-      s: 'Per drawdown',
-      bg: 'var(--brand-soft)'
-    }, {
-      v: e.perClient.toFixed(1),
-      l: 'Advances per employee',
-      k: 'ewaFrequency',
-      s: 'Average frequency',
-      bg: '#fdf3e2'
-    }].forEach((x, i) => kpiWrap.appendChild(el(`<div class="card kpi reveal" style="animation-delay:${i * .06}s"><div class="kpi-label"><span class="kpi-ico" style="background:${x.bg}"></span>${x.l}${employerInfoButton(x.k)}</div><div class="kpi-value">${x.v}</div><div class="kpi-sub">${x.s}</div></div>`)));
-  }
-  if (!wrap) return;
-  const comparison = getMonthFinancialComparison('ewa');
-  if (comparison) {
-    renderMarkup(wrap, renderPeriodLineChart([comparison.current], [comparison.previous], comparison.currentLabel, comparison.previousLabel, formatRand, 'var(--chart-cashflow)'));
-    return;
-  }
-  const current = e?.trend || [],
-    prior = DATA.comparison?.previous?.ewa || [];
-  renderMarkup(wrap, renderPeriodLineChart(current, prior, DATA.filterContext?.label || 'Selected period', DATA.comparison?.label || 'Previous period', formatRandThousands, 'var(--chart-cashflow)'));
-}
-function renderSavings() {
-  const wrap = document.getElementById('savings-chart');
-  const comparison = getMonthFinancialComparison('savings');
-  if (comparison) {
-    renderMarkup(wrap, renderPeriodLineChart([comparison.current], [comparison.previous], comparison.currentLabel, comparison.previousLabel, formatRand, 'var(--chart-cashflow)'));
-    return;
-  }
-  const current = DATA.savings || [],
-    prior = DATA.comparison?.previous?.savings || [];
-  renderMarkup(wrap, renderPeriodLineChart(current, prior, DATA.filterContext?.label || 'Selected period', DATA.comparison?.label || 'Previous period', formatRandThousands, 'var(--chart-cashflow)'));
-}
 
 /* ─────────────────── ACT 3: debt pressure profile ─────────────────── */
-function renderDebtProfile() {
-  const wrap = document.getElementById('debt-profile');
-  if (!wrap) return;
-  // stacked bar by type
-  let seg = DATA.debtProfile.map((d, i) => `<div class="dp-seg" style="width:${d.pct}%;background:${brandSeries(i)}" title="${esc(d.type)}"></div>`).join('');
-  let legend = DATA.debtProfile.map((d, i) => `<div class="dp-leg"><span class="dp-dot" style="background:${brandSeries(i)}"></span><span class="dp-type">${esc(d.type)}</span><span class="dp-bal">${displayMoney(d.balance)}</span><span class="dp-pct">${d.pct}%</span></div>`).join('');
-  wrap.appendChild(el(`<div>
-    <div class="dp-bar">${seg}</div>
-    <div class="dp-legend">${legend}</div>
-    <button class="dp-toggle" id="dp-toggle">View by creditor ▾</button>
-  </div>`));
-  const tbl = document.getElementById('creditor-table');
-  tbl.style.display = 'none';
-  document.getElementById('dp-toggle').addEventListener('click', function () {
-    const open = tbl.style.display !== 'none';
-    tbl.style.display = open ? 'none' : 'block';
-    this.textContent = open ? 'View by creditor ▾' : 'Hide creditor detail ▴';
-  });
-}
 
 /* ─────────────────── ACT 3: creditor table ─────────────────── */
 function initials(n) {
   return n.split(/\s|\//)[0].slice(0, 2).toUpperCase();
 }
-function renderCreditors() {
-  const wrap = document.getElementById('creditor-table');
-  let rows = DATA.creditors.map((c, i) => `<tr class="ct-row" data-i="${i}">
-    <td data-label="Creditor"><div class="cred-name"><span class="cred-logo" style="background:${c.color}">${initials(c.name)}</span><span class="cred-name-text">${esc(c.name)}</span></div></td>
-    <td data-label="Accounts" class="r num">${esc(c.accounts)}</td>
-    <td data-label="Balance" class="r num">${displayMoney(c.balance)}</td>
-    <td data-label="Average per account" class="r muted">${displayMoney(c.avg)}</td>
-    <td data-label="Status" class="r"><span class="chip-mini ${c.status === 'elig' ? 'chip-elig' : 'chip-prog'}">${esc(c.statusL)}</span></td>
-  </tr>`).join('');
-  const tbl = el(`<table class="ct">
-    <thead><tr><th>Creditor</th><th class="r">Accounts</th><th class="r">Balance</th><th class="r">Average per account</th><th class="r">Status</th></tr></thead>
-    <tbody>${rows}
-      <tr class="ct-total"><td data-label="Total"><strong>Total in arrears journey</strong></td><td data-label="Accounts" class="r num">${esc(DATA.creditorsTotal.accounts)}</td><td data-label="Balance" class="r num">${displayMoney(DATA.creditorsTotal.balance)}</td><td data-label="Average per account" class="r"></td><td data-label="Status" class="r"></td></tr>
-    </tbody>
-  </table>`);
-  tbl.querySelectorAll('.ct-row').forEach(row => row.addEventListener('click', () => creditorDrill(DATA.creditors[+row.dataset.i])));
-  wrap.appendChild(tbl);
-}
 
 /* ─────────────────── ACT 4: region bars ─────────────────── */
-function renderRegions() {
-  const wrap = document.getElementById('region-bars');
-  DATA.regions.forEach((r, i) => {
-    const col = r.stress >= 70 ? 'var(--chart-high)' : r.stress >= 55 ? 'var(--chart-mid)' : r.stress >= 45 ? 'var(--chart-debt)' : 'var(--chart-low)';
-    const row = el(`<div class="hbar-row"><div class="hbar-lbl">${esc(r.name)}</div><div class="hbar-track"><div class="hbar-fill" style="width:0;background:${col}"></div></div><div class="hbar-val">${r.stress}</div></div>`);
-    wrap.appendChild(row);
-    setTimeout(() => row.querySelector('.hbar-fill').style.width = r.stress + '%', 150 + i * 80);
-  });
-}
 
 /* ─────────────────── ACT 4: stress map summary strip ─────────────────── */
-function renderStressMap() {
-  const wrap = document.getElementById('stress-strip');
-  if (!wrap) return;
-  const tone = {
-    red: 'var(--chart-high)',
-    green: 'var(--chart-low)',
-    blue: 'var(--chart-debt)',
-    amber: 'var(--chart-mid)'
-  };
-  const strip = el('<div class="stress-grid reveal"></div>');
-  DATA.stressMap.forEach(s => {
-    strip.appendChild(el(`<div class="stress-cell" style="--t:${tone[s.tone]}">
-      <div class="stress-l">${s.l} ${employerInfoButton(employerMetricKey(s.l))}</div>
-      <div class="stress-v">${s.v}</div>
-      <div class="stress-d">${s.d}</div>
-    </div>`));
-  });
-  wrap.appendChild(strip);
-}
 
 /* ─────────────────── ACT 4: income donut ─────────────────── */
-function renderIncome() {
-  const wrap = document.getElementById('income-donut');
-  if (!wrap) return;
-  const rows = Array.isArray(DATA.income) ? DATA.income : [];
-  if (!rows.length) {
-    renderMarkup(wrap, '<div class="muted" style="padding:28px 8px;text-align:center;">Income-band data is not available for this period.</div>');
-    return;
-  }
-  const total = rows.reduce((sum, row) => sum + (Number(row.count) || 0), 0);
-  if (total <= 0) {
-    renderMarkup(wrap, '<div class="muted" style="padding:28px 8px;text-align:center;">No activated employees with an income band are available in this view.</div>');
-    return;
-  }
-  const r = 52,
-    c = 2 * Math.PI * r;
-  let off = 0;
-  const segs = rows.map((b, i) => {
-    const count = Number(b.count) || 0;
-    const frac = count / total,
-      len = frac * c;
-    const s = `<circle cx="70" cy="70" r="${r}" fill="none" stroke="${brandSeries(i)}" stroke-width="20" stroke-dasharray="${len} ${c - len}" stroke-dashoffset="${-off}" transform="rotate(-90 70 70)" />`;
-    off += len;
-    return s;
-  }).join('');
-  const legend = rows.map((b, i) => `<div class="legend-row"><span class="legend-dot" style="background:${brandSeries(i)}"></span><span class="legend-name">${esc(b.name)}</span><span class="legend-val">${Number(b.count || 0).toLocaleString('en-ZA')}</span></div>`).join('');
-  renderMarkup(wrap, `<div class="donut-wrap">
-    <svg width="140" height="140" viewBox="0 0 140 140" role="img" aria-label="Activated employees by income band">${segs}
-      <text x="70" y="65" text-anchor="middle" font-size="22" font-weight="800" fill="var(--brand-primary)" font-family="Fraunces,serif">${total.toLocaleString('en-ZA')}</text>
-      <text x="70" y="84" text-anchor="middle" font-size="9.5" font-weight="700" fill="#8497a7">ACTIVATED</text>
-    </svg>
-    <div class="legend">${legend}<div class="legend-sub" style="margin-top:4px">Income-band reach among activated employees in the selected view.</div></div>
-  </div>`);
-}
 
 /* ─────────────────── ACT 4: ratings ─────────────────── */
-function renderRatings() {
-  const wrap = document.getElementById('ratings');
-  const rt = DATA.ratings;
-  const avg = Math.max(0, Math.min(5, Number(rt.avg) || 0));
-  const rounded = Math.round(avg * 2) / 2;
-  const stars = Array.from({
-    length: 5
-  }, (_, i) => {
-    const fill = rounded - i;
-    const state = fill >= 1 ? 'full' : fill >= 0.5 ? 'half' : 'empty';
-    return `<span class="rating-star ${state}" aria-hidden="true">★</span>`;
-  }).join('');
-  let bars = [5, 4, 3, 2, 1].map(s => `<div class="rb-row"><div class="rb-lbl">${s} ★</div><div class="rb-track"><div class="rb-fill" style="width:${rt.dist[s]}%;${s <= 2 ? 'background:var(--chart-high)' : s === 3 ? 'background:var(--chart-mid)' : ''}"></div></div><div class="rb-val">${rt.dist[s]}%</div></div>`).join('');
-  wrap.appendChild(el(`<div>
-    <div class="rating-hero">
-      <div class="rating-big">${avg.toFixed(1)}</div>
-      <div class="rating-summary">
-        <div class="rating-stars" role="img" aria-label="${avg.toFixed(1)} out of 5 stars">${stars}</div>
-        <div class="rating-response-count">${rt.responses.toLocaleString()} ratings</div>
-      </div>
-    </div>
-    <div class="rating-bars">${bars}</div>
-    <div class="rating-share-pill"><div><div class="l">5-star ratings ${employerInfoButton('fiveStarPct')}</div></div><div class="v">${rt.fiveStarPct}%</div></div>
-    <div class="rating-share-pill"><div><div class="l">Net Promoter Score ${employerInfoButton('nps')}</div></div><div class="v">${rt.nps == null ? 'Not available' : rt.nps}</div></div>
-  </div>`));
-}
 
 /* ─────────────────── ACT 5: debt states (three honest buckets) ─────────────────── */
-function renderDebtStates() {
-  const wrap = document.getElementById('debt-states');
-  if (!wrap) return;
-  const d = DATA.debtStates;
-  // Full number, not abbreviated Not available these three cards are the actual audited
-  // rand amounts an employer/broker checks line by line, so "R 384k" vs
-  // "R 384,231" is the difference between a rough vibe and a real figure.
-  const fmtM = v => 'R ' + Math.round(v).toLocaleString('en-ZA');
-  const total = d.active.rand + d.challenged.rand + d.guided.rand;
-  const cols = [{
-    ...d.active,
-    c: "var(--blue)",
-    tag: "ACTIVE ARRANGEMENT"
-  }, {
-    ...d.challenged,
-    c: "var(--chart-insurance)",
-    tag: "BEING CONTESTED"
-  }, {
-    ...d.guided,
-    c: "var(--chart-mid)",
-    tag: "GUIDANCE ONLY"
-  }];
-  // stacked bar
-  let seg = cols.map(x => `<div style="width:${(x.rand / total * 100).toFixed(1)}%;background:${x.c};height:100%"></div>`).join('');
-  // three cards
-  let cards = cols.map(x => {
-    const mk = x.tag === 'ACTIVE ARRANGEMENT' ? 'debtActive' : x.tag === 'BEING CONTESTED' ? 'debtChallenged' : 'debtGuided';
-    return `<div class="ds-card" style="--c:${x.c}">
-    <div class="ds-tag" style="color:${x.c}">${x.tag}</div>
-    <div class="ds-v">${fmtM(x.rand)}</div>
-    <div class="ds-name">${x.label} ${employerInfoButton(mk)}</div>
-    <div class="ds-note">${x.note}</div>
-    <div class="ds-emp">${x.employees} employees</div>
-  </div>`;
-  }).join('');
-  wrap.appendChild(el(`<div>
-    <div class="ds-bar">${seg}</div>
-    <div class="ds-grid">${cards}</div>
-    <div class="ds-foot">Only <strong>${fmtM(d.active.rand)}</strong> is counted as <strong>debt under active intervention</strong> in the summary above. The guidance-only amount is shown separately and honestly Not available we educated these employees on prescription so they can manage accounts they couldn't afford to arrange; we don't claim it as active intervention.</div>
-  </div>`));
-}
 
 /* ─────────────────── ACT 5: prescription ─────────────────── */
-function renderPrescription() {
-  const wrap = document.getElementById('prescription');
-  const p = DATA.prescription;
-  let bars = p.statusBars.map((b, i) => {
-    const row = el(`<div class="hbar-row" style="grid-template-columns:130px 1fr 96px"><div class="hbar-lbl">${b.l}</div><div class="hbar-track" style="height:26px"><div class="hbar-fill" style="width:0;background:${b.c}"></div></div><div class="hbar-val">${b.n} acct</div></div>`);
-    setTimeout(() => row.querySelector('.hbar-fill').style.width = b.pct + '%', 150 + i * 100);
-    return row;
-  });
-  const top = el(`<div style="display:flex;gap:26px;margin-bottom:18px;padding-bottom:18px;border-bottom:1px solid #f7f4ff">
-    <div><div style="font-size:11px;font-weight:700;color:#8497a7;text-transform:uppercase;letter-spacing:.05em">Value challenged ${employerInfoButton('prescriptionValue')}</div><div style="font-family:Fraunces,serif;font-size:30px;font-weight:600;color:var(--brand-primary);letter-spacing:-1px;margin-top:5px">${displayMoney(p.total)}</div></div>
-    <div><div style="font-size:11px;font-weight:700;color:#8497a7;text-transform:uppercase;letter-spacing:.05em">Already written off ${employerInfoButton('prescriptionWrittenOff')}</div><div style="font-family:Fraunces,serif;font-size:30px;font-weight:600;color:var(--chart-cashflow);letter-spacing:-1px;margin-top:5px">${displayMoney(p.writtenOff)}</div></div>
-    <div><div style="font-size:11px;font-weight:700;color:#8497a7;text-transform:uppercase;letter-spacing:.05em">Accounts ${employerInfoButton('prescriptionAccounts')}</div><div style="font-family:Fraunces,serif;font-size:30px;font-weight:600;color:var(--brand-primary);letter-spacing:-1px;margin-top:5px">${esc(p.accounts)}</div></div>
-  </div>`);
-  wrap.appendChild(top);
-  const hb = el('<div class="hbar"></div>');
-  bars.forEach(b => hb.appendChild(b));
-  wrap.appendChild(hb);
-}
 
 /* ─────────────────── ACT 5: referral ─────────────────── */
-function renderRiskSignals() {
-  const wrap = document.getElementById('risk-signals');
-  if (!wrap) return;
-  const sev = {
-    high: {
-      c: 'var(--chart-high)',
-      l: 'High'
-    },
-    med: {
-      c: 'var(--chart-mid)',
-      l: 'Medium'
-    },
-    low: {
-      c: 'var(--chart-debt)',
-      l: 'Low'
-    }
-  };
-  DATA.riskSignals.forEach(s => {
-    const sv = sev[s.sev];
-    wrap.appendChild(el(`<div class="risk-row">
-      <div class="risk-bar" style="background:${sv.c}"></div>
-      <div class="risk-body"><div class="risk-sig">${s.sig} ${employerInfoButton('riskSignals')}</div><div class="risk-note">${s.note}</div></div>
-      <div class="risk-stat"><div class="risk-n">${s.n.toLocaleString()}</div><div class="risk-sev" style="color:${sv.c}">${sv.l}</div></div>
-    </div>`));
-  });
-}
-function renderOpportunities() {
-  const wrap = document.getElementById('opportunities');
-  if (!wrap) return;
-  const o = DATA.opportunities;
-  const cards = o.cards.map(c => `<div class="opp-card">
-    <div class="opp-ico">${svgIco(c.icon)}</div>
-    <div class="opp-name">${esc(c.name)} ${employerInfoButton('opportunities')}</div>
-    <div class="opp-elig"><span class="opp-n">${c.eligible}</span> employees eligible</div>
-    <div class="opp-save">${c.saving !== 'Not available' ? '+ ' + c.saving + '/mo potential' : c.extra || ''}</div>
-  </div>`).join('');
-  const r = DATA.referral;
-  wrap.appendChild(el(`<div class="opp-wrap reveal">
-    <div class="opp-grid">${cards}</div>
-    <div class="opp-foot">
-      <div class="opp-foot-main">
-        <div class="opp-foot-l">Estimated additional value in the next wave ${employerInfoButton('opportunityValue')}</div>
-        <div class="opp-foot-v">${o.estMonthly}<span>/month</span> &nbsp;·&nbsp; ${o.estAnnual}<span>/year</span></div>
-        <div class="opp-foot-note">Direct your broker to activate these segments Not available the diagnosis is already done.</div>
-      </div>
-      <div class="opp-foot-ref">
-        <div class="opp-ref-v">${r.shareRate}%</div>
-        <div class="opp-ref-l">organic referral rate ${employerInfoButton('referralRate')}<br><span>${r.shares.toLocaleString()} shares · reach ${r.impliedReach}</span></div>
-      </div>
-    </div>
-  </div>`));
-}
 
 /* ─────────────────── ACT 6: webchat engagement ─────────────────── */
-const JOURNEY_COLOR = {
-  credit: 'var(--chart-debt)',
-  funeral: 'var(--chart-insurance)',
-  arrears: 'var(--chart-mid)',
-  prescribed: 'var(--chart-workforce)',
-  emergency: 'var(--chart-cashflow)',
-  general: 'var(--chart-engagement)'
-};
-let CHAT_SELECTED = 'credit';
-function sentBadge(pct) {
-  const c = brandSeries(Math.round(pct / 20));
-  const lbl = pct >= 72 ? 'Positive' : pct >= 64 ? 'Mixed' : 'Anxious';
-  return `<span style="font-size:10.5px;font-weight:800;color:${c};background:${c}1a;padding:3px 8px;border-radius:6px">${lbl} · ${pct}%</span>`;
-}
-function chatUnavailableMessage() {
-  return '<div class="muted" style="padding:34px 18px;text-align:center;color:#8497a7;font-size:13px;line-height:1.55;">Chat data is supplied by the separate chat integration and is not currently available.</div>';
-}
-function renderChatUnavailable() {
-  const c = DATA.chat || {};
-  const countTag = document.getElementById('chat-count-tag');
-  if (countTag) countTag.textContent = 'Data unavailable';
-  const kpis = document.getElementById('chat-kpis');
-  if (kpis) renderMarkup(kpis, `<div class="card reveal" style="grid-column:1/-1;padding:10px 0;">${chatUnavailableMessage()}</div>`);
-  ['chat-journeys', 'chat-trending', 'chat-themes'].forEach(id => {
-    const node = document.getElementById(id);
-    if (node) renderMarkup(node, chatUnavailableMessage());
-  });
-  const title = document.getElementById('chat-theme-title');
-  if (title) title.textContent = 'Chat themes';
-  const note = document.getElementById('chat-theme-note');
-  if (note) note.textContent = 'Available when the separate chat integration is connected.';
-}
-function renderChatKPIs() {
-  const c = DATA.chat || {};
-  const cards = [{
-    label: 'Total conversations',
-    infoKey: 'chatTotal',
-    ico: KPI_ICONS.activated,
-    num: Number(c.conversations || 0),
-    sub: 'selected period',
-    spark: Array.isArray(c.volume) && c.volume.length ? sparkline(c.volume, 'var(--blue)') : ''
-  }, {
-    label: 'Resolved in chat',
-    infoKey: 'chatResolved',
-    ico: KPI_ICONS.takeUp,
-    num: Number(c.resolvedInChat || 0),
-    suffix: '%',
-    sub: Number.isFinite(Number(c.escalated)) ? Number(c.escalated) + '% handed to an agent' : 'handoff rate unavailable'
-  }, {
-    label: 'Avg first reply',
-    infoKey: 'chatFirstReply',
-    ico: {
-      bg: 'var(--brand-soft)',
-      path: '<circle cx="12" cy="12" r="9" stroke="var(--chart-cashflow)" stroke-width="1.8" fill="none"/><path d="M12 7v5l3 2" stroke="var(--chart-cashflow)" stroke-width="1.8" stroke-linecap="round"/>'
-    },
-    raw: c.avgFirstReply || 'Not available',
-    sub: 'median response time'
-  }, {
-    label: 'Chat satisfaction',
-    infoKey: 'chatSatisfaction',
-    ico: KPI_ICONS.rating,
-    num: Number(c.csat || 0),
-    suffix: '/5',
-    decimals: 1,
-    sub: 'rated after chat'
-  }];
-  const wrap = document.getElementById('chat-kpis');
-  if (!wrap) return;
-  cards.forEach((cardData, i) => {
-    const card = el(`<div class="card kpi reveal" style="animation-delay:${i * .06}s">
-      <div class="kpi-label"><span class="kpi-ico" style="background:${cardData.ico.bg}"><svg width="18" height="18" viewBox="0 0 24 24">${cardData.ico.path}</svg></span>${cardData.label}${employerInfoButton(cardData.infoKey)}</div>
-      <div class="kpi-value">${cardData.raw ? cardData.raw : '<span class="kpi-num">0</span>'}${cardData.suffix ? '<span style="font-size:18px">' + cardData.suffix + '</span>' : ''}</div>
-      <div class="kpi-sub">${cardData.sub || ''}</div>
-      ${cardData.spark || ''}
-    </div>`);
-    wrap.appendChild(card);
-    if (!cardData.raw) countUp(card.querySelector('.kpi-num'), cardData.num, {
-      decimals: cardData.decimals || 0,
-      delay: 120 + i * 60
-    });
-  });
-}
-function renderChatJourneys() {
-  const wrap = document.getElementById('chat-journeys');
-  if (!wrap) return;
-  const rows = Array.isArray(DATA.chat?.byJourney) ? DATA.chat.byJourney : [];
-  if (!rows.length) {
-    renderMarkup(wrap, '<div class="muted" style="padding:28px 12px;text-align:center;color:#8497a7;font-size:13px;">No conversations in the selected period.</div>');
-    return;
-  }
-  const max = Math.max(1, ...rows.map(j => Number(j.convos || 0)));
-  rows.forEach((j, i) => {
-    const col = JOURNEY_COLOR[j.key] || 'var(--blue)';
-    const row = el(`<div class="chat-jrow${j.key === CHAT_SELECTED ? ' sel' : ''}" data-k="${esc(j.key)}">
-      <div class="chat-jbar-lbl"><span class="chat-jdot" style="background:${col}"></span>${esc(j.name)}</div>
-      <div class="chat-jbar-track"><div class="chat-jbar" style="width:0;background:${col}"></div></div>
-      <div class="chat-jmeta">${j.convos.toLocaleString()}<small>${sentBadge(j.sentiment)}</small></div>
-    </div>`);
-    row.addEventListener('click', () => {
-      CHAT_SELECTED = j.key;
-      renderChatThemes();
-      document.querySelectorAll('.chat-jrow').forEach(r => r.classList.toggle('sel', r.dataset.k === j.key));
-    });
-    wrap.appendChild(row);
-    setTimeout(() => row.querySelector('.chat-jbar').style.width = j.convos / max * 100 + '%', 140 + i * 70);
-  });
-}
-function renderChatTrending() {
-  const wrap = document.getElementById('chat-trending');
-  const rows = Array.isArray(DATA.chat?.trending) ? DATA.chat.trending : [];
-  if (!rows.length) {
-    renderMarkup(wrap, '<div class="muted" style="padding:28px 12px;text-align:center;color:#8497a7;font-size:13px;">No trending questions in the selected period.</div>');
-    return;
-  }
-  rows.forEach((t, i) => {
-    const tc = t.trend === 'flat' ? '#8497a7' : 'var(--chart-engagement)';
-    wrap.appendChild(el(`<div class="trend-row">
-      <div class="trend-rank">${i + 1}</div>
-      <div class="trend-body"><div class="trend-q">"${t.q}"</div><div class="trend-meta">${t.journey}</div></div>
-      <div class="trend-stat"><div class="trend-n">${t.n}</div><div class="trend-up" style="color:${tc}">${t.trend === 'flat' ? 'Not available' : '▲ ' + t.trend}</div></div>
-    </div>`));
-  });
-}
-function renderChatThemes() {
-  const wrap = document.getElementById('chat-themes');
-  if (!wrap) return;
-  renderMarkup(wrap, '');
-  const journeys = Array.isArray(DATA.chat?.byJourney) ? DATA.chat.byJourney : [];
-  const j = journeys.find(x => x.key === CHAT_SELECTED) || journeys[0];
-  if (!j) {
-    const title = document.getElementById('chat-theme-title');
-    if (title) title.textContent = 'Chat themes';
-    const note = document.getElementById('chat-theme-note');
-    if (note) note.textContent = 'No journey themes in the selected period.';
-    renderMarkup(wrap, '<div class="muted" style="padding:28px 12px;text-align:center;color:#8497a7;font-size:13px;">No themes tagged in the selected period.</div>');
-    return;
-  }
-  document.getElementById('chat-theme-title').textContent = 'Top themes Not available ' + j.name;
-  document.getElementById('chat-theme-note').textContent = window.__LIVE__ ? 'Most frequent themes tagged for this journey in the selected period.' : 'Illustrative demonstration themes for this journey.';
-  if (!j.themes || !j.themes.length) {
-    wrap.appendChild(el('<div class="muted" style="padding:10px 0;color:#8497a7;font-size:13px;">No themes tagged for this journey yet.</div>'));
-    return;
-  }
-  const max = Math.max(...j.themes.map(t => t.n));
-  const grid = el('<div class="theme-grid"></div>');
-  j.themes.forEach((t, i) => {
-    const col = JOURNEY_COLOR[j.key];
-    const row = el(`<div class="theme-row">
-      <div class="theme-q">${t.t}</div>
-      <div class="theme-track"><div class="theme-fill" style="width:0;background:${col}"></div></div>
-      <div class="theme-n">${t.n}</div>
-    </div>`);
-    grid.appendChild(row);
-    setTimeout(() => row.querySelector('.theme-fill').style.width = t.n / max * 100 + '%', 120 + i * 60);
-  });
-  wrap.appendChild(grid);
-}
-function renderChat() {
-  const c = DATA.chat || {};
-  if (c.available === false) {
-    renderChatUnavailable();
-    return;
-  }
-  const countTag = document.getElementById('chat-count-tag');
-  if (countTag) countTag.textContent = Number(c.conversations || 0).toLocaleString() + ' chats';
-  renderChatKPIs();
-  renderChatJourneys();
-  renderChatTrending();
-  renderChatThemes();
-}
-
 /* ─────────────────── footnote ─────────────────── */
 renderMarkup(document.getElementById('footnote'), '<strong>How we define the headline numbers.</strong> &nbsp;<em>Employees better off</em> = unique employees who completed at least one journey with a concrete result: a lower monthly premium or instalment, a settlement or arrangement put in place, a prescribed-debt challenge lodged, or an interest-free emergency cash advance set up. It counts people, not actions (one person who fixed two things counts once). Employees who only received guidance, without a completed fix, are not included. &nbsp;<em>Debt under active intervention</em> = arrears where a settlement or reduced-instalment arrangement has actually been sent; it excludes prescribed debt being contested (shown separately) and debt the employee could not afford to arrange, where we instead educated them on prescription to self-manage (also shown separately).<br><br>' + 'Simulated demonstration data for the empower-fin Dashboard Portal. Figures are illustrative and reconciled to the consumer journey model. Employee-level data is aggregated and de-identified; individual financial information is never exposed to the employer. Underwriting by Guardrisk Life Insurance Company Limited. Intermediary services: EmpowerFS (Pty) Ltd, FSP 53395.');
 
@@ -2133,10 +1534,7 @@ const PERIOD = {
 function clearAll() {
   updateWellness(null);
   updateEmployerOverview(null);
-  ['outcomes', 'savings-chart', 'debt-profile', 'creditor-table', 'stress-strip', 'region-bars', 'income-donut', 'ratings', 'debt-states', 'prescription', 'risk-signals', 'opportunities', 'chat-kpis', 'chat-journeys', 'chat-trending', 'chat-themes', 'ewa-kpis', 'ewa-chart'].forEach(id => {
-    const e = document.getElementById(id);
-    if (e) renderMarkup(e, '');
-  });
+  updateEmployerCharts(null);
 }
 
 // A single optional visual must never prevent the rest of the dashboard from
@@ -2215,38 +1613,6 @@ function randMoney(v, f) {
   abs *= f;
   return 'R ' + Math.round(abs).toLocaleString('en-ZA');
 }
-function renderExecutiveInsight() {
-  const host = document.getElementById('executive-insight');
-  if (!host) return;
-  const w = DATA.wellness || {},
-    pc = DATA.periodComparison;
-  const score = Number(w.score),
-    prior = Number(w.prior);
-  const delta = Number.isFinite(score) && Number.isFinite(prior) ? score - prior : null;
-  const statements = [];
-  if (Number.isFinite(score)) statements.push('Financial wellbeing score is ' + score + '/100' + (delta === null ? '' : ', ' + (delta > 0 ? 'up ' : delta < 0 ? 'down ' : 'unchanged ') + Math.abs(delta) + ' points versus ' + (pc?.previous?.label || 'the comparison period')) + '.');
-  if (Number.isFinite(Number(pc?.current?.monthlyCashFreedUp))) statements.push('Monthly cash freed up is ' + formatRandThousands(pc.current.monthlyCashFreedUp) + '.');
-  if (Number.isFinite(Number(pc?.current?.totalAdvanced))) statements.push('Total advanced through early wage access is ' + formatRandThousands(pc.current.totalAdvanced) + ' in this period.');
-  const box = el('<div class="enterprise-insight"><div class="enterprise-insight-eyebrow">Executive insight</div><div class="enterprise-insight-copy"></div></div>');
-  box.querySelector('.enterprise-insight-copy').textContent = statements.join(' ') || 'More data is required to produce an executive insight for this view.';
-  renderMarkup(host, '');
-  host.appendChild(box);
-}
-function renderDataTrust() {
-  const host = document.getElementById('data-trust');
-  if (!host) return;
-  const q = DATA.dataQuality || {},
-    warnings = Array.isArray(q.warnings) ? q.warnings : [];
-  const state = warnings.length === 0 ? 'Good' : warnings.length <= 2 ? 'Attention' : 'Incomplete';
-  const btn = el('<button class="data-trust-pill ' + state.toLowerCase() + '" type="button"><span class="data-trust-dot"></span><span>Data quality: <strong>' + state + '</strong></span></button>');
-  renderMarkup(host, '');
-  host.appendChild(btn);
-  btn.addEventListener('click', () => {
-    const rows = warnings.length ? '<ul class="data-trust-list">' + warnings.map(w => '<li>' + esc(typeof w === 'string' ? w : w.message || JSON.stringify(w)) + '</li>').join('') + '</ul>' : '<p>No data-quality warnings were returned for this view.</p>';
-    const body = '<div class="data-trust-grid"><div><strong>' + (q.loadedFeedCount ?? 0) + '</strong><span>feeds loaded</span></div><div><strong>' + (q.coreFeedCount ?? 0) + '</strong><span>core feeds</span></div><div><strong>' + (q.workforceObservationRows ?? 0) + '</strong><span>workforce observations</span></div><div><strong>' + (q.debtObservationRows ?? 0) + '</strong><span>debt observations</span></div></div>' + rows;
-    openDrawer('Data quality', DATA.filterContext?.label || 'Selected view', body, 'outcome');
-  });
-}
 function saveCurrentView() {
   const key = 'empower-fin.savedViews';
   const views = JSON.parse(localStorage.getItem(key) || '[]');
@@ -2270,7 +1636,7 @@ function applyState() {
   // illustrative ratios); applying it to real snapshots would distort them.
   if (window.__LIVE__) {
     clearAll();
-    [renderExec, renderExecutiveInsight, renderDataTrust, renderWellness, renderOutcomes, renderSavings, renderEwa, renderDebtProfile, renderCreditors, renderRegions, renderIncome, renderRatings, renderDebtStates, renderPrescription, renderRiskSignals, renderOpportunities, renderChat, renderStressMap].forEach(safeRender);
+    [renderExec, renderWellness].forEach(safeRender);
     safeRender(() => wireMetricTips(document.getElementById('employer-view')));
     updateContextLine();
     const siteLabel = document.querySelector('#region-filter .tag-label');
@@ -2430,20 +1796,7 @@ function applyState() {
   clearAll();
   renderExec();
   renderWellness();
-  renderOutcomes();
-  renderSavings();
-  renderEwa();
-  renderDebtProfile();
-  renderCreditors();
-  renderRegions();
-  renderIncome();
-  renderRatings();
-  renderDebtStates();
-  renderPrescription();
-  renderRiskSignals();
-  renderOpportunities();
-  renderChat();
-  renderStressMap();
+
   // Fit the current render after both demo and live data updates. The callback
   // reads the current nodes, so a late demo callback cannot retain old metrics.
   requestAnimationFrame(() => fitResponsiveDataValues());
@@ -2753,133 +2106,6 @@ function openScheduleReport() {
     period: periodFromUrl()
   });
 }
-/* ─────── drill-down drawer ─────── */
-function openDrawer(title, sub, bodyHTML, kind = '') {
-  closeDrawer();
-  const back = el('<div class="drawer-backdrop"></div>');
-  const drawerClass = kind === 'outcome' ? 'drawer drawer-outcome' : kind === 'creditor' ? 'drawer drawer-creditor' : 'drawer';
-  const drawer = el(`<div class="${drawerClass}">
-    <div class="drawer-hd">
-      <div><div class="drawer-eyebrow">Drill-down</div><div class="drawer-title">${title}</div><div class="drawer-sub">${sub}</div></div>
-      <button class="drawer-x" aria-label="Close">&times;</button>
-    </div>
-    <div class="drawer-body">${bodyHTML}</div>
-  </div>`);
-  back.addEventListener('click', closeDrawer);
-  drawer.querySelector('.drawer-x').addEventListener('click', closeDrawer);
-  document.body.appendChild(back);
-  document.body.appendChild(drawer);
-  requestAnimationFrame(() => {
-    back.classList.add('show');
-    drawer.classList.add('show');
-  });
-}
-function closeDrawer() {
-  document.querySelectorAll('.drawer,.drawer-backdrop').forEach(e => {
-    e.classList.remove('show');
-    setTimeout(() => e.remove(), 260);
-  });
-}
-document.addEventListener('keydown', e => {
-  if (e.key === 'Escape') closeDrawer();
-});
-function outcomeDrill(o) {
-  const prior = DATA.comparison?.previous?.outcomes?.[o.key] || [];
-  const currentLabels = Array.isArray(o.trendLabels) ? o.trendLabels : DATA.comparison?.current?.savingsLabels || [];
-  const previousLabels = DATA.comparison?.previous?.outcomeLabels || [];
-  const body = `
-    <div class="drawer-stat-grid">
-      <div class="ds"><div class="dsl">Fixes completed</div><div class="dsv">${o.count.toLocaleString('en-ZA')}</div></div>
-      <div class="ds"><div class="dsl">${esc(o.statL)}</div><div class="dsv">${displayMoney(o.stat)}</div></div>
-      <div class="ds"><div class="dsl">Average per employee</div><div class="dsv">${o.avgPerEmployee || 'Not available'}</div></div>
-      <div class="ds"><div class="dsl">Period change</div><div class="dsv">${hasValue(o.delta) ? (Number(o.delta) > 0 ? '+' : '') + Number(o.delta).toLocaleString('en-ZA') : 'Not available'}</div></div>
-    </div>
-    <div class="drawer-section-title">Completion trend</div>
-    ${miniTrend(o.trend, prior, currentLabels, previousLabels, DATA.comparison?.label)}
-    <div class="drawer-note">Employee-level detail is de-identified. The employer sees aggregated outcomes only. ${o.key === 'credit' ? 'Credit life replacement uses the applicable NCA substitution rules.' : ''}</div>`;
-  openDrawer(o.name, o.meta, body, 'outcome');
-}
-function alignSeries(current, previous) {
-  const a = Array.isArray(current) ? current.map(Number) : [];
-  const b = Array.isArray(previous) ? previous.map(Number) : [];
-  const n = Math.max(a.length, b.length);
-  return {
-    current: Array.from({
-      length: n
-    }, (_, i) => a[i - (n - a.length)] ?? null),
-    previous: Array.from({
-      length: n
-    }, (_, i) => b[i - (n - b.length)] ?? null),
-    count: n
-  };
-}
-function countAxisTicks(maxValue, target = 5) {
-  const max = Math.max(1, Math.ceil(Number(maxValue) || 0));
-  if (max <= target) return Array.from({
-    length: max + 1
-  }, (_, i) => i);
-  const raw = max / target;
-  const magnitude = Math.pow(10, Math.floor(Math.log10(raw)));
-  const normalized = raw / magnitude;
-  const step = (normalized <= 1 ? 1 : normalized <= 2 ? 2 : normalized <= 5 ? 5 : 10) * magnitude;
-  const top = Math.ceil(max / step) * step;
-  const ticks = [];
-  for (let v = 0; v <= top + step / 2; v += step) ticks.push(Math.round(v));
-  return ticks;
-}
-function shortTrendLabel(label) {
-  const parts = String(label || '').trim().split(/\s+/);
-  if (parts.length >= 2) return parts[0].slice(0, 3) + ' ' + parts[parts.length - 1].slice(-2);
-  return String(label || '');
-}
-function miniTrend(trend, prior = [], labels = [], priorLabels = [], comparisonLabel = 'previous period') {
-  const aligned = alignSeries(trend, prior);
-  const values = [...aligned.current, ...aligned.previous].filter(v => Number.isFinite(v));
-  if (!values.length) return '<div class="muted" style="padding:10px 0;font-size:12.5px;">No trend data is available for this period.</div>';
-  const w = 700,
-    h = 260,
-    left = 58,
-    right = 22,
-    top = 24,
-    bottom = 44;
-  const ticks = countAxisTicks(Math.max(...values), 5);
-  const yMax = Math.max(1, ticks[ticks.length - 1] || 1);
-  const py = v => h - bottom - v / yMax * (h - bottom - top),
-    px = i => left + i * (w - left - right) / Math.max(1, aligned.count - 1);
-  const lineOf = series => series.map((v, i) => v == null ? '' : (i ? 'L' : 'M') + px(i).toFixed(1) + ' ' + py(v).toFixed(1)).filter(Boolean).join(' ');
-  const line = lineOf(aligned.current),
-    priorLine = lineOf(aligned.previous);
-  const dots = aligned.current.map((v, i) => v == null ? '' : `<circle cx="${px(i)}" cy="${py(v)}" r="3.8" fill="var(--chart-cashflow)" stroke="var(--white)" stroke-width="2"><title>${v.toLocaleString('en-ZA')}</title></circle>`).join('');
-  const priorDots = aligned.previous.map((v, i) => v == null ? '' : `<circle cx="${px(i)}" cy="${py(v)}" r="3.2" fill="var(--chart-engagement)" stroke="var(--white)" stroke-width="2"><title>${v.toLocaleString('en-ZA')}</title></circle>`).join('');
-  const yaxis = ticks.map(v => `<line x1="${left}" x2="${w - right}" y1="${py(v)}" y2="${py(v)}" stroke="var(--line-soft)" stroke-width="1"/><text x="${left - 10}" y="${py(v) + 3}" text-anchor="end" font-size="10" font-weight="700" fill="var(--grey-l)">${v.toLocaleString('en-ZA')}</text>`).join('');
-  const labelEvery = aligned.count > 8 ? 2 : 1;
-  const xlabels = Array.from({
-    length: aligned.count
-  }, (_, i) => {
-    const idx = labels.length ? i - (aligned.count - labels.length) : i;
-    const label = idx >= 0 ? labels[idx] : null;
-    const show = label && (i === 0 || i === aligned.count - 1 || i % labelEvery === 0);
-    return show ? `<text x="${px(i)}" y="${h - 14}" text-anchor="middle" font-size="9.5" font-weight="600" fill="var(--grey-l)">${esc(shortTrendLabel(label))}</text>` : '';
-  }).join('');
-  return `<div class="comparison-legend"><span><i class="comparison-dot current"></i>${esc(DATA.filterContext?.label || 'Selected period')}</span><span><i class="comparison-dot previous"></i>${esc(comparisonLabel || 'Previous period')}</span></div>
-  <svg class="outcome-trend-chart" viewBox="0 0 ${w} ${h}" style="width:100%;height:auto" role="img" aria-label="Completion trend comparison"><line x1="${left}" x2="${left}" y1="${top}" y2="${h - bottom}" stroke="var(--line)"/>${yaxis}<path d="${line}" fill="none" stroke="var(--chart-cashflow)" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"/><path d="${priorLine}" fill="none" stroke="var(--chart-engagement)" stroke-width="2.2" stroke-dasharray="6 5" stroke-linecap="round" stroke-linejoin="round"/>${dots}${priorDots}${xlabels}</svg>`;
-}
-function creditorDrill(c) {
-  const stages = Array.isArray(c.stateBreakdown) ? c.stateBreakdown : [];
-  const body = `
-    <div class="drawer-stats">
-      <div class="ds"><div class="dsl">Accounts in journey</div><div class="dsv">${esc(c.accounts)}</div></div>
-      <div class="ds"><div class="dsl">Total balance</div><div class="dsv">${c.balance}</div></div>
-      <div class="ds"><div class="dsl">Avg per account</div><div class="dsv">${c.avg}</div></div>
-    </div>
-    <div class="drawer-section-title">Where accounts stand</div>
-    <div class="hbar" style="margin-top:10px">
-      ${stages.length ? stages.map(s => `<div class="hbar-row" style="grid-template-columns:190px 1fr 68px"><div class="hbar-lbl">${s.label}</div><div class="hbar-track"><div class="hbar-fill" style="width:${s.pct}%"></div></div><div class="hbar-val">${s.count} · ${s.pct}%</div></div>`).join('') : '<div class="muted" style="padding:10px 0;font-size:12.5px;">No status breakdown available for this creditor.</div>'}
-    </div>
-    <div class="drawer-note">Employees deal with ${esc(c.name)} directly through a guided, do-it-yourself settlement Not available no debt-review flag, no third party taking over their money. Figures aggregated across ${esc(c.accounts)} employees.</div>`;
-  openDrawer(c.name, 'Unsecured arrears, settlement journey', body, 'creditor');
-}
-
 /* ─────── toast ─────── */
 let toastT;
 function openToast(msg) {
@@ -4006,6 +3232,19 @@ setInterval(checkSourceVersion, 30000);
 })();
 ;
 function renderExec() {
+  updateEmployerCharts({
+    ...DATA,
+    live: window.__LIVE__,
+    sentimentColours: Object.fromEntries((DATA.chat?.byJourney || []).map(j => [j.key, brandSeries(Math.round(j.sentiment / 20))])),
+    definitions: EMPLOYER_METRIC_INFO,
+    colours: Array.from({
+      length: Math.max(DATA.debtProfile?.length || 0, DATA.income?.length || 0)
+    }, (_, i) => brandSeries(i)),
+    keys: {
+      stress: (DATA.stressMap || []).map(item => employerMetricKey(item.l))
+    },
+    fit: () => requestAnimationFrame(() => fitResponsiveDataValues())
+  });
   updateEmployerOverview({
     exec: DATA.exec,
     wellness: DATA.wellness,
