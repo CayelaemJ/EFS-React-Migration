@@ -1,4 +1,4 @@
-# React migration status — 15 October 2026
+# React migration status — 16 October 2026
 
 The migration is **not ready for acceptance**. Dashboard and administration controllers still need conversion, and real authenticated workflows require migration-test credentials.
 
@@ -30,7 +30,8 @@ Brand Engine 1.4, supplied The Fixer normal/reversed SVG assets, updated styles,
 | Enterprise operations | React summary, source/read-model placement, routes, replica status, quality detail and refresh/collapse actions | Authenticated source verification |
 | Reset and rebuild | React confirmation, pending state, error recovery and dependent-panel refresh | Authenticated migration-environment verification |
 | Live data integration | React controlled API/SQL/replica fields, save/test/sync/full-refresh actions, progress and history | Newer source-switch/incremental-refresh contract reconciliation and authenticated source verification |
-| Remaining administration | React JSX with retained partner/preview controllers | Full conversion to React state/components |
+| Partners and client preview | Native React creation/presets, branding edits, logo detection, assignments, deletion and synthetic preview | Authenticated branding and assignment verification |
+| Administration shell | Retained theme, welcome, role-posture and report-manifest bootstrap | Convert remaining shell lifecycle and privileged-card visibility to React |
 
 The users entry no longer starts the legacy users or user-security scripts. Source HTML remains a reference fixture. Default Admin/Superadmin shells use The Fixer; custom partner dashboards show the partner identity alone, matching the latest source product decision.
 
@@ -93,3 +94,15 @@ Failed writes retain draft values and credentials; successful writes clear both 
 The source head `499a9d9` adds candidate-source preview/staging and changes normal refresh into an incremental operation. Those controls are not enabled here because their required backend reconciliation is pending. This checkpoint intentionally preserves the migration backend's existing **confirmed full-refresh** contract. It must not be presented as matching the newer source behaviour. New source database/refresh/semantic-layer and CI changes still require reconciliation as a complete contract.
 
 Hosted CI run `38535911551` passed for reset checkpoint `2c328d8d3ab58e040c17cdc6f59673474614b63e`. Integration verification adds failure/retry and credential handling, save-before-sync gating, confirmation/already-running handling, sync progress/terminal failure and desktop/mobile dark-form comparisons. API responses are mocked; no live integration, reset or database writes were performed.
+
+## October 16 partner and preview conversion
+
+Partner creation, presets, controlled branding fields, logo uploads, user/employer assignments, deletion and collapse now belong to React. All mutations check HTTP status and display escaped server errors. Failed edits keep their draft. A failed logo/preset second step resumes the existing partner rather than creating a duplicate. Existing-partner logo failures expose a retry action using the same selected file. Assignment failures retain unfinished choices, and read failures preserve existing cards/drafts with retry. Logo extraction and learning use the existing Brand Engine and payload contract.
+
+The synthetic client dashboard preview is generated as JSX from the source template, including its driver/funnel rows. It no longer renders through HTML strings. React owns its partner/theme state, modal visibility, body-scroll restoration, Escape/backdrop dismissal and focus containment/restoration. Preview-only action buttons explain that reports/exports require the live dashboard; they do not create real schedules or exports from synthetic data.
+
+The previous integration checkpoint `36010a83aedc24b47972189072a296d52dcd2464` passed hosted CI run `38748452663`. New partner coverage exercises mutations/failure recovery, duplicate prevention, assignment choices, large-file rejection and modal keyboard behaviour, plus populated panel/preview visual comparisons at desktop/mobile sizes in light/dark themes. The same 0.5% visual gate is retained. APIs are mocked; live partner writes, logo storage and assignments remain unverified.
+
+NewChanges main was rechecked on 16 October and remains `499a9d9598d0eced1ce8ebebb06bcaff983215c5`. The pending 43-commit backend/schema/source-activation delta remains outside this checkpoint. No database schema changes or Railway actions were executed.
+
+Local verification for this checkpoint: all 76 browser checks passed before the final logo retry refinement; the affected creation/edit checks and added same-file logo retry then passed with the rebuilt frontend. Hosted CI runs the complete 77-test suite for the published commit.

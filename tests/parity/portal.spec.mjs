@@ -1764,3 +1764,86 @@ test('React integration renders sync progress details and returns a terminal job
  await expect(page.locator('#live-integration').getByRole('button',{name:'Sync now',exact:true})).toBeDisabled();done=true;
  await expect(page.locator('#integ-result')).toContainText('<img src=x> Source disconnected');await expect(page.locator('#integ-result img')).toHaveCount(0);await expect(page.locator('#integ-url')).toBeEnabled();
 });
+
+const samplePartner={id:'partner-1',name:'Acme Finance',slug:'acme',displayName:'Acme',tagline:'People first',primaryColor:'003C64',accentColor:'00A651',navyColor:'003C64',_count:{users:1,employers:1}};
+test('React partners preserve failed branding edits and verify assignment and deletion responses',async({page})=>{
+ await mockApi(page);let rows=[{...samplePartner}],failEdit=true,failAssign=true,failDelete=true,assignments=[];
+ await page.route('**/api/admin/partners',route=>route.fulfill({json:rows}));
+ await page.route('**/api/admin/partners/partner-1',route=>{
+  if(route.request().method()==='DELETE'){if(failDelete)return route.fulfill({status:503,json:{error:'Delete unavailable'}});rows=[];return route.fulfill({json:{ok:true}});}
+  if(failEdit)return route.fulfill({status:503,json:{error:'<img src=x> Write unavailable'}});
+  rows[0]={...rows[0],...route.request().postDataJSON()};return route.fulfill({json:rows[0]});
+ });
+ await page.route('**/api/admin/partners/partner-1/assign',route=>{assignments.push(route.request().postDataJSON());return route.fulfill(failAssign?{status:503,json:{error:'Assignment unavailable'}}:{json:{ok:true}});});
+ await page.goto(url+'/admin');const card=page.locator('[data-partner="partner-1"]'),display=card.getByLabel('Display name');
+ await display.fill('<img src=x> Acme');await display.press('Tab');await expect(page.locator('#channel-partners-card')).toContainText('Write unavailable');await expect(display).toHaveValue('<img src=x> Acme');
+ failEdit=false;await display.focus();await display.press('Tab');await expect(card.locator('.partner-preview-copy strong')).toHaveText('<img src=x> Acme');await expect(card.locator('.partner-preview-copy img')).toHaveCount(0);
+ await page.locator('#pt-u-partner-1').selectOption('user-1');await page.locator('#pt-e-partner-1').selectOption('employer-1');await card.getByRole('button',{name:'Assign',exact:true}).click();
+ await expect(page.locator('#channel-partners-card')).toContainText('Assignment unavailable');await expect(page.locator('#pt-u-partner-1')).toHaveValue('user-1');expect(assignments).toHaveLength(1);
+ failAssign=false;await card.getByRole('button',{name:'Assign',exact:true}).click();await expect(page.locator('#pt-e-partner-1')).toHaveValue('');expect(assignments.slice(1)).toEqual([{userId:'user-1'},{employerId:'employer-1'}]);
+ page.once('dialog',d=>d.accept());await card.getByRole('button',{name:'Delete partner'}).click();await expect(page.locator('#channel-partners-card')).toContainText('Delete unavailable');await expect(card).toBeVisible();
+ failDelete=false;page.once('dialog',d=>d.accept());await card.getByRole('button',{name:'Delete partner'}).click();await expect(card).toHaveCount(0);
+});
+
+test('React partner creation resumes a failed logo save without creating another partner',async({page})=>{
+ await mockApi(page);let posts=0,puts=0,failLogo=true,rows=[];
+ await page.route('**/api/admin/partners',route=>{if(route.request().method()==='POST'){posts++;rows=[{...samplePartner,name:route.request().postDataJSON().name}];return route.fulfill({json:rows[0]});}return route.fulfill({json:rows});});
+ await page.route('**/api/admin/partners/partner-1',route=>{puts++;return route.fulfill(failLogo?{status:503,json:{error:'Logo save unavailable'}}:{json:{ok:true}});});
+ await page.goto(url+'/admin');await page.locator('#pt-new-name').fill('New Partner');
+ const logo=new PNG({width:16,height:16});for(let i=0;i<logo.data.length;i+=4){logo.data[i]=35;logo.data[i+1]=160;logo.data[i+2]=90;logo.data[i+3]=255;}
+ await page.locator('#pt-new-logo').setInputFiles({name:'brand.png',mimeType:'image/png',buffer:PNG.sync.write(logo)});
+ await expect(page.locator('#pt-new-logo-label')).toContainText('brand.png');await page.locator('#channel-partners-card').getByRole('button',{name:'Add partner',exact:true}).click();
+ await expect(page.locator('#channel-partners-card')).toContainText('Logo save unavailable');expect(posts).toBe(1);await expect(page.locator('#pt-new-name')).toHaveValue('New Partner');
+ failLogo=false;await page.locator('#channel-partners-card').getByRole('button',{name:'Add partner',exact:true}).click();await expect(page.locator('#pt-new-name')).toHaveValue('');expect(posts).toBe(1);expect(puts).toBe(2);
+});
+
+test('React partner preview traps focus, dismisses on Escape and restores scrolling',async({page})=>{
+ await ready(page,'/admin',{'/api/admin/partners':[samplePartner]});const open=page.getByRole('button',{name:'View client dashboard'});await open.click();
+ await expect(page.getByRole('dialog')).toBeVisible();await expect(page.getByRole('button',{name:'Close preview'})).toBeFocused();await expect(page.locator('#client-preview-app')).toContainText('Synthetic preview data.');
+ await page.keyboard.press('Shift+Tab');await expect(page.locator('#client-preview-app').getByRole('button',{name:'Quick actions'})).toBeFocused();await page.keyboard.press('Tab');await expect(page.getByRole('button',{name:'Close preview'})).toBeFocused();
+ await page.keyboard.press('Escape');await expect(page.getByRole('dialog')).toHaveCount(0);await expect(open).toBeFocused();expect(await page.evaluate(()=>document.body.style.overflow)).not.toBe('hidden');
+});
+
+for(const width of [1440,390])for(const theme of ['light','dark'])test(`partner panel and preview match source at ${width}px in ${theme}`,async({browser},testInfo)=>{
+ const captures=[[],[]];
+ for(const port of [4101,4100]){
+  const page=await browser.newPage({viewport:{width,height:1000},timezoneId:'Africa/Johannesburg'});await mockApi(page,{'/api/admin/partners':[samplePartner]});
+  await page.addInitScript(theme=>{localStorage.setItem('cookieNoticeDismissed','1');localStorage.setItem('empower-fin-theme',theme);},theme);await page.goto(`http://127.0.0.1:${port}/admin`);
+  await expect(page.locator('#pt-list .partner-card')).toHaveCount(1);await page.addStyleTag({content:'*,*::before,*::after{transition:none!important;animation:none!important;caret-color:transparent!important}.reveal{opacity:1!important;transform:none!important}#welcome-splash{display:none!important}'});await page.evaluate(()=>document.fonts.ready);
+  captures[0].push(PNG.sync.read(await page.locator('#channel-partners-card').screenshot()));
+  await page.getByRole('button',{name:'View client dashboard'}).click();await expect(page.locator('#client-preview-overlay')).toHaveClass(/is-open/);await page.getByRole('button',{name:'Close preview'}).evaluate(node=>node.blur());
+  captures[1].push(PNG.sync.read(await page.locator('.client-preview-dialog').screenshot()));await page.close();
+ }
+ for(let i=0;i<captures.length;i++){const [a,b]=captures[i];expect({width:b.width,height:b.height}).toEqual({width:a.width,height:a.height});const diff=new PNG({width:a.width,height:a.height}),ratio=pixelmatch(a.data,b.data,diff.data,a.width,a.height,{threshold:.15})/(a.width*a.height);if(ratio>.005){for(const [name,value]of [['source',a],['react',b],['diff',diff]])await testInfo.attach(`${i}-${name}`,{body:PNG.sync.write(value),contentType:'image/png'});}expect(ratio).toBeLessThanOrEqual(.005);}
+});
+
+test('React partner refresh errors retain existing drafts and assignment choices retry independently',async({page})=>{
+ await mockApi(page,{'/api/admin/partners':[samplePartner]});let failChoices=true,failRead=false;
+ await page.route('**/api/users',route=>route.fulfill(failChoices?{status:503,json:{error:'User choices unavailable'}}:{json:users}));
+ await page.route('**/api/admin/partners',route=>route.fulfill(failRead?{status:503,json:{error:'Partner refresh unavailable'}}:{json:[samplePartner]}));
+ await page.route('**/api/admin/partners/partner-1',route=>route.fulfill({status:503,json:{error:'Write unavailable'}}));
+ await page.route('**/api/admin/partners/partner-1/assign',route=>{failRead=true;return route.fulfill({json:{ok:true}});});
+ await page.goto(url+'/admin');const card=page.locator('[data-partner="partner-1"]');await expect(page.locator('#channel-partners-card')).toContainText('User choices unavailable');await expect(card.getByRole('button',{name:'Assign',exact:true})).toBeDisabled();
+ failChoices=false;await page.getByRole('button',{name:'Retry choices'}).click();await expect(card.getByRole('button',{name:'Assign',exact:true})).toBeEnabled();
+ await card.getByLabel('Tagline (optional)').fill('Retain this draft');await card.getByLabel('Tagline (optional)').press('Tab');await expect(page.locator('#channel-partners-card')).toContainText('Write unavailable');
+ await page.locator('#pt-u-partner-1').selectOption('user-1');await card.getByRole('button',{name:'Assign',exact:true}).click();await expect(page.locator('#channel-partners-card')).toContainText('Partner refresh unavailable');await expect(card.getByLabel('Tagline (optional)')).toHaveValue('Retain this draft');
+ failRead=false;await page.getByRole('button',{name:'Retry partners'}).click();await expect(card.getByLabel('Tagline (optional)')).toHaveValue('Retain this draft');
+});
+
+test('React partner presets resume failed branding and reject oversized logos',async({page})=>{
+ await mockApi(page);let posts=0,puts=0,fail=true,rows=[];
+ await page.route('**/api/admin/partners',route=>{if(route.request().method()==='POST'){posts++;rows=[{...samplePartner,name:route.request().postDataJSON().name}];return route.fulfill({json:rows[0]});}return route.fulfill({json:rows});});
+ await page.route('**/api/admin/partners/partner-1',route=>{puts++;return route.fulfill(fail?{status:503,json:{error:'Preset colours unavailable'}}:{json:{ok:true}});});
+ await page.goto(url+'/admin');const preset=page.locator('#pt-presets').getByRole('button',{name:'+ FNB (test)',exact:true});await preset.click();await expect(page.locator('#channel-partners-card')).toContainText('Preset colours unavailable');
+ fail=false;await preset.click();await expect(page.locator('#pt-list')).toContainText('FNB (test)');expect(posts).toBe(1);expect(puts).toBe(2);
+ await page.locator('#pt-new-logo').setInputFiles({name:'oversized.png',mimeType:'image/png',buffer:Buffer.alloc(500001)});await expect(page.locator('#channel-partners-card')).toContainText('Please use a logo under 500KB.');await expect(page.locator('#pt-new-logo-label')).toHaveText('+ Logo (optional)');expect(posts).toBe(1);
+});
+
+test('React partner logo upload retries the same file after a failed save',async({page})=>{
+ await mockApi(page,{'/api/admin/partners':[samplePartner]});let fail=true,patches=[];
+ await page.route('**/api/admin/partners/partner-1',route=>{patches.push(route.request().postDataJSON());return route.fulfill(fail?{status:503,json:{error:'Logo storage unavailable'}}:{json:{ok:true}});});
+ await page.goto(url+'/admin');const card=page.locator('[data-partner="partner-1"]'),logo=new PNG({width:16,height:16});
+ for(let i=0;i<logo.data.length;i+=4){logo.data[i]=35;logo.data[i+1]=160;logo.data[i+2]=90;logo.data[i+3]=255;}
+ await card.locator('input[type=file]').setInputFiles({name:'brand.png',mimeType:'image/png',buffer:PNG.sync.write(logo)});await expect(page.locator('#channel-partners-card')).toContainText('Logo storage unavailable');await expect(card.getByRole('button',{name:'Retry logo upload',exact:true})).toBeVisible();
+ fail=false;await card.getByRole('button',{name:'Retry logo upload',exact:true}).click();await expect(card.locator('.partner-preview-logo')).toHaveAttribute('src',/^data:image\/png;base64,/);await expect(card.getByRole('button',{name:'Retry logo upload',exact:true})).toHaveCount(0);expect(patches).toHaveLength(2);expect(patches[1].logoDataUrl).toBe(patches[0].logoDataUrl);
+});

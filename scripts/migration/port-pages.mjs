@@ -2,6 +2,7 @@
  * The source HTML remains a reference fixture; production renders the JSX pages.
  */
 import fs from 'node:fs';
+import {compilePreviewTemplate} from './preview-template.mjs';
 import path from 'node:path';
 import { parse as htmlParse } from 'parse5';
 import { parse } from '@babel/parser';
@@ -86,6 +87,8 @@ for(const file of fs.readdirSync('public').filter(x=>x.endsWith('.html'))){
   if(portfolioLayout&&n.attrs?.some(a=>a.name==='data-metric'&&a.value==='measureGuide'))return '{state.guide}';
   if(name==='admin'){
    const id=n.attrs?.find(a=>a.name==='id')?.value;
+   if(id==='channel-partners-card')return '<AdminPartners/>';
+   if(id==='client-preview-overlay')return '';
    if(!integrationLayout&&id==='live-integration')return '<AdminIntegration/>';
    if(!governanceLayout&&id==='admin-security-strip')return '<AdminSecurity/>';
    if(!governanceLayout&&id==='enterprise-operations-card')return '<EnterpriseOperations/>';
@@ -213,6 +216,12 @@ for(const file of fs.readdirSync('public').filter(x=>x.endsWith('.html'))){
  }
  if(name==='admin'){
   function findNode(n,predicate){if(predicate(n))return n;for(const child of n.childNodes||[]){const result=findNode(child,predicate);if(result)return result;}}
+  const sourceScripts=scripts.join('\n;\n');
+  const previewFunction=parse(sourceScripts,{sourceType:'script'}).program.body.find(n=>n.type==='FunctionDeclaration'&&n.id.name==='openClientPreview');
+  const previewAssignment=previewFunction.body.body.find(n=>n.type==='ExpressionStatement'&&n.expression.type==='AssignmentExpression'&&n.expression.left.property?.name==='innerHTML');
+  const previewConstants=previewFunction.body.body.filter(n=>n.type==='VariableDeclaration'&&n.declarations.some(d=>['score','drivers','funnel'].includes(d.id.name))).map(n=>generate(n).code).join('\n');
+  const previewMarkup=compilePreviewTemplate(previewAssignment.expression.right);
+  fs.writeFileSync(`${out}/client-preview-layout.jsx`,`// Synthetic source preview rendered as native JSX; no live data.\nimport React from 'react';\nexport function ClientPreviewLayout({p,logo}){const name=p.displayName||p.name||'Partner',partnerLabel=name;\n${previewConstants}\nreturn <>${previewMarkup}</>;}\n`);
   integrationLayout=true;const integrationMarkup=jsx(findNode(body,n=>n.attrs?.some(a=>a.name==='id'&&a.value==='live-integration')));integrationLayout=false;
   fs.writeFileSync(`${out}/admin-integration-layout.jsx`,`// Source integration layout; fields and actions are React-owned.\nimport React from 'react';\nimport {siteText} from '../native/site-config.js';\nexport function IntegrationLayout({state,actions}){return (${integrationMarkup});}\n`);
   governanceLayout=true;
@@ -248,6 +257,11 @@ for(const file of fs.readdirSync('public').filter(x=>x.endsWith('.html'))){
   if(insightsStart<0||insightsEnd<0)throw new Error('Missing admin insights boundary');
   controllerSource=controllerSource.slice(0,insightsStart)+'// ── admin audit log (React)\n'+controllerSource.slice(insightsEnd);
   controllerSource=controllerSource.replace("    ['engagement',loadEngagement],\n",'').replace("    ['audit',loadAuditLog],\n",'');
+  const partnerStart=controllerSource.indexOf('// ── channel partners (white-label)');
+  const partnerEnd=controllerSource.indexOf('// ── dashboard section permissions',partnerStart);
+  if(partnerStart<0||partnerEnd<0)throw new Error('Missing partner migration boundary');
+  controllerSource=controllerSource.slice(0,partnerStart)+controllerSource.slice(partnerEnd);
+  controllerSource=controllerSource.replace("    ['partners',loadPartners],\n",'').replace("    ['presets',renderPresets],\n",'');
   const integrationStart=controllerSource.indexOf('function setIntegMode(mode){');
   const integrationEnd=controllerSource.indexOf('// ── system email / SMTP',integrationStart);
   if(integrationStart<0||integrationEnd<0)throw new Error('Missing integration boundary');
@@ -282,7 +296,7 @@ for(const file of fs.readdirSync('public').filter(x=>x.endsWith('.html'))){
   controllerSource=controllerSource.replace(/window\.setInterval\(\(\) => \{\n  if\(document\.visibilityState !== 'visible'\) return;\n  loadHistory\(\);\n\}, 1500\);/,'');
  }
  if(name==='admin'){
-  const obsolete=parse(controllerSource,{sourceType:'script'}).program.body.filter(n=>n.type==='FunctionDeclaration'&&['pollJob','installCompactCollapse'].includes(n.id.name));
+  const obsolete=parse(controllerSource,{sourceType:'script'}).program.body.filter(n=>n.type==='FunctionDeclaration'&&['pollJob','installCompactCollapse','toggleChannelPartners'].includes(n.id.name));
   for(const node of obsolete.reverse())controllerSource=controllerSource.slice(0,node.start)+controllerSource.slice(node.end);
   controllerSource=controllerSource.replace('  installCompactCollapse();','');
  }
@@ -314,7 +328,7 @@ for(const file of fs.readdirSync('public').filter(x=>x.endsWith('.html'))){
  if(name==='dashboard')fs.writeFileSync(`${out}/${name}.jsx`,code.replace("import React from 'react';","import React from 'react';\nimport {Portfolio,updatePortfolio} from '../native/Portfolio.jsx';"));
  if(name==='admin')fs.writeFileSync(`${out}/${name}.jsx`,code.replace("import React from 'react';", "import React from 'react';\nimport {AdminEmailPanel,AdminAutomationPanel} from '../native/AdminSettings.jsx';\nimport {AdminSections} from '../native/AdminSections.jsx';\nimport {ReportPicker,ReportWorkspace,ImportHistoryRows,initializeReports,refreshImportHistory} from '../native/AdminReports.jsx';"));
  const native=fs.existsSync(`frontend/src/native/${name}.jsx`);
- if(name==='admin')fs.writeFileSync(`${out}/${name}.jsx`,fs.readFileSync(`${out}/${name}.jsx`,'utf8').replace("import React from 'react';","import React from 'react';\nimport {AdminIntegration,setIntegrationMode as setIntegMode,refreshIntegration} from '../native/AdminIntegration.jsx';\nimport {AdminReset,configureResetRefresh} from '../native/AdminReset.jsx';\nimport {EnterpriseOperations} from '../native/EnterpriseOperations.jsx';"));
+ if(name==='admin')fs.writeFileSync(`${out}/${name}.jsx`,fs.readFileSync(`${out}/${name}.jsx`,'utf8').replace("import React from 'react';","import React from 'react';\nimport {AdminPartners} from '../native/AdminPartners.jsx';\nimport {AdminIntegration,setIntegrationMode as setIntegMode,refreshIntegration} from '../native/AdminIntegration.jsx';\nimport {AdminReset,configureResetRefresh} from '../native/AdminReset.jsx';\nimport {EnterpriseOperations} from '../native/EnterpriseOperations.jsx';"));
  if(name==='dashboard')fs.writeFileSync(`${out}/${name}.jsx`,fs.readFileSync(`${out}/${name}.jsx`,'utf8').replace("import React from 'react';","import React from 'react';\nimport {Wellness,updateWellness} from '../native/Wellness.jsx';"));
  if(name==='admin')fs.writeFileSync(`${out}/${name}.jsx`,fs.readFileSync(`${out}/${name}.jsx`,'utf8').replace("import React from 'react';","import React from 'react';\nimport {AdminSecurity,Compliance,MLOpsAlert,refreshGovernance} from '../native/AdminGovernance.jsx';"));
  if(name==='admin')fs.writeFileSync(`${out}/${name}.jsx`,fs.readFileSync(`${out}/${name}.jsx`,'utf8').replace("import React from 'react';","import React from 'react';\nimport {AuditRows,Engagement} from '../native/AdminInsights.jsx';"));
