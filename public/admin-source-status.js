@@ -1,7 +1,9 @@
 (() => {
   const ENDPOINT = "/api/admin/integration";
   const ID = "efs-admin-source-status";
+  const DB_ENDPOINT = "/api/admin/database-status";
   let timer = null;
+  let collapsed = true;
 
   function esc(value) {
     return String(value ?? "").replace(/[&<>"']/g, (ch) => ({ "&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;" }[ch]));
@@ -38,6 +40,8 @@
     const style = document.createElement("style");
     style.textContent = `
       #${ID}{position:fixed;right:18px;bottom:18px;z-index:120;max-width:min(560px,calc(100vw - 36px));font:600 12px/1.45 Manrope,system-ui,sans-serif;color:#243746;background:rgba(255,255,255,.97);border:1px solid #d7cde9;border-radius:12px;box-shadow:0 10px 30px rgba(15,36,56,.14);padding:10px 12px;backdrop-filter:blur(10px)}
+      #${ID} .efs-toggle{border:1px solid currentColor;border-radius:6px;padding:2px 8px;font:inherit;color:inherit;background:transparent;cursor:pointer;margin-left:auto}
+      #${ID} .efs-help{font-size:11px;font-weight:400;line-height:1.55;margin-top:7px;color:inherit;opacity:.85}
       #${ID} .efs-source-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
       #${ID} .efs-source-dot{width:8px;height:8px;border-radius:50%;background:#64748b;flex:0 0 auto}
       #${ID}[data-tone="ok"] .efs-source-dot{background:#187a4d}
@@ -49,6 +53,15 @@
       #${ID}[data-tone="busy"] .efs-source-state{background:#fcedd4;color:#8a5a10}
       #${ID}[data-tone="err"] .efs-source-state{background:#fbe4df;color:#b5391f}
       #${ID} .efs-source-meta{margin-top:3px;color:#617486;font-size:10.5px}
+      #${ID} .efs-db-panel{margin-top:9px;padding-top:9px;border-top:1px solid #d7cde9}
+      #${ID} .efs-db-dot{width:8px;height:8px;border-radius:50%;background:#64748b;flex:0 0 auto}
+      #${ID} .efs-db-panel[data-db-status="green"] .efs-db-dot{background:#187a4d}
+      #${ID} .efs-db-panel[data-db-status="yellow"] .efs-db-dot{background:#b7791f}
+      #${ID} .efs-db-panel[data-db-status="red"] .efs-db-dot{background:#b5391f}
+      #${ID} .efs-db-panel[data-db-status="green"] .efs-source-state{background:#dff3e8;color:#137a47}
+      #${ID} .efs-db-panel[data-db-status="yellow"] .efs-source-state{background:#fcedd4;color:#8a5a10}
+      #${ID} .efs-db-panel[data-db-status="red"] .efs-source-state{background:#fbe4df;color:#b5391f}
+      @media(prefers-color-scheme:dark){#${ID}{background:rgba(23,30,44,.97);color:#e6edf6;border-color:#46516a}#${ID} strong{color:#e6d9ff}#${ID} .efs-source-meta{color:#acbacb}#${ID} .efs-db-panel{border-color:#46516a}}
       @keyframes efs-source-pulse{50%{opacity:.35}}
       @media(max-width:640px){#${ID}{left:12px;right:12px;bottom:12px;max-width:none}}
     `;
@@ -67,14 +80,22 @@
     const lock = config.environmentLocked ? " · Railway env locked" : "";
     const configured = config.configured ? "" : " · incomplete";
     const note = config.lastSyncNote ? ` · ${esc(config.lastSyncNote)}` : "";
+    const previousDb = document.getElementById("efs-db-status")?.outerHTML;
     el.innerHTML = `
       <div class="efs-source-row">
         <span class="efs-source-dot" aria-hidden="true"></span>
         <strong>Connected source: ${esc(sourceLabel(config))}</strong>
         <span class="efs-source-state">${esc(current.label)}</span>
+        <button class="efs-toggle" type="button" aria-expanded="${!collapsed}" aria-controls="efs-status-detail">${collapsed ? "Details ▾" : "Collapse ▴"}</button>
       </div>
+      <div id="efs-status-detail" ${collapsed ? "hidden" : ""}>
       <div class="efs-source-meta">Last successful: ${esc(when(config.lastSuccessfulSyncAt))}${configured}${lock}${note}</div>
+      <div class="efs-help">Source = external SQL/API reporting data. COMPLETE = last import succeeded, not proof that the source is up to date. PostgreSQL = the shared Neon application database that stores dashboards and users; HEALTHY means its connection check succeeded. A healthy database does not guarantee successful source sync.</div>
+      <div class="efs-db-panel" data-db-status="yellow" id="efs-db-status"><div class="efs-source-row"><span class="efs-db-dot" aria-hidden="true"></span><strong>PostgreSQL: Checking connection…</strong><span class="efs-source-state">CHECKING</span></div></div>
+      </div>
     `;
+    el.querySelector(".efs-toggle")?.addEventListener("click", () => { collapsed = !collapsed; const detail = document.getElementById("efs-status-detail"); if(detail) detail.hidden = collapsed; const btn = el.querySelector(".efs-toggle"); if(btn){btn.textContent = collapsed ? "Details ▾" : "Collapse ▴";btn.setAttribute("aria-expanded",String(!collapsed));} });
+    if (previousDb) document.getElementById("efs-db-status")?.replaceWith(document.createRange().createContextualFragment(previousDb));
   }
   async function refresh() {
     try {
@@ -89,10 +110,31 @@
       render(await response.json());
     } catch {}
   }
+  async function refreshDatabase() {
+    let status;
+    try {
+      const response = await fetch(DB_ENDPOINT, { credentials: "same-origin", cache: "no-store" });
+      if (response.status === 401 || response.status === 403) return;
+      if (!response.ok) throw new Error("Health endpoint unavailable");
+      status = await response.json();
+    } catch {
+      status = { status: "red", provider: "Unknown", database: "Unverified", message: "Status check unavailable" };
+    }
+    const panel = document.getElementById("efs-db-status");
+    if (!panel) return;
+    const tone = ["green", "yellow", "red"].includes(status.status) ? status.status : "red";
+    panel.dataset.dbStatus = tone;
+    const checked = status.checkedAt ? when(status.checkedAt) : "Unavailable";
+    const duration = Number.isFinite(status.latencyMs) ? ` · ${status.latencyMs} ms` : "";
+    panel.innerHTML = `<div class="efs-source-row"><span class="efs-db-dot" aria-hidden="true"></span>
+      <strong>PostgreSQL: ${esc(status.provider || "Unknown")} · ${esc(status.database || "Unknown")}</strong>
+      <span class="efs-source-state">${tone === "green" ? "HEALTHY" : tone === "yellow" ? "DEGRADED" : "ERROR"}</span></div>
+      <div class="efs-source-meta">${esc(status.message || "Unknown")}${duration} · Checked: ${esc(checked)}</div>`;
+  }
   function start() {
-    refresh();
-    timer = setInterval(refresh, 5000);
-    document.addEventListener("visibilitychange", () => { if (!document.hidden) refresh(); });
+    refresh().then(refreshDatabase);
+    timer = setInterval(() => { refresh().then(refreshDatabase); }, 60000);
+    document.addEventListener("visibilitychange", () => { if (!document.hidden) refresh().then(refreshDatabase); });
     window.addEventListener("efs:source-status-refresh", refresh);
   }
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", start, { once:true });

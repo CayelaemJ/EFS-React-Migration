@@ -40,4 +40,7 @@ assert.ok(server.includes('user.role !== "ADMIN" && user.role !== "SUPERADMIN"')
 assert.equal((server.match(/allowedPath: \(pathname\) => !pathname.endsWith\(".html"\)/g)||[]).length,2,'Static HTML must not bypass canonical page routing');
 assert.equal(JSON.parse(read('railway.json')).deploy.healthcheckPath,'/health');
 console.log('PASS: 12 React page entries, built assets, canonical routes and protected routing');
-console.log('NOTE: parity controllers still use imperative DOM operations; this is not proof of a completed declarative React migration.');
+assert.doesNotMatch(read('frontend/src/parity/dashboard.jsx'), /renderMarkup|registerAction|function applyState|addEventListener|querySelector/, 'Dashboard page is a declarative React layout');
+assert.doesNotMatch(read('frontend/src/native/dashboard-model.js'), /innerHTML|renderMarkup|document\.|addEventListener|querySelector|<button/, 'Dashboard model supplies data without DOM controllers');
+assert.ok(manifest.every(page=>page.implementation==='declarative-react'),'Every source page is declarative React');
+console.log('PASS: all 12 pages use declarative React; dashboard model has no DOM controllers.');

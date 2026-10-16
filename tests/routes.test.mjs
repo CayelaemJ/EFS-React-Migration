@@ -147,6 +147,23 @@ try {
   assert.equal(response.statusCode, 200);
   assert.deepEqual(response.json(), []);
   assert.equal(reads, 1);
+  const sourceRoutes=[
+    {method:'GET',url:'/api/admin/database-status'},
+    {method:'GET',url:'/api/admin/integration/changes'},
+    {method:'POST',url:'/api/admin/integration/preview-switch',payload:{}},
+    {method:'POST',url:'/api/admin/integration/stage-source',payload:{}},
+    {method:'GET',url:'/api/admin/integration/dataset-replacement/preview'},
+    {method:'POST',url:'/api/admin/integration/activate-equivalent-source',payload:{}},
+  ];
+  for(const route of sourceRoutes){
+    assert.equal((await app.inject(route)).statusCode,401,`anonymous source guard: ${route.url}`);
+    for(const value of ['VIEWER','EMPLOYER_MANAGER','PORTFOLIO_MANAGER']){
+      role=value;
+      const result=await app.inject({...route,headers:{authorization:'Bearer isolated-permission-test'}});
+      assert.equal(result.statusCode,403,`${value} source guard: ${route.url}`);
+    }
+  }
+  console.log("PASS: source and database endpoints reject anonymous and non-admin requests");
 } finally {
   prisma.session.findUnique = originalSession;
   prisma.dashboardSection.findMany = originalSections;

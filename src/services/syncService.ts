@@ -20,7 +20,8 @@ const prisma = new PrismaClient();
 type Json = Prisma.InputJsonValue;
 const CURSOR_OVERLAP_MS = 5 * 60 * 1000;
 const CLOCK_SKEW_TOLERANCE_MS = 5 * 60 * 1000;
-export const SOURCE_CHANGE_POLL_SECONDS = Math.max(15, Math.min(3600, Number(process.env.SOURCE_CHANGE_POLL_SECONDS ?? 30) || 30));
+// Five-minute default avoids expensive ten-feed SQL watermark checks every 30s.
+export const SOURCE_CHANGE_POLL_SECONDS = Math.max(60, Math.min(3600, Number(process.env.SOURCE_CHANGE_POLL_SECONDS ?? 300) || 300));
 const pendingSnapshotEmployers = new Set<string>();
 let snapshotDrainScheduled = false;
 
@@ -99,6 +100,14 @@ export interface IntegrationConfigPatch {
 }
 
 export async function saveConfig(patch: IntegrationConfigPatch) {
+  const current = await getConfig();
+  const identityFields = ["sourceMode","baseUrl","sqlHost","sqlPort","sqlDatabase","sqlSchema","sqlViewPrefix","sqlDialect"] as const;
+  if (current.enabled && identityFields.some(key => patch[key] !== undefined && String(patch[key] ?? "") !== String(current[key] ?? ""))) {
+    throw new Error("Use staged source cutover for active database identity changes; live cursors remain unchanged.");
+  }
+  if (patch.scheduleHours !== undefined &&
+      (!Number.isInteger(patch.scheduleHours) || patch.scheduleHours < 1 || patch.scheduleHours > 168))
+    throw new Error("Scheduled source reconciliation interval must be between 1 and 168 whole hours.");
   const data: any = { ...patch };
   if (patch.authToken === "" || patch.authToken == null) delete data.authToken;
   if (patch.sqlPassword === "" || patch.sqlPassword == null) delete data.sqlPassword;
@@ -150,6 +159,7 @@ export async function saveAnalyticsRoute(input: { reportKey: string; executionMo
 }
 
 export function publicConfig(config: Awaited<ReturnType<typeof getConfig>>) {
+  // Never expose replica password (or primary/API credentials) in public configuration responses.
   const { authToken, sqlPassword, sourceAnalyticsReplicaPassword, ...safe } = config as any;
   const effective = effectiveSourceConfig(config);
   let effectiveSourceMode = "API";
@@ -260,7 +270,7 @@ export async function detectSourceChanges() {
     };
   } finally {
     if (adapter) {
-      try { await adapter.close(); } catch {}
+      try { await adapter.close(); } catch { /* Optional cleanup or diagnostics failure; retain previous state. */ }
     }
   }
 }
@@ -269,7 +279,7 @@ const FULL_REFRESH_LOCK_A = 0x454653; // must match dailyRefresh.ts
 const SOURCE_SYNC_COORDINATION_LOCK_B = 79;
 const SOURCE_INCREMENTAL_MUTEX_B = 80;
 
-async function openIncrementalSyncLease() {
+export async function openIncrementalSyncLease() {
   const connectionString = process.env.DATABASE_URL;
   if (!connectionString) throw new Error("DATABASE_URL is required for source-sync coordination.");
   const client = new Client({ connectionString });
@@ -279,7 +289,7 @@ async function openIncrementalSyncLease() {
       "SELECT pg_try_advisory_lock_shared($1, $2) AS acquired",
       [FULL_REFRESH_LOCK_A, SOURCE_SYNC_COORDINATION_LOCK_B],
     );
-    if (!Boolean(result.rows?.[0]?.acquired)) {
+    if (!result.rows?.[0]?.acquired) {
       await client.end();
       return null;
     }
@@ -287,7 +297,7 @@ async function openIncrementalSyncLease() {
       "SELECT pg_try_advisory_lock($1, $2) AS acquired",
       [FULL_REFRESH_LOCK_A, SOURCE_INCREMENTAL_MUTEX_B],
     );
-    if (!Boolean(incremental.rows?.[0]?.acquired)) {
+    if (!incremental.rows?.[0]?.acquired) {
       await client.query(
         "SELECT pg_advisory_unlock_shared($1, $2)",
         [FULL_REFRESH_LOCK_A, SOURCE_SYNC_COORDINATION_LOCK_B],
@@ -302,7 +312,7 @@ async function openIncrementalSyncLease() {
   }
 }
 
-async function closeIncrementalSyncLease(client: Client | null) {
+export async function closeIncrementalSyncLease(client: Client | null) {
   if (!client) return;
   try {
     await client.query(
@@ -367,6 +377,8 @@ async function runSyncUnlocked(trigger: "manual" | "scheduled" | "full-refresh" 
   }
   const summary: Record<string, any> = {};
   const touchedEmployers = new Set<string>();
+  let historicalShadowPartitions: import("./semanticRefreshPlanner.js").RefreshPartition[] = [];
+  let historicalPlanningError: string | null = null;
   let anyFailed = false;
   let anyOk = false;
   let failedStep: { reportIndex: number; reportKey: string; title: string; reason: string } | null = null;
@@ -413,7 +425,7 @@ async function runSyncUnlocked(trigger: "manual" | "scheduled" | "full-refresh" 
           try {
             const described = await adapter.describe(reportKey);
             sourceTotalRows = Number.isFinite(Number(described.totalRows)) ? Number(described.totalRows) : null;
-          } catch {}
+          } catch { /* Optional cleanup or diagnostics failure; retain previous state. */ }
         }
         const feedSpan = 82 / Math.max(1, LOAD_ORDER.length);
         const feedStart = 5 + reportIndex * feedSpan;
@@ -528,7 +540,7 @@ async function runSyncUnlocked(trigger: "manual" | "scheduled" | "full-refresh" 
               if (newestMs != null && newestMs < cursor.lastSourceUpdatedAt.getTime()) {
                 rebasedCursor = new Date(newestMs);
               }
-            } catch {}
+            } catch { /* Optional cleanup or diagnostics failure; retain previous state. */ }
           }
           await prisma.integrationCursor.update({
             where: { reportKey },
@@ -702,6 +714,21 @@ async function runSyncUnlocked(trigger: "manual" | "scheduled" | "full-refresh" 
           }
           committed.skipped = 0;
         }
+        // Only inspect canonical rows after their transactional import succeeds.
+        // Planning is opt-in and bounded; failures must not invalidate live sync.
+        if (process.env.ENABLE_SEMANTIC_SHADOW_ENQUEUE === "true" && trigger !== "full-refresh" &&
+            !historicalPlanningError && (committed.inserted + committed.updated + committed.deleted + (committed.historyRows ?? 0) > 0)) {
+          try {
+            const { partitionsFromCanonicalSourceRows } = await import("./semanticSourceChangePlanner.js");
+            historicalShadowPartitions.push(...partitionsFromCanonicalSourceRows(
+              reportKey, result.rows as Record<string, unknown>[], 500));
+            if (historicalShadowPartitions.length > 500) throw new Error("Historical semantic partition budget exceeded");
+          } catch(error:any) {
+            historicalPlanningError = error?.message ?? String(error);
+            historicalShadowPartitions = [];
+            console.warn("[sync] historical semantic invalidation deferred:", historicalPlanningError);
+          }
+        }
         await prisma.importBatch.update({
           where: { id: batch.id },
           data: {
@@ -856,6 +883,38 @@ async function runSyncUnlocked(trigger: "manual" | "scheduled" | "full-refresh" 
     }
   }
 
+  // Shadow-only durable handoff. Do not alter the serving dashboard path.
+  // Historical dependency expansion is not yet complete, therefore only
+  // enqueue current-period shadow work when an explicitly ACTIVE generation
+  // has been assigned to this worker by the operator.
+  if (!anyFailed && trigger !== "full-refresh" && touchedEmployers.size &&
+      process.env.ENABLE_SEMANTIC_SHADOW_ENQUEUE === "true") {
+    try {
+      const generationId = process.env.SEMANTIC_ACTIVE_SOURCE_GENERATION_ID;
+      if (!generationId) throw new Error("SEMANTIC_ACTIVE_SOURCE_GENERATION_ID is required");
+      const generation = await prisma.sourceGeneration.findUnique({ where: { id: generationId } });
+      if (generation?.state !== "ACTIVE") throw new Error("Semantic source generation must be ACTIVE");
+      const { enqueueSemanticRefresh } = await import("./semanticRefreshQueue.js");
+      const period = new Date().toISOString().slice(0, 7);
+      const changedFeeds = Object.keys(summary).filter(key =>
+        ["employers","workforce_snapshots","employees","platform_users","journeys","debt_accounts","policies","ratings","referrals","salary_advances"].includes(key) &&
+        (Number(summary[key]?.inserted || 0) + Number(summary[key]?.updated || 0) + Number(summary[key]?.deleted || 0) + Number(summary[key]?.historyRows || 0)) > 0);
+      if (historicalPlanningError) throw new Error("Historical dependency proof unavailable: " + historicalPlanningError);
+      if (changedFeeds.length) {
+        const { mergeAndExpandSemanticPartitions } = await import("./semanticSourceChangePlanner.js");
+        const historical = mergeAndExpandSemanticPartitions(historicalShadowPartitions,period,500);
+        if (!historical.length) throw new Error("Changed feeds have no provable business-period invalidations");
+        const result = await enqueueSemanticRefresh(generationId, throughAt,historical);
+        summary.semanticShadowQueue = { ...result, generationId, affectedPeriods: [...new Set(historical.map(x => x.period))].sort(),
+          partitions:historical.length, mode: "SHADOW_ONLY_HISTORICAL" };
+      }
+    } catch (error: any) {
+      // Shadow sidecar failures must not falsify a successfully committed sync.
+      summary.semanticShadowQueue = { error: error?.message || String(error), mode: "SHADOW_ONLY" };
+      console.error("[sync] shadow semantic queue handoff failed:", error);
+    }
+  }
+
   if (!anyFailed) {
     await emitSyncProgress(options, {
       phase: "REBUILDING_DASHBOARD",
@@ -906,7 +965,55 @@ async function runSyncUnlocked(trigger: "manual" | "scheduled" | "full-refresh" 
     message: note,
     feedCount: LOAD_ORDER.length,
   });
-  return { ok: status !== "FAILED", status, sourceMode: mode, note, throughAt, touchedEmployers: [...touchedEmployers], summary };
+  return { ok: status === "OK", status, sourceMode: mode, note, throughAt, touchedEmployers: [...touchedEmployers], summary };
+}
+
+/**
+ * Read-only preflight for a proposed source connection. No cursor changes,
+ * integrationConfig writes, raw imports or dashboard invalidation.
+ * Explicitly report source identity changes so Admin can require a cutover.
+ */
+export async function previewSourceSwitch(patch: IntegrationConfigPatch = {}) {
+  const saved = await getConfig();
+  const safePatch: IntegrationConfigPatch = { ...patch };
+  if (!safePatch.authToken) delete safePatch.authToken;
+  if (!safePatch.sqlPassword) delete safePatch.sqlPassword;
+  const candidate = { ...saved, ...safePatch };
+  const active = effectiveSourceConfig(saved);
+  const proposed = effectiveSourceConfig(candidate);
+  const sourceIdentity = (c: typeof active) => JSON.stringify([
+    configuredSourceMode(c),
+    c.baseUrl ?? null, c.sqlDialect ?? null, c.sqlHost ?? null,
+    c.sqlPort ?? null, c.sqlDatabase ?? null, c.sqlSchema ?? null,
+    c.sqlViewPrefix ?? null,
+  ]);
+  const sourceChanged = sourceIdentity(active) !== sourceIdentity(proposed);
+  let adapter: Awaited<ReturnType<typeof createSourceAdapter>> | null = null;
+  try {
+    adapter = await createSourceAdapter(candidate);
+    const test = await adapter.test();
+    const watermarks: Array<{ reportKey: string; newest: string | null }> = [];
+    if (adapter.mode === "SQL" && adapter.watermark) {
+      for (const reportKey of LOAD_ORDER) {
+        const w = await adapter.watermark(reportKey);
+        watermarks.push({ reportKey, newest: w.newest });
+      }
+    }
+    return {
+      ok: true, sourceChanged, requiresCutover: sourceChanged,
+      canReuseCurrentCursors: !sourceChanged,
+      testedFeeds: adapter.mode === "SQL" ? LOAD_ORDER.length : 1,
+      mode: adapter.mode, watermarks,
+      note: sourceChanged
+        ? "Candidate passed read-only validation. Source identity changed: activation must reconcile source keys and reset or translate checkpoints in a controlled cutover. Existing data was not purged."
+        : "Source identity unchanged. Connection preflight passed without modifying data or checkpoints.",
+      details: test.details ?? null,
+    };
+  } catch (error: any) {
+    return { ok: false, sourceChanged, requiresCutover: sourceChanged, error: error?.message ?? String(error) };
+  } finally {
+    await adapter?.close().catch(() => {});
+  }
 }
 
 export async function testConnection(patch: IntegrationConfigPatch = {}) {
@@ -924,7 +1031,7 @@ export async function testConnection(patch: IntegrationConfigPatch = {}) {
     return { ok: false, error: error?.message ?? String(error), sourceMode: (() => { try { return configuredSourceMode(config); } catch { return "UNKNOWN"; } })() };
   } finally {
     if (adapter) {
-      try { await adapter.close(); } catch {}
+      try { await adapter.close(); } catch { /* Optional cleanup or diagnostics failure; retain previous state. */ }
     }
   }
 }

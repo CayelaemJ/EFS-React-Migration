@@ -1,4 +1,6 @@
 import { completedJobResponse } from "./services/jobResponses.js";
+import { inspectReplacementDependencies } from "./services/datasetReplacementDependencies.js";
+import { previewDatasetReplacement } from "./services/datasetReplacementPreview.js";
 // ════════════════════════════════════════════════════════════════════
 //  API SERVER (Fastify + TypeScript)
 //  Serves JSON shaped exactly like the frontend DATA / PORTFOLIO objects,
@@ -21,8 +23,15 @@ import { csvTemplate, xlsxTemplate, formatManifest } from "./services/templateGe
 import { uploadAndValidate, commitBatch, revertBatch } from "./services/importService.js";
 import { startUploadJob, getUploadJob, startCommitJob, getCommitJob } from "./services/asyncJobs.js";
 import { startSyncJob, getSyncJob } from "./services/syncJobs.js";
+import { stageValidatedGeneration, listSourceGenerations, getSemanticPublicationStatus } from "./services/sourceGovernance.js";
+import { semanticPublicationReadiness } from "./services/semanticPublicationGates.js";
+import { getSemanticQueueHealth } from "./services/semanticQueueHealth.js";
+import { readSemanticPublicationChanges } from "./services/semanticPublicationFeed.js";
+import { publicSemanticStorageHealth } from "./services/semanticStorageSettings.js";
+import { readPublishedSemanticPartition } from "./services/semanticCanaryRead.js";
+import { activateEquivalentSource, bootstrapExistingSource } from "./services/sourceActivation.js";
 import { startDailyRefresh, triggerRefreshNow } from "./services/dailyRefresh.js";
-import { getConfig as getSyncConfig, saveConfig as saveSyncConfig, publicConfig as publicSyncConfig, testConnection as testSyncConnection, runSync, recentSyncLogs, detectSourceChanges, SOURCE_CHANGE_POLL_SECONDS } from "./services/syncService.js";
+import { getConfig as getSyncConfig, saveConfig as saveSyncConfig, publicConfig as publicSyncConfig, testConnection as testSyncConnection, runSync, recentSyncLogs, detectSourceChanges, previewSourceSwitch, SOURCE_CHANGE_POLL_SECONDS } from "./services/syncService.js";
 import { listPartners, createPartner, updatePartner, deletePartner, assignUserToPartner, assignEmployerToPartner, themeForUser, themeForEmployer, themeForSlug } from "./services/partnerService.js";
 import { login, resolveSession, destroySession, destroySessionById, destroyAllSessionsForUser, canViewEmployer, canAccessModule, allowedEmployerIds, AuthUser, isAdminRole } from "./services/authService.js";
 import { createUser, listUsers, updateUser, resetPassword, completeSetup, deactivateSelf, listRevokedUsers, deleteUserPermanently, requestPasswordReset } from "./services/userService.js";
@@ -133,14 +142,12 @@ app.addHook("onRequest", async (req, reply) => {
   // application. Bearer-token API clients are exempt because they don't carry
   // the browser session cookie and can legitimately omit Origin/Referer.
   if (req.method !== "GET" && req.method !== "HEAD" && path.startsWith("/api/")) {
-    const authHeader = req.headers.authorization;
     const origin = req.headers.origin;
     const referer = req.headers.referer;
-    if (!authHeader) {
-      // This onRequest hook can run before the cookie plugin's hook. Parse
-      // the header with the same plugin parser when cookies are not populated.
-      const hasSessionCookie = Boolean(req.cookies?.session || app.parseCookie(req.headers.cookie || "").session);
-      const configuredOrigin = String(process.env.PUBLIC_BASE_URL || "").replace(/\/$/, "");
+    // Check the raw cookie header: @fastify/cookie's hook can run after this hook.
+    // Authorization must not exempt requests that also carry a session cookie.
+    const hasSessionCookie = /(?:^|;\s*)session=/.test(String(req.headers.cookie || ""));
+    if (hasSessionCookie || !req.headers.authorization) {
       const suppliedOrigin = origin || (() => { try { return new URL(referer as string).origin; } catch { return ""; } })();
       // TLS may terminate at Railway before Fastify sees the request. Compare the
       // browser origin to the externally requested host, not the internal HTTP
@@ -158,7 +165,7 @@ app.addHook("onRequest", async (req, reply) => {
       if (hasSessionCookie && !suppliedOrigin) return reply.code(403).send({ error: "same-origin request required" });
       // A custom domain plus the platform domain (or a preview URL) are both legitimate; a cross-site
       // attacker's Origin can never equal the host this request was addressed to.
-      if (suppliedOrigin && !sameHostOrigin && suppliedOrigin !== configuredOrigin) {
+      if (suppliedOrigin && !sameHostOrigin) {
         return reply.code(403).send({ error: "cross-origin request rejected" });
       }
     }
@@ -173,8 +180,9 @@ app.addHook("onResponse", async (req, reply) => {
   const sensitive = path.startsWith("/api/admin/") || path.startsWith("/api/dashboard") || path.startsWith("/api/portfolio");
   if (!sensitive) return;
   try {
-    const token = req.cookies?.session;
-    const user = token ? await resolveSession(token) : null;
+    // Reuse the per-request authentication result; never query session/user/links
+    // twice just to write the data-access audit trail.
+    const user = await currentUser(req);
     if (!user) return;
     const context = requestSecurityContext(req);
     await recordDataAccessEvent({
@@ -187,7 +195,7 @@ app.addHook("onResponse", async (req, reply) => {
       statusCode: reply.statusCode,
       durationMs: undefined,
     });
-  } catch {}
+  } catch { /* Audit failures must not interrupt successful requests. */ }
 });
 // Periodically discard old rate-limit buckets so a long-lived process does not
 // retain one entry forever for every IP that ever touched it.
@@ -263,10 +271,10 @@ const escAttr = (v: string) => v.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<"
 // (never reflect an arbitrary Host header into markup).
 function publicOrigin(req: FastifyRequest): string {
   const configured = String(process.env.PUBLIC_BASE_URL || "").trim().replace(/\/$/, "");
-  if (/^https?:\/\/[a-z0-9.\-]+(:\d+)?$/i.test(configured)) return configured;
+  if (/^https?:\/\/[a-z0-9.-]+(:\d+)?$/i.test(configured)) return configured;
   const host = String(req.headers.host || "");
   const proto = req.protocol === "https" ? "https" : "http";
-  return /^[a-z0-9.\-]+(:\d+)?$/i.test(host) ? `${proto}://${host}` : "http://localhost";
+  return /^[a-z0-9.-]+(:\d+)?$/i.test(host) ? `${proto}://${host}` : "http://localhost";
 }
 const CONTACT_EMAIL = (process.env.CONTACT_EMAIL || "").trim();
 const siteVars = (req: FastifyRequest): Record<string, string> => ({
@@ -292,9 +300,17 @@ const serveHtml = async (reply: FastifyReply, file: string, status = 200) => {
 };
 
 // ── auth helpers ──
+// Request-scoped only: no cross-request permission cache, so revocations
+// and employer access changes are observed by the next HTTP request.
+const authenticatedRequests = new WeakMap<FastifyRequest, Promise<AuthUser | null>>();
 async function currentUser(req: FastifyRequest): Promise<AuthUser | null> {
-  const token = (req.cookies && req.cookies.session) || (req.headers.authorization?.replace("Bearer ", ""));
-  return resolveSession(token);
+  let pending = authenticatedRequests.get(req);
+  if (!pending) {
+    const token = (req.cookies && req.cookies.session) || (req.headers.authorization?.replace("Bearer ", ""));
+    pending = resolveSession(token);
+    authenticatedRequests.set(req, pending);
+  }
+  return pending;
 }
 // guard for API routes: returns the user or sends 401/403
 async function requireUser(req: FastifyRequest, reply: FastifyReply): Promise<AuthUser | null> {
@@ -378,7 +394,11 @@ app.post<{ Body: { name?: unknown; email?: unknown; organisation?: unknown; mess
     await sendMail({
       to: CONTACT_EMAIL, replyTo: email,
       subject: `Portal contact request from ${name.replace(/[\r\n]+/g, " ")}`,
-      html: `<div style="font-family:Arial,sans-serif;color:#241536"><h2 style="color:#32217c">New contact request</h2><p><b>Name:</b> ${e(name)}<br><b>Email:</b> ${e(email)}<br><b>Organisation:</b> ${e(organisation || "—")}</p><p style="white-space:pre-wrap">${e(message)}</p></div>`,
+      html: [
+        '<div style="font-family:Arial,sans-serif;color:#241536"><h2 style="color:#32217c">New contact request</h2><p><b>Name:</b> ',
+        e(name), '<br><b>Email:</b> ', e(email), '<br><b>Organisation:</b> ', e(organisation || "—"),
+        '</p><p style="white-space:pre-wrap">', e(message), "</p></div>",
+      ].join(""),
     });
     return { ok: true };
   } catch (err) {
@@ -417,7 +437,18 @@ app.get("/users", async (req, reply) => {
   return serveHtml(reply, "users.html");
 });
 
+// Keep lightweight liveness independent of upstream outages.
 app.get("/health", async () => ({ ok: true }));
+// Load balancers must only send authenticated traffic to a DB-ready instance.
+app.get("/ready", async (_req, reply) => {
+  try {
+    await prisma.$queryRaw`SELECT 1`;
+    return { ok: true, database: "reachable" };
+  } catch (err) {
+    app.log.warn({ err }, "readiness failed: application PostgreSQL unavailable");
+    return reply.code(503).send({ ok: false, database: "unavailable" });
+  }
+});
 // lets you confirm the NEW build is live: should report the live-dashboard version
 app.get("/version", async () => ({ product: "empower-fin Dashboard Portal", version: "0.10.0", contractVersion: "2.6", coreSourceFeeds: 10, sourceModes: ["API", "SQL"], sqlDialects: ["POSTGRESQL", "MSSQL", "MYSQL"], channelPartners: true, scheduledReports: true, emailDelivery: "SMTP", portfolioEmployerFilter: true, portfolioMetricHelp: true, employerMetricHelp: true, uiNavigation: "account-dropdown-v2", routes: ["/login", "/dashboard", "/admin", "/users"] }));
 
@@ -544,7 +575,7 @@ app.get("/api/admin/events", async (req, reply) => {
 
   const unsubscribe = subscribeAdminEvents(jobId, send);
   const heartbeat = setInterval(() => {
-    try { res.write(`: heartbeat ${Date.now()}\n\n`); } catch {}
+    try { res.write(`: heartbeat ${Date.now()}\n\n`); } catch { /* Ignore writes after the SSE connection closes. */ }
   }, 15000);
 
   const close = () => {
@@ -825,6 +856,7 @@ app.get("/api/admin/users/revoked", async (req, reply) => {
 app.post<{ Body: { type: "PAGEVIEW" | "SCROLL_DEPTH" | "SESSION_END" | "CTA_CLICK" | "FORM_SUBMIT" | "OUTBOUND_CLICK" | "CLIENT_ERROR"; path: string; value?: number } }>(
   "/api/analytics/event",
   async (req, reply) => {
+    if (process.env.TRAFFIC_SAVER_MODE !== "false") return { ok: true }; // emergency: disable nonessential analytics DB reads/writes
     const user = await currentUser(req); // best-effort — allow anonymous beacons to no-op rather than 401 spam
     const b = req.body ?? ({} as any);
     const EVENT_TYPES = ["PAGEVIEW", "SCROLL_DEPTH", "SESSION_END", "CTA_CLICK", "FORM_SUBMIT", "OUTBOUND_CLICK", "CLIENT_ERROR"];
@@ -1116,6 +1148,41 @@ app.post<{ Body: { confirm?: string } }>("/api/admin/reset-all", async (req, rep
   }
 });
 
+// Live database diagnostics: admin-only. Never expose connection strings or credentials.
+app.get("/api/admin/database-status", async (req, reply) => {
+  if (!(await requireAdmin(req, reply))) return;
+  reply.header("Cache-Control", "no-store");
+  const configured = process.env.DATABASE_URL;
+  if (!configured) return { status: "red", provider: "Unconfigured", database: "Unknown", checkedAt: new Date().toISOString(), message: "DATABASE_URL is missing" };
+  let provider = "Other PostgreSQL";
+  let expectedDatabase = "";
+  try {
+    const url = new URL(configured);
+    const hostname = url.hostname.toLowerCase();
+    provider = hostname === "neon.tech" || hostname.endsWith(".neon.tech") ? "Neon" :
+      hostname === "railway.internal" || hostname.endsWith(".railway.internal") || hostname.endsWith(".railway.app") || hostname.endsWith(".rlwy.net") ? "Railway PostgreSQL" :
+      hostname.endsWith(".render.com") || hostname.endsWith(".render.internal") ? "Render PostgreSQL" : "Other PostgreSQL";
+    expectedDatabase = decodeURIComponent(url.pathname.slice(1));
+  } catch {
+    return { status: "red", provider: "Invalid configuration", database: "Unknown", checkedAt: new Date().toISOString(), message: "DATABASE_URL cannot be parsed" };
+  }
+  const started = Date.now();
+  try {
+    // The same Prisma client used by authentication and ordinary user requests.
+    const rows = await prisma.$queryRaw<Array<{ database: string }>>`SELECT current_database() AS database`;
+    const latencyMs = Date.now() - started;
+    const database = rows[0]?.database || "Unknown";
+    const mismatch = !!expectedDatabase && database !== expectedDatabase;
+    return { status: mismatch ? "red" : latencyMs > 1500 ? "yellow" : "green", provider, database,
+      latencyMs, checkedAt: new Date().toISOString(),
+      message: mismatch ? "Connected database differs from configured database" : latencyMs > 1500 ? "Slow database response" : "Live query succeeded" };
+  } catch (error) {
+    req.log.error({ err: error }, "admin database status probe failed");
+    return { status: "red", provider, database: "Unverified", latencyMs: Date.now() - started,
+      checkedAt: new Date().toISOString(), message: "Database query failed" };
+  }
+});
+
 // ── External integration (API or direct SQL pull & sync) — admin only ──
 app.get("/api/admin/integration", async (req, reply) => {
   if (!(await requireAdmin(req, reply))) return;
@@ -1166,6 +1233,149 @@ app.post<{ Body: {
   },
 );
 
+// Validate a prospective SQL/API source without activating it or rewriting data.
+// Candidate registration preserves existing source configuration and all
+// active integration cursors. No automatic activation or destructive reimport.
+app.post<{ Body: Record<string, unknown> }>("/api/admin/integration/stage-source", async (req, reply) => {
+  if (!(await requireAdmin(req, reply))) return;
+  try {
+    const result = await stageValidatedGeneration((req.body || {}) as any);
+    return reply.code(result.ok ? 201 : 400).send(result);
+  } catch (error: any) {
+    return reply.code(400).send({ ok: false, error: error?.message || "Unable to stage candidate source" });
+  }
+});
+
+// Only verified equivalent datasets can switch without rebuilding data.
+// Incomplete/mismatched digests must fail closed. This endpoint is disabled
+// without the governed-cutover feature flag and is SUPERADMIN-only.
+app.post<{ Body: { targetGenerationId?:string; expectedActiveGenerationId?:string; reason?:string; confirm?:string } }>(
+  "/api/admin/integration/activate-equivalent-source",
+  async (req, reply) => {
+    const admin=await requireAdmin(req,reply);
+    if(!admin)return;
+    if(admin.role!=="SUPERADMIN")return reply.code(403).send({error:"superadmin only"});
+    try {
+      const result=await activateEquivalentSource({
+        targetGenerationId:String(req.body?.targetGenerationId||""),
+        expectedActiveGenerationId:String(req.body?.expectedActiveGenerationId||""),
+        actor:admin.id,reason:String(req.body?.reason||""),confirm:String(req.body?.confirm||""),
+      });
+      logAdminAction(admin,"source.equivalent_cutover",result.note,{detail:result});
+      return result;
+    }catch(error:any){
+      return reply.code(409).send({ok:false,error:error?.message||"Source cutover was not safe"});
+    }
+  },
+);
+
+app.post<{ Body: { reason?:string;confirm?:string } }>(
+  "/api/admin/integration/bootstrap-source",
+  async (req,reply)=>{
+    const admin=await requireAdmin(req,reply);
+    if(!admin)return;
+    if(admin.role!=="SUPERADMIN")return reply.code(403).send({error:"superadmin only"});
+    try{
+      const result=await bootstrapExistingSource({
+        actor:admin.id,reason:String(req.body?.reason||""),confirm:String(req.body?.confirm||""),
+      });
+      logAdminAction(admin,"source.bootstrap",result.note,{detail:result});
+      return result;
+    }catch(error:any){return reply.code(409).send({ok:false,error:error?.message||"Bootstrap failed"});}
+  },
+);
+
+app.get("/api/admin/integration/generations", async (req, reply) => {
+  if (!(await requireAdmin(req, reply))) return;
+  return { generations: await listSourceGenerations() };
+});
+
+app.get<{ Params: { manifestId: string } }>("/api/admin/mlops/semantic-publications/:manifestId/readiness", async (req, reply) => {
+  if (!(await requireAdmin(req, reply))) return;
+  return semanticPublicationReadiness(req.params.manifestId);
+});
+
+// Permission-scoped publication version polling for signed-in dashboard users.
+// Never returns payloads or private storage URLs. Existing dashboard reads
+// remain unchanged until the semantic-serving rollout is approved.
+app.get("/api/dashboard/semantic-features", async (req, reply) => {
+  if (!(await requireUser(req, reply))) return;
+  return {
+    pollingEnabled: process.env.ENABLE_SEMANTIC_LIVE_NOTIFICATIONS === "true",
+    servingEnabled: false,
+  };
+});
+
+app.get<{ Querystring: { afterId?: string; limit?: string } }>("/api/dashboard/semantic-version-changes", async (req, reply) => {
+  const user = await requireUser(req, reply);
+  if (!user) return;
+  const ids = allowedEmployerIds(user);
+  try {
+    if (ids !== null && ids.length === 0) return { changes: [], nextCursor: req.query?.afterId ?? null, servingEnabled: false };
+    return await readSemanticPublicationChanges({
+      afterId: req.query?.afterId,
+      limit: Number(req.query?.limit ?? 50),
+      employerIds: ids === null ? undefined : ids,
+      initializeAtLatest: !req.query?.afterId,
+    });
+  } catch(error: any) {
+    return reply.code(400).send({ error: error?.message ?? "Invalid semantic version cursor" });
+  }
+});
+
+app.get<{ Params: { employerId: string }; Querystring: { period?: string } }>(
+  "/api/employers/:employerId/semantic-canary",
+  async (req, reply) => {
+    const user = await requireUser(req, reply);
+    if (!user) return;
+    if (user.role !== "SUPERADMIN") return reply.code(403).send({ error: "superadmin diagnostic only" });
+    if (!canViewEmployer(user, req.params.employerId))
+      return reply.code(403).send({ error: "no access to this employer" });
+    const period = String(req.query?.period || "");
+    if (!/^[0-9]{4}-(0[1-9]|1[0-2])$/.test(period))
+      return reply.code(400).send({ error: "invalid period" });
+    if (process.env.ENABLE_SEMANTIC_CANARY_READ !== "true")
+      return reply.code(503).send({ error: "canary disabled" });
+    try {
+      const result = await readPublishedSemanticPartition({
+        employerId: req.params.employerId, period, partitionKey: "all",
+      });
+      if (!result) return reply.code(404).send({ error: "no published semantic partition" });
+      return result;
+    } catch (error: any) {
+      req.log.error({ message: error?.message }, "semantic canary read unavailable");
+      return reply.code(503).send({ error: "semantic canary unavailable" });
+    }
+  },
+);
+
+app.get("/api/admin/mlops/semantic-storage-health", async (req, reply) => {
+  if (!(await requireAdmin(req, reply))) return;
+  return publicSemanticStorageHealth();
+});
+
+app.get<{ Querystring: { afterId?:string; limit?:string } }>("/api/admin/mlops/semantic-publication-changes", async (req, reply) => {
+  if (!(await requireAdmin(req, reply))) return;
+  try { return await readSemanticPublicationChanges({afterId:req.query?.afterId,limit:Number(req.query?.limit??50)}); }
+  catch(error:any) { return reply.code(400).send({error:error?.message||"Invalid cursor"}); }
+});
+
+app.get("/api/admin/mlops/semantic-queue-health", async (req, reply) => {
+  if (!(await requireAdmin(req, reply))) return;
+  return getSemanticQueueHealth();
+});
+
+app.get("/api/admin/mlops/semantic-publications", async (req, reply) => {
+  if (!(await requireAdmin(req, reply))) return;
+  return getSemanticPublicationStatus();
+});
+
+app.post<{ Body: Record<string, unknown> }>("/api/admin/integration/preview-switch", async (req, reply) => {
+  if (!(await requireAdmin(req, reply))) return;
+  const result = await previewSourceSwitch((req.body || {}) as any);
+  return reply.code(result.ok ? 200 : 400).send(result);
+});
+
 app.post<{ Body: Record<string, unknown> }>("/api/admin/integration/test", async (req, reply) => {
   if (!(await requireAdmin(req, reply))) return;
   return testSyncConnection((req.body || {}) as any);
@@ -1175,6 +1385,20 @@ app.post<{ Body: Record<string, unknown> }>("/api/admin/integration/test", async
 // browser polls /api/admin/sync-jobs/:jobId. Pulling and validating a full
 // dataset from an external source can take minutes and must never hold the
 // HTTP connection (and the admin UI) open until it finishes.
+// Read-only source change detection. Does not change sync cursors or dashboard facts.
+app.get("/api/admin/integration/changes", async (req, reply) => {
+  if (!(await requireAdmin(req, reply))) return;
+  return detectSourceChanges();
+});
+
+// Non-destructive manual sync. This keeps the existing source data in place,
+// fetches incremental source changes, and never resets integration cursors.
+app.post("/api/admin/integration/sync-now", async (req, reply) => {
+  if (!(await requireAdmin(req, reply))) return;
+  const jobId = startSyncJob("manual");
+  return reply.code(202).send({ ok: true, status: "ACCEPTED", jobId });
+});
+
 app.post("/api/admin/integration/sync", async (req, reply) => {
   if (!(await requireAdmin(req, reply))) return;
   const jobId = startSyncJob("manual");
@@ -1202,14 +1426,62 @@ app.get<{ Params: { jobId: string } }>(
   },
 );
 
-// Manual run of the same authoritative purge-and-overwrite pipeline used by
-// the 00:00 Africa/Johannesburg refresh. The validated app pipeline is always
-// used because the legacy SQL procedure does not reload every canonical feed.
+// Compatibility path for the existing Admin refresh button.
+// Ordinary refreshes must NEVER purge facts or reset source cursors.
 app.post("/api/admin/integration/refresh", async (req, reply) => {
   if (!(await requireAdmin(req, reply))) return;
-  const result = await triggerRefreshNow();
-  if (!result?.ok) return reply.code(500).send(result);
+  const result = await runSync("manual");
+  if (!result?.ok) return reply.code(409).send(result);
   return result;
+});
+
+// Validate a DIFFERENT candidate SQL database read-only. This is NOT an
+// equivalent-source cutover and cannot change live credentials or cursors.
+// Keep candidate credentials out of audit logs and response payloads.
+app.post<{ Body: import("./services/syncService.js").IntegrationConfigPatch }>(
+  "/api/admin/integration/dataset-replacement/validate-source",
+  async (req,reply)=>{
+    const admin=await requireAdmin(req,reply);
+    if(!admin)return;
+    if(admin.role!=="SUPERADMIN")return reply.code(403).send({error:"superadmin only"});
+    if(process.env.ENABLE_DATASET_REPLACEMENT_PREFLIGHT!=="true")
+      return reply.code(403).send({error:"Dataset replacement preflight is disabled"});
+    const patch=req.body??{};
+    if(patch.sourceMode!=="SQL")return reply.code(400).send({error:"Replacement source must use canonical SQL views"});
+    try{
+      const preflight=await previewSourceSwitch(patch);
+      if(!preflight.ok)return reply.code(400).send({ok:false,error:preflight.error??"Source preflight failed"});
+      if(!preflight.sourceChanged)return reply.code(409).send({ok:false,error:"Replacement source must differ from the currently active source"});
+      if(preflight.mode!=="SQL"||preflight.testedFeeds!==LOAD_ORDER.length||preflight.watermarks?.length!==LOAD_ORDER.length)
+        return reply.code(409).send({ok:false,error:"All ten canonical SQL feeds must be validated"});
+      return {ok:true,mode:"READ_ONLY_SOURCE_PREFLIGHT",executable:false,
+        testedFeeds:preflight.testedFeeds,sourceChanged:true,
+        note:"Candidate SQL views verified. No source switch, purge, import or cursor change was performed."};
+    }catch(error:any){
+      req.log.warn({type:"dataset_replacement_preflight_failed"},"candidate validation did not pass");
+      return reply.code(400).send({ok:false,error:"Candidate validation failed; verify connection settings and canonical views"});
+    }
+  },
+);
+
+// This SUPERADMIN-only inspection reports PostgreSQL FK cascade hazards.
+app.get("/api/admin/integration/dataset-replacement/dependencies", async (req,reply)=>{
+  const admin=await requireAdmin(req,reply);
+  if(!admin)return;
+  if(admin.role!=="SUPERADMIN")return reply.code(403).send({error:"superadmin only"});
+  try{return await inspectReplacementDependencies();}
+  catch(error:any){req.log.error({err:error},"replacement dependency inspection failed");
+    return reply.code(500).send({error:"Unable to inspect replacement dependencies"});}
+});
+
+// Inventory-only replacement preview. Never permits destructive operations.
+app.get("/api/admin/integration/dataset-replacement/preview", async (req, reply) => {
+  const admin=await requireAdmin(req,reply);
+  if(!admin) return;
+  if(admin.role!=="SUPERADMIN") return reply.code(403).send({error:"superadmin only"});
+  try {return await previewDatasetReplacement();}
+  catch(error:any){req.log.error({err:error},"dataset replacement preview failed");
+    return reply.code(500).send({error:"Unable to generate dataset replacement preview"});}
 });
 
 // ── DANGER: purge source-derived dashboard facts/caches and pull a fresh
@@ -1541,16 +1813,37 @@ app.get<{
     };
     const usePublished = dashboardUsesPublishedSnapshot(syncStatus);
     const published = usePublished ? await getPublishedDashboardState(employerId) : null;
-    const payload: any = usePublished
+    // Opt-in, exact-period semantic read. Never replace filtered dashboards
+    // until their site, income and historical parity is independently tested.
+    let semanticPayload: any = null;
+    if (!usePublished &&
+        process.env.ENABLE_SEMANTIC_DASHBOARD_SERVING === "true" &&
+        process.env.ENABLE_SEMANTIC_CANARY_READ === "true" &&
+        req.query.period && !req.query.quarter &&
+        (!req.query.site || req.query.site === "all") &&
+        (!req.query.income || req.query.income === "all")) {
+      try {
+        const semantic = await readPublishedSemanticPartition({
+          employerId, period: req.query.period, partitionKey: "all",
+        });
+        semanticPayload = semantic?.payload ?? null;
+        if (semanticPayload) reply.header("X-Semantic-Version", semantic!.version);
+      } catch (error: any) {
+        req.log.warn({ message: error?.message }, "semantic read failed; retaining proven dashboard fallback");
+      }
+    }
+    const payload: any = semanticPayload ?? (usePublished
       ? await getPublishedDashboardPayload(employerId, query)
-      : await getDashboardPayload(employerId, query);
+      : await getDashboardPayload(employerId, query));
     if (!payload) return sendPublishedDashboardUnavailable(reply, syncStatus);
     const sections = await sectionsForUser(user);
     if (!sections.voiceOfEmployee) payload.chat = { available: false };
     const userTheme = await themeForUser(user.id);
-    payload.theme = !isAdminRole(user) && userTheme.branded
+    // The administrative control plane must retain its own neutral/default UI,
+    // regardless of which employer or partner is selected in dashboard filters.
+    payload.theme = isAdminRole(user)
       ? userTheme
-      : await themeForEmployer(employerId);
+      : (userTheme.branded ? userTheme : await themeForEmployer(employerId));
     payload.syncStatus = usePublished
       ? syncStatusForPublishedSnapshot(syncStatus, published?.capturedAt ?? null)
       : syncStatus;
@@ -1808,16 +2101,23 @@ function startSyncScheduler(app: any) {
         return;
       }
 
-      // Heartbeat reconciliation. For SQL this is a safety net; for API it is
-      // the normal polling mechanism because a portable DB watermark is not
-      // available through an arbitrary HTTP API.
+      // Never pay for a ten-feed SQL extraction when a trusted source
+      // watermark says nothing has changed. Earlier hourly heartbeats
+      // re-read hundreds of thousands of unchanged rows: costly and needless.
+      // A first-time source with no successful import still gets bootstrapped.
+      // Real deletions must arrive as versioned is_deleted tombstones.
+      if (changes.supported && !changes.changed && cfg.lastSuccessfulSyncAt) {
+        app.log.info("SQL source watermarks unchanged; skipping costly heartbeat extraction");
+        return;
+      }
+
+      // Unsupported source watermark (typically API), or first-time SQL
+      // bootstrap: retain the configured scheduled reconciliation fallback.
       const dueAfter = cfg.lastSyncAt
         ? new Date(cfg.lastSyncAt).getTime() + cfg.scheduleHours * 3600 * 1000
         : 0;
       if (Date.now() >= dueAfter) {
-        app.log.info(changes.supported
-          ? "No new SQL watermark detected; running scheduled heartbeat reconciliation…"
-          : "Running scheduled external source sync…");
+        app.log.info("Running scheduled fallback source reconciliation…");
         const r = await runSync("scheduled");
         app.log.info(`Scheduled sync: ${r.status ?? "done"}`);
         reportFailure(r);
@@ -1939,7 +2239,11 @@ app.get<{ Querystring: { period?: string; quarter?: string; range?: "30d" | "qua
     if (!payload) return sendPublishedDashboardUnavailable(reply, syncStatus);
     const sections = await sectionsForUser(user);
     if (!sections.voiceOfEmployee) payload.chat = { available: false };
-    payload.theme = await themeForEmployer(employer.id);
+    // Keep the fallback dashboard consistent with the employer-specific route.
+    const userTheme = await themeForUser(user.id);
+    payload.theme = isAdminRole(user)
+      ? userTheme
+      : (userTheme.branded ? userTheme : await themeForEmployer(employer.id));
     payload.syncStatus = usePublished
       ? syncStatusForPublishedSnapshot(syncStatus, published?.capturedAt ?? null)
       : syncStatus;
@@ -1961,6 +2265,7 @@ for (const sig of ["SIGTERM", "SIGINT"] as const) {
 }
 // Close expired sessions for history, then prune only old ended records.
 setInterval(() => {
+  if (process.env.TRAFFIC_SAVER_MODE !== "false") return;
   const now = new Date();
   const cutoff = new Date(Date.now() - 180 * 864e5);
   prisma.session.updateMany({ where: { expiresAt: { lt: now }, endedAt: null }, data: { endedAt: now } })
@@ -1972,8 +2277,43 @@ setInterval(() => {
   if (!CONTACT_EMAIL) app.log.warn("CONTACT_EMAIL is not set: the contact form is disabled and legal pages show a placeholder contact.");
   app.log.info({ portalVersion: "0.10.0", publicDir: PUBLIC_DIR }, "starting empower-fin Dashboard Portal");
 app.listen({ port: PORT, host: "0.0.0.0" })
-  .then(async () => { await bootstrapAdmin(); await ensureSectionDefaults(); startSyncScheduler(app); startReportScheduler(app);
-startDailyRefresh(); startAutomationScheduler(app); app.log.info(`empower-fin Dashboard Portal on :${PORT}`); })
+  .then(async () => {
+    // Standby instances must not run independent scheduled imports, mail or
+    // daily purges. Keep these disabled unless explicitly enabled.
+    const standby = process.env.STANDBY_MODE === "true";
+    if (!standby) {
+      await bootstrapAdmin();
+      await ensureSectionDefaults();
+      // Independent source ingestion switch: maintain dashboard freshness while
+      // leaving mail, reports and maintenance jobs asleep in traffic-saver mode.
+      // Never activate this on a standby or a second ingest leader.
+      if (process.env.ENABLE_AUTHORITATIVE_INCREMENTAL_SCHEDULER === "true") {
+        startSyncScheduler(app);
+        app.log.info("Authoritative incremental source scheduler enabled");
+      } else if (process.env.TRAFFIC_SAVER_MODE === "false") {
+        // Legacy compatibility when full background operations are enabled.
+        startSyncScheduler(app);
+      }
+      if (process.env.TRAFFIC_SAVER_MODE === "false") {
+        startReportScheduler(app);
+        startDailyRefresh();
+        startAutomationScheduler(app);
+      } else {
+        app.log.warn("TRAFFIC_SAVER_MODE: optional reports, daily reconciliation and maintenance paused; incremental source scheduler is independently configurable");
+      }
+    } else {
+      app.log.warn("STANDBY_MODE enabled: background schedulers and bootstrap writes are disabled");
+    }
+    // Disposable Playground-only diagnostics. Never run during production serving.
+    if (process.env.RAILWAY_ENVIRONMENT_NAME === "Playground and new ideas" &&
+        process.env.SEMANTIC_STORAGE_SMOKE_TEST === "true") {
+      void import("./services/semanticStorageProbe.js")
+        .then(({ runPlaygroundStorageProbe }) => runPlaygroundStorageProbe())
+        .then(result => app.log.info({ result }, "Playground semantic S3 verification succeeded"))
+        .catch(error => app.log.error({ message: error instanceof Error ? error.message : String(error) }, "Playground semantic S3 verification failed"));
+    }
+    app.log.info(`empower-fin Dashboard Portal on :${PORT}`);
+  })
   .catch((err) => { app.log.error(err); process.exit(1); });
 
 }

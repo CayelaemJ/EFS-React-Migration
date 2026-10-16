@@ -85,6 +85,10 @@ for(const file of fs.readdirSync('public').filter(x=>x.endsWith('.html'))){
   if(!n.tagName)return '';
   if(name==='dashboard'){
    const id=n.attrs?.find(a=>a.name==='id')?.value,cls=n.attrs?.find(a=>a.name==='class')?.value;
+   if(id==='portal-brand-lockup')return '<DashboardBrand/>';
+   if(cls==='pdf-print-header')return '<DashboardPrintHeader/>';
+   if(cls==='pdf-print-footer')return '<DashboardPrintFooter/>';
+   if(n.tagName==='button'&&cls==='metric-info')return '<DashboardMetricInfo name="'+n.attrs.find(a=>a.name==='data-metric').value+'" label='+json(n.attrs.find(a=>a.name==='aria-label')?.value)+'/>';
    if(id==='welcome-splash')return '<DashboardWelcome/>';
    if(id==='role-indicator')return '<DashboardRole/>';
    if(id==='audience-switch')return '<DashboardAudience/>';
@@ -128,6 +132,8 @@ for(const file of fs.readdirSync('public').filter(x=>x.endsWith('.html'))){
    if(!emailLayout&&n.tagName==='div'&&n.childNodes?.some(child=>child.childNodes?.some(title=>title.tagName==='h2'&&title.childNodes?.some(text=>text.value==='Automations'))))return '<AdminAutomationPanel/>';
    if(id==='rep-list')return '<ReportPicker/>';
    if(id==='sec-list')return '<AdminSections/>';
+   if(id==='import-history-card')return '<ImportHistoryCard>'+n.childNodes.map(jsx).join('')+'</ImportHistoryCard>';
+   if(n.tagName==='button'&&n.attrs?.some(a=>a.name==='onclick'&&a.value==='loadHistory()'))return '<HistoryRefreshButton/>';
    if(id==='hist-body')return '<ImportHistoryRows/>';
    if(n.tagName==='div'&&n.attrs?.some(a=>a.name==='class'&&a.value==='card')&&n.childNodes?.some(child=>child.childNodes?.some(title=>title.attrs?.some(a=>a.name==='id'&&a.value==='rep-title'))))return '<ReportWorkspace/>';
   }
@@ -172,7 +178,7 @@ for(const file of fs.readdirSync('public').filter(x=>x.endsWith('.html'))){
     attrs+=` ${check?'checked':'value'}={state.draft[${json(nodeId)}]} onChange={event=>actions.change(${json(nodeId)},event.target.${check?'checked':'value'})} disabled={state.busy}`;
    }
    const action=originalAttrs.find(a=>a.name==='onclick')?.value;
-   if(action){const key={"setIntegMode('API')":'api',"setIntegMode('SQL')":'sql','saveInteg()':'save','testInteg()':'test','syncNow()':'sync','refreshNow(this)':'refresh'}[action];if(!key)throw new Error('Unknown integration action '+action);attrs+=` onClick={actions.${key}} disabled={state.busy}`;}
+   if(action){const key={"setIntegMode('API')":'api',"setIntegMode('SQL')":'sql','saveInteg()':'save','testInteg()':'test','syncNow()':'sync','refreshNow(this)':'refresh','previewCandidateSource()':'preview','stageCandidateSource()':'stage','setIntegHeartbeat(1)':'hourly','setIntegHeartbeat(6)':'sixHours','setIntegHeartbeat(24)':'daily','setIntegHeartbeat(168)':'weekly'}[action];if(!key)throw new Error('Unknown integration action '+action);attrs+=` onClick={actions.${key}} disabled={state.busy}`;}
    const dynamic={'integ-status':'status','integ-change-mode':'changeMode','integ-env-override':'environment','integ-result':'result','integ-logs':'logs','btn-refresh-now':'refreshLabel'};
    if(dynamic[nodeId])children=`{state.${dynamic[nodeId]}}`;
    if(nodeId==='live-integration')attrs+=' className={"card section-gap"+(state.collapsed?" compact-collapsed":"")}';
@@ -371,15 +377,16 @@ for(const file of fs.readdirSync('public').filter(x=>x.endsWith('.html'))){
 
  }
  if(name==='dashboard')controllerSource=migrateDashboardState(controllerSource);
- const control=name==='admin'?'':transform(controllerSource);
+ const control=['admin','dashboard'].includes(name)?'':transform(controllerSource);
  let code=`// Ported from New Changes ${file}; keep source structure and CSS selectors intact.\nimport React from 'react';\n${name==='users'?"import {AddUser,UsersList,RevokedUsers} from '../native/UsersManagement.jsx';\nimport {SecurityCenter} from '../native/SecurityCenter.jsx';\n":''}${name==='dashboard'?"import {showQuickActions,showScheduleReport} from '../native/DashboardDialogs.jsx';\n":''}import BrandEngine from '../lib/brand-engine.js';\nimport {renderMarkup,insertMarkup,registerAction,decodeAttribute,onReady,createMarkupElement} from './runtime.jsx';\nimport {siteText} from '../native/site-config.js';\nlet actions=[];\nexport function Page(){return <>${markup}</>;}\nlet started=false;\nexport function start(){if(started)return;started=true;\nactions=[${handlers.join(',\n')}];\n${control}\n}\n`;
+ if(name==='dashboard')code=`// Source layout rendered by native React dashboard components.\nimport React from 'react';\nimport {siteText} from '../native/site-config.js';\nexport function Page(){return <>${markup}</>;}\nexport function start(){}\n`;
  if(name==='admin')code=`// Source layout rendered by native React administration components.\nimport React from 'react';\nimport {siteText} from '../native/site-config.js';\nimport {WelcomeSplash,PrivilegedAdmin,chooseIngestion} from '../native/AdminShell.jsx';\nexport function Page(){return <>${markup}</>;}\nexport function start(){}\n`;
  fs.writeFileSync(`${out}/${name}.jsx`,code);
  if(name==='dashboard')fs.writeFileSync(`${out}/${name}.jsx`,code.replace("import React from 'react';","import React from 'react';\nimport {Portfolio,updatePortfolio} from '../native/Portfolio.jsx';"));
- if(name==='admin')fs.writeFileSync(`${out}/${name}.jsx`,code.replace("import React from 'react';", "import React from 'react';\nimport {AdminEmailPanel,AdminAutomationPanel} from '../native/AdminSettings.jsx';\nimport {AdminSections} from '../native/AdminSections.jsx';\nimport {ReportPicker,ReportWorkspace,ImportHistoryRows,initializeReports,refreshImportHistory} from '../native/AdminReports.jsx';"));
+ if(name==='admin')fs.writeFileSync(`${out}/${name}.jsx`,code.replace("import React from 'react';", "import React from 'react';\nimport {AdminEmailPanel,AdminAutomationPanel} from '../native/AdminSettings.jsx';\nimport {AdminSections} from '../native/AdminSections.jsx';\nimport {ReportPicker,ReportWorkspace,ImportHistoryCard,HistoryRefreshButton,ImportHistoryRows,initializeReports,refreshImportHistory} from '../native/AdminReports.jsx';"));
  const native=fs.existsSync(`frontend/src/native/${name}.jsx`);
  if(name==='admin')fs.writeFileSync(`${out}/${name}.jsx`,fs.readFileSync(`${out}/${name}.jsx`,'utf8').replace("import React from 'react';","import React from 'react';\nimport {AdminPartners} from '../native/AdminPartners.jsx';\nimport {AdminIntegration,setIntegrationMode as setIntegMode,refreshIntegration} from '../native/AdminIntegration.jsx';\nimport {AdminReset,configureResetRefresh} from '../native/AdminReset.jsx';\nimport {EnterpriseOperations} from '../native/EnterpriseOperations.jsx';"));
- if(name==='dashboard')fs.writeFileSync(`${out}/${name}.jsx`,fs.readFileSync(`${out}/${name}.jsx`,'utf8').replace("import React from 'react';","import React from 'react';\nimport {configureDashboard,DashboardWelcome,DashboardRole,DashboardAudience,DashboardFreshness,DashboardViewport,DashboardHeading,DashboardNotices,DashboardFilters,DashboardFootnote,DashboardButton,DashboardSection} from '../native/DashboardState.jsx';"));
+ if(name==='dashboard')fs.writeFileSync(`${out}/${name}.jsx`,fs.readFileSync(`${out}/${name}.jsx`,'utf8').replace("import React from 'react';","import React from 'react';\nimport {DashboardBrand,DashboardPrintHeader,DashboardPrintFooter,DashboardMetricInfo,DashboardWelcome,DashboardRole,DashboardAudience,DashboardFreshness,DashboardViewport,DashboardHeading,DashboardNotices,DashboardFilters,DashboardFootnote,DashboardButton,DashboardSection} from '../native/DashboardState.jsx';"));
  if(name==='dashboard')fs.writeFileSync(`${out}/${name}.jsx`,fs.readFileSync(`${out}/${name}.jsx`,'utf8').replace("import React from 'react';","import React from 'react';\nimport {ExecutiveInsight,DataTrust,EmployeeChat,Outcomes,OutcomesNote,SavingsChart,EwaChart,EwaKpis,DebtProfile,Regions,StressMap,Income,Ratings,DebtStates,Prescription,RiskSignals,Opportunities,updateEmployerCharts} from '../native/EmployerCharts.jsx';"));
  if(name==='dashboard')fs.writeFileSync(`${out}/${name}.jsx`,fs.readFileSync(`${out}/${name}.jsx`,'utf8').replace("import React from 'react';","import React from 'react';\nimport {ExecSummary,EmployerKpis,EngagementFunnel,ValueStrip,updateEmployerOverview} from '../native/EmployerOverview.jsx';\nimport {Wellness,updateWellness} from '../native/Wellness.jsx';"));
  if(name==='admin')fs.writeFileSync(`${out}/${name}.jsx`,fs.readFileSync(`${out}/${name}.jsx`,'utf8').replace("import React from 'react';","import React from 'react';\nimport {AdminSecurity,Compliance,MLOpsAlert,refreshGovernance} from '../native/AdminGovernance.jsx';"));
@@ -402,7 +409,7 @@ for(const file of fs.readdirSync('public').filter(x=>x.endsWith('.html'))){
  skeleton=skeleton.replace(/<body([^>]*)>[\s\S]*<\/body>/i,`<body$1><div id="root" style="display:contents"></div><script type="module" src="/src/parity/${name}.entry.jsx"></script></body>`);
  skeleton=skeleton.replace('</head>','<meta name="portal-config" content="{{PORTAL_CONFIG}}"></head>');
  fs.writeFileSync(`frontend/pages/${file}`,skeleton);
- manifest.push({page:name,source:file,implementation:native||staticPage||name==='admin'?'declarative-react':'transitional-controller',navigation:['dashboard','admin','users'].includes(name)?'declarative-react':null,staticHandlers:handlers.length,scripts:scripts.length});
+ manifest.push({page:name,source:file,implementation:native||staticPage||['admin','dashboard'].includes(name)?'declarative-react':'transitional-controller',navigation:['dashboard','admin','users'].includes(name)?'declarative-react':null,staticHandlers:handlers.length,scripts:scripts.length});
 }
 fs.writeFileSync('frontend/parity-manifest.json',json(manifest,null,2)+'\n');
 console.log('Converted',manifest.length,'pages to React JSX.');

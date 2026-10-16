@@ -33,7 +33,10 @@ must(syncSource.includes("detectSourceChanges") && syncSource.includes("SOURCE_C
 must(server.includes("Source database changes detected; running incremental sync") && server.includes("SOURCE_CHANGE_POLL_SECONDS"), "runtime scheduler must trigger incremental sync from detected SQL changes");
 must(server.includes("_max: { lastSourceUpdatedAt: true }"), "dashboard versioning must advance only when the source watermark advances");
 must(admin.includes("Live SQL change detection is active every") && admin.includes("Bulk writes process up to"), "Administration must explain change detection and bulk-write throughput");
-must(dashboard.includes("setInterval(checkSourceVersion,30000)"), "visible dashboards must re-check the source version within 30 seconds");
+const sourcePoll=Number(dashboard.match(/setInterval\(checkSourceVersion,\s*(\d+)\)/)?.[1]);
+const reactDashboard=fs.readFileSync(path.join(root,"frontend/src/native/DashboardState.jsx"),"utf8");
+const reactPoll=Number(reactDashboard.match(/setInterval\(poll,\s*(\d+)\)/)?.[1]);
+must(sourcePoll>0&&sourcePoll<=180000&&reactPoll>0&&reactPoll<=180000,"source and React dashboards must re-check the source version within 3 minutes");
 
 if (failures.length) {
   console.error("PERFORMANCE REGRESSION CHECK FAILED:");

@@ -429,8 +429,8 @@
       </div>
 
       <!-- import history -->
-      <div class="card section-gap">
-        <div class="card-hd"><h2>Import history</h2><div class="note">Live updates every 1.5s · Rows show validated totals and how many changes have actually reached live tables</div></div>
+      <div class="card section-gap" id="import-history-card">
+        <div class="card-hd"><h2>Import history</h2><div class="note">Refreshes every 30s while in view · Import jobs update immediately · Rows show validated totals and live changes</div><button class="btn btn-sm" type="button" onclick="loadHistory()">Refresh</button></div>
         <div class="card-bd" style="padding:6px 8px 12px;">
           <table class="hist"><thead><tr><th>Report</th><th>File</th><th>Rows</th><th>Status</th><th>When</th><th>Download</th><th></th></tr></thead>
           <tbody id="hist-body"><tr><td colspan="7" class="muted" style="padding:14px;">No imports yet.</td></tr></tbody></table>
@@ -456,8 +456,16 @@
           </div>
           <div style="max-width:820px;margin-bottom:14px;">
             <label style="display:block;font-size:12.5px;font-weight:700;color:#5b6b7a;max-width:390px;">Heartbeat reconciliation every (hours)
-              <input id="integ-hours" type="number" min="1" value="24" style="display:block;width:100%;margin-top:5px;font:inherit;font-weight:500;padding:9px 12px;border:1px solid #e8e1f7;border-radius:9px;">
+              <input id="integ-hours" type="number" min="1" max="168" step="1" value="24" style="display:block;width:100%;margin-top:5px;font:inherit;font-weight:500;padding:9px 12px;border:1px solid #e8e1f7;border-radius:9px;">
             </label>
+            <div style="display:flex;gap:7px;align-items:center;flex-wrap:wrap;margin-top:8px;">
+              <span class="muted">Heartbeat presets:</span>
+              <button type="button" class="btn btn-ghost" onclick="setIntegHeartbeat(1)">Hourly</button>
+              <button type="button" class="btn btn-ghost" onclick="setIntegHeartbeat(6)">6 hours</button>
+              <button type="button" class="btn btn-ghost" onclick="setIntegHeartbeat(24)">Daily</button>
+              <button type="button" class="btn btn-ghost" onclick="setIntegHeartbeat(168)">Weekly</button>
+            </div>
+            <p class="muted" style="margin-top:8px;max-width:820px;">For SQL: change detection checks source watermarks on a server-controlled interval (normally 5 minutes); unchanged sources skip expensive imports. This hourly setting is for fallback reconciliation, not a timed full rebuild. For API: it controls the regular polling cadence. The Railway ingestion scheduler must also be enabled by deployment configuration; turning on the checkbox alone cannot start a paused server scheduler.</p>
             <div id="integ-change-mode" class="muted" style="margin-top:7px;max-width:820px;">SQL sources also use indexed change detection between heartbeat runs.</div>
           </div>
 
@@ -564,16 +572,18 @@
           </div>
 
           <label style="margin-top:16px;display:flex;align-items:center;gap:9px;font-size:13px;font-weight:700;color:#32217c;cursor:pointer;">
-            <input id="integ-enabled" type="checkbox" style="width:17px;height:17px;"> Enable automatic scheduled sync
+            <input id="integ-enabled" type="checkbox" style="width:17px;height:17px;"> Allow automatic source synchronization
           </label>
 
           <div style="margin-top:16px;display:flex;gap:8px;flex-wrap:wrap;">
             <button class="btn" onclick="saveInteg()">Save settings</button>
             <button class="btn btn-ghost" onclick="testInteg()">Test source</button>
-            <button class="btn" style="background:#2B1D73;color:#fff;border-color:#2B1D73;" onclick="syncNow()">Sync now</button>
-            <button id="btn-refresh-now" class="btn btn-ghost" onclick="refreshNow(this)" title="Run the full governed purge, authoritative reload, snapshot rebuild and publish cycle now">Refresh now</button>
+            <button class="btn btn-ghost" onclick="previewCandidateSource()">Preview new source</button>
+            <button class="btn btn-ghost" onclick="stageCandidateSource()">Stage validated source</button>
+            <button type="button" class="btn btn-ghost" onclick="syncNow()" title="Run an incremental sync now without clearing existing reporting records">Sync now</button>
+            <button id="btn-refresh-now" class="btn btn-ghost" onclick="refreshNow(this)" title="Safely synchronize changes from the current source without a data purge">Refresh changes</button>
           </div>
-          <div class="muted" style="margin-top:8px;max-width:820px;line-height:1.5;"><b>Sync now</b> applies incremental source changes. <b>Refresh now</b> runs the full purge-and-reload cycle; dashboard users keep seeing the last successful published data until the new refresh completes successfully.</div>
+          <div class="muted" style="margin-top:8px;max-width:820px;line-height:1.5;"><b>Sync now</b> and <b>Refresh changes</b> update the active source incrementally, without purging records. To switch databases, preview and stage the candidate first. A full reset is a separate confirmed recovery operation, never a normal refresh.</div>
           <div id="integ-result" style="margin-top:12px;"></div>
           <div style="margin-top:18px;">
             <div style="font-size:12.5px;font-weight:700;color:#5b6b7a;margin-bottom:8px;">Recent syncs</div>
@@ -755,6 +765,12 @@
         <div class="card-hd" style="border-bottom-color:#fbe4df;"><h2 style="color:#b5391f;">Danger zone</h2><div class="note">Authoritative reset and rebuild from the connected source</div></div>
         <div class="card-bd">
           <p class="muted" style="margin-bottom:14px;"><b>Reset always reloads.</b> The connected API/SQL database becomes the source of truth: prior cursors, import history, MLOps decisions and stale-write comparisons are ignored for this rebuild. The current published dashboard stays visible until all 10 feeds have been rebuilt successfully. User logins, access, branding and separately sourced chat history are kept.</p>
+          <div style="border:1px solid var(--border,#d1d5db);border-radius:8px;padding:14px;margin-bottom:14px;">
+            <b>Replace reporting dataset — impact preview</b>
+            <p class="muted" style="margin:7px 0;">Moving from a test SQL database to a different production SQL database requires a separate controlled migration. Preview the records and identity mappings first. This does not delete or switch anything.</p>
+            <button class="btn btn-ghost" type="button" onclick="previewDatasetReplacement()">Preview replacement impact</button>
+            <div class="muted" id="dataset-replacement-preview" role="status" aria-live="polite" style="margin-top:9px;white-space:pre-wrap;"></div>
+          </div>
           <button class="btn" id="reset-btn" style="border-color:#e0492f;color:#b5391f;" onclick="openReset()">Reset &amp; rebuild from source…</button>
           <div id="reset-area" style="display:none;margin-top:16px;padding:16px;border:1px solid #f3c9c0;border-radius:11px;background:#fdf5f3;">
             <div style="font-weight:700;color:#b5391f;font-size:13.5px;margin-bottom:8px;">Are you sure? This cannot be undone.</div>
@@ -852,6 +868,7 @@ function setSqlPortDefault(force=false){
   if(!force && field.value) return;
   field.value = dialect === 'MSSQL' ? '1433' : dialect === 'MYSQL' ? '3306' : '5432';
 }
+async function setIntegHeartbeat(hours){ const input=document.getElementById('integ-hours');if(input)input.value=String(hours); }
 async function loadInteg(){
   try{
     const c = await fetch(`${API}/api/admin/integration`).then(r=>r.json());
@@ -960,6 +977,11 @@ function integrationDraft(){
   return body;
 }
 async function saveInteg(){
+  const hours=Number(document.getElementById('integ-hours')?.value);
+  if(!Number.isInteger(hours)||hours<1||hours>168){
+    document.getElementById('integ-result').textContent='Choose a heartbeat of 1–168 whole hours.';
+    return;
+  }
   const body=integrationDraft();
   const mode=body.sourceMode;
   $('#integ-result').innerHTML = '<div class="banner ok">Saving…</div>';
@@ -971,6 +993,31 @@ async function saveInteg(){
     $('#integ-result').innerHTML = `<div class="banner ok">✓ ${mode==='SQL'?'Database':'API'} integration settings saved.</div>`;
     loadInteg();
   }catch(e){ $('#integ-result').innerHTML = `<div class="banner err">✕ ${esc(e.message)}</div>`; }
+}
+async function previewCandidateSource(){
+  $('#integ-result').innerHTML='<div class="banner ok">Validating candidate source without switching databases or rewriting facts…</div>';
+  try{
+    const r=await fetch(`${API}/api/admin/integration/preview-switch`,{
+      method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(integrationDraft())
+    });
+    const d=await r.json().catch(()=>({}));
+    if(!r.ok||!d.ok)throw new Error(d.error||'Candidate validation failed');
+    const detail=d.sourceChanged?'A different source identity was detected. Existing cursors will NOT be reused.':'Current source identity is unchanged.';
+    $('#integ-result').innerHTML=`<div class="banner ok">✓ ${esc(d.note||'Source contract validated')} ${esc(detail)} ${Number(d.testedFeeds||0)} feed(s) checked.</div>`;
+  }catch(e){$('#integ-result').innerHTML=`<div class="banner err">✕ ${esc(e.message)}</div>`;}
+}
+async function stageCandidateSource(){
+  $('#integ-result').innerHTML='<div class="banner ok">Staging candidate source. Current dashboard and connection remain active…</div>';
+  try{
+    const r=await fetch(`${API}/api/admin/integration/stage-source`,{
+      method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(integrationDraft())
+    });
+    const d=await r.json().catch(()=>({}));
+    if(!r.ok||!d.ok)throw new Error(d.error||'Source staging failed');
+    const vault=d.credentialsStaged?'Encrypted credentials stored.':'Encrypted credential vault not configured; activation remains blocked.';
+    $('#integ-result').innerHTML=`<div class="banner ok">✓ Candidate generation ${esc(d.generationId||'unknown')} validated. ${esc(vault)} No active database or dashboard data changed.</div>`;
+    if(d.credentialsStaged){$('#integ-token').value='';$('#integ-sql-password').value='';}
+  }catch(e){$('#integ-result').innerHTML=`<div class="banner err">✕ ${esc(e.message)}</div>`;}
 }
 async function testInteg(){
   const body=integrationDraft();
@@ -1021,33 +1068,19 @@ async function syncNow(){
   }
 }
 async function refreshNow(btn){
-  if(!confirm('Run an authoritative full refresh now?\n\nThe connected source will be treated as truth. Previous cursors, MLOps decisions and stale-write comparisons will not gate this rebuild. All 10 feeds are read from the beginning, the source-derived model is rewritten, and a new dashboard is published only after the full rebuild succeeds.\n\nDashboard users continue seeing the last successful published dashboard while this runs.')) return;
-  const original=btn?.textContent||'Refresh now';
-  if(btn){ btn.disabled=true; btn.textContent='Refreshing…'; }
-  $('#integ-result').innerHTML = '<div class="banner ok">Saving settings and preflighting the source…</div>';
+  if(!confirm('Run a safe incremental sync of the 10 canonical feeds? Only changes since the saved source cursors will be fetched. Existing dashboard records are not purged.')) return;
+  const original=btn?.textContent||'Sync changes now';
+  if(btn){ btn.disabled=true; btn.textContent='Syncing…'; }
+  $('#integ-result').innerHTML = '<div class="banner ok">Synchronising changed records without resetting source cursors…</div>';
   try{
-    const saveBody=integrationDraft();
-    const saveResp=await fetch(`${API}/api/admin/integration`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(saveBody)});
-    const saved=await saveResp.json().catch(()=>({}));
-    if(!saveResp.ok) throw new Error(saved.error||'Could not save settings before refresh');
-    $('#integ-token').value=''; $('#integ-sql-password').value='';
-
-    $('#integ-result').innerHTML = '<div class="banner ok">Full refresh started. The last successful dashboard remains published while source data is rebuilt…</div>';
+    // Do not implicitly overwrite the live connection with unsaved form fields.
+    // Use Save / Test connection before syncing to a new source.
     const r=await fetch(`${API}/api/admin/integration/refresh`,{method:'POST'});
     const d=await r.json().catch(()=>({}));
-    if(!r.ok || !d.ok) throw new Error(d.error||d.note||'Full refresh failed');
-    if(d.status==='ALREADY_RUNNING'){
-      $('#integ-result').innerHTML = '<div class="banner ok">A full refresh is already running on another application instance. The last successful dashboard remains visible until it publishes.</div>';
-      return;
-    }
-    const detail=[
-      d.purgedRows!=null ? `${Number(d.purgedRows).toLocaleString('en-ZA')} source rows purged` : null,
-      d.overwrittenRows!=null ? `${Number(d.overwrittenRows).toLocaleString('en-ZA')} rows committed` : null,
-      d.publishedDashboards!=null ? `${Number(d.publishedDashboards).toLocaleString('en-ZA')} dashboard snapshot${Number(d.publishedDashboards)===1?'':'s'} published` : null,
-    ].filter(Boolean).join(' · ');
-    $('#integ-result').innerHTML = `<div class="banner ok">✓ Full refresh completed and published.${detail?' '+esc(detail)+'.':''}</div>`;
+    if(!r.ok || !d.ok) throw new Error(d.error||d.note||'Incremental sync failed');
+    $('#integ-result').innerHTML = `<div class="banner ok">✓ Incremental sync completed. ${esc(d.note||'Changes processed without deleting existing dashboard records.')}</div>`;
   }catch(e){
-    $('#integ-result').innerHTML = `<div class="banner err">✕ Refresh did not publish a new dashboard. The last successful dashboard remains visible. Reason: ${esc(e.message)}</div>`;
+    $('#integ-result').innerHTML = `<div class="banner err">✕ Incremental sync failed. Existing dashboard data was not purged. Reason: ${esc(e.message)}</div>`;
   }finally{
     if(btn){ btn.disabled=false; btn.textContent=original; }
     loadInteg();
@@ -1794,6 +1827,19 @@ async function revokeSection(key,userId){
 }
 
 
+async function previewDatasetReplacement(){
+  const area=document.getElementById('dataset-replacement-preview');
+  if(!area)return;
+  area.textContent='Reading counts. No changes will be made…';
+  try {
+    const response=await fetch('/api/admin/integration/dataset-replacement/preview',{credentials:'same-origin'});
+    const data=await response.json();
+    if(!response.ok)throw new Error(data.error||'Preview unavailable');
+    const reporting=Object.entries(data.reportingRows||{}).map(([name,count])=>name+': '+Number(count).toLocaleString('en-ZA')).join(' | ');
+    const retained=Object.entries(data.identitiesToPreserve||{}).map(([name,count])=>name+': '+Number(count).toLocaleString('en-ZA')).join(' | ');
+    area.textContent='READ-ONLY — replacement is not enabled.\nReporting records: '+reporting+'\nProtected links: '+retained+'\nReview employer access before any replacement.';
+  }catch(error){area.textContent='Preview failed: '+(error?.message||String(error));}
+}
 // ── danger zone: full reset ──
 function openReset(){
   const area=$('#reset-area');
@@ -1855,6 +1901,10 @@ async function boot(){
   }catch(e){
     location.href='/login';
     return;
+  }
+  if(!me || !me.modules || typeof me.modules.admin !== 'boolean'){
+    console.error('Admin session response missing required module permissions');
+    location.href='/login'; return;
   }
   if(!me.modules.admin){ location.href='/dashboard'; return; }
   applyAdminBrandTheme();
@@ -2251,10 +2301,16 @@ function installCompactCollapse(){
   });
 }
 window.addEventListener("load", () => boot(), { once: true });
+// Avoid issuing an entire import-history query every 1.5 seconds merely
+// because an admin tab is open. Active import jobs already call loadHistory().
 window.setInterval(() => {
   if(document.visibilityState !== 'visible') return;
+  const card=document.getElementById('import-history-card');
+  if(!card) return;
+  const box=card.getBoundingClientRect();
+  if(box.bottom<=0 || box.top>=window.innerHeight) return;
   loadHistory();
-}, 1500);
+}, 30000);
 window.setInterval(() => {
   if(document.visibilityState !== 'visible') return;
   Promise.allSettled([loadAdminSecuritySummary(), loadComplianceSummary()]);

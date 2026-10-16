@@ -3,20 +3,30 @@ import React, {
   useCallback,
   useContext,
   useEffect,
+  useLayoutEffect,
   useRef,
   useState,
 } from "react";
 import { showQuickActions, showScheduleReport } from "./DashboardDialogs.jsx";
 const Context = createContext(null);
 const useDashboard = () => useContext(Context);
-let controller;
-let resolveController;
-const controllerReady = new Promise((resolve) => {
-  resolveController = resolve;
-});
-export function configureDashboard(value) {
-  controller = value;
-  resolveController(value);
+import { createDashboardModel } from "./dashboard-model.js";
+import {
+  EMPLOYER_METRIC_INFO,
+  PORTFOLIO_METRIC_INFO,
+} from "./dashboard-metrics.js";
+import { Info } from "./Portfolio.jsx";
+import {
+  dashboardBrand,
+  useDashboardBranding,
+  DashboardBrandLockup,
+} from "./DashboardBranding.jsx";
+import {
+  scheduleDashboardFit,
+  cancelDashboardFit,
+} from "./dashboard-layout.js";
+export function useDashboardReport() {
+  return useDashboard();
 }
 const present = (value) =>
   value !== null &&
@@ -55,6 +65,8 @@ function redirectSession(me) {
   return "/login";
 }
 export function DashboardProvider({ children }) {
+  const [controller] = useState(createDashboardModel);
+  const [portfolioReport, setPortfolioReport] = useState(null);
   const [query, setQuery] = useState(readQuery),
     [me, setMe] = useState(null),
     [data, setData] = useState(null),
@@ -65,6 +77,21 @@ export function DashboardProvider({ children }) {
     [retry, setRetry] = useState(0),
     [audience, setAudience] = useState("employer"),
     [syncStatus, setSyncStatus] = useState(null);
+  const theme = data ? data.theme : me?.theme;
+  useDashboardBranding(theme, me);
+  useLayoutEffect(() => {
+    let width = window.innerWidth;
+    const resize = () => {
+      if (width === window.innerWidth) return;
+      width = window.innerWidth;
+      scheduleDashboardFit();
+    };
+    window.addEventListener("resize", resize, { passive: true });
+    return () => {
+      window.removeEventListener("resize", resize);
+      cancelDashboardFit();
+    };
+  }, []);
   const version = useRef(null),
     pollBusy = useRef(false),
     demoActive = useRef(false);
@@ -77,7 +104,7 @@ export function DashboardProvider({ children }) {
     const abort = new AbortController();
     (async () => {
       try {
-        const bridge = await controllerReady;
+        const bridge = controller;
         if (abort.signal.aborted) return;
         const value = await request("/api/auth/me", abort.signal);
         if (!value?.modules || typeof value.modules.dashboard !== "boolean") {
@@ -233,6 +260,8 @@ export function DashboardProvider({ children }) {
       value={{
         me,
         data,
+        portfolioReport,
+        setPortfolioReport,
         live,
         periods,
         error,
@@ -664,7 +693,7 @@ export function DashboardFootnote() {
   );
 }
 export function DashboardButton({ id }) {
-  const { data, me, query } = useDashboard(),
+  const { data, me, query, busy: loading } = useDashboard(),
     [busy, setBusy] = useState(false),
     [notice, setNotice] = useState(null),
     timer = useRef(null),
@@ -685,7 +714,7 @@ export function DashboardButton({ id }) {
     if (busy) return;
     if (id === "btn-export" || id === "btn-pf-export") {
       setBusy(true);
-      controller.preparePrint();
+
       timer.current = setTimeout(
         () => {
           setBusy(false);
@@ -738,7 +767,7 @@ export function DashboardButton({ id }) {
           (id === "btn-export" ? " btn-primary" : "") +
           (busy ? " loading" : "")
         }
-        disabled={busy || !me || (id !== "btn-pf-export" && !data)}
+        disabled={busy || loading || !me || (id !== "btn-pf-export" && !data)}
         onClick={click}
       >
         {busy ? "Preparing…" : labels[id]}
@@ -1138,6 +1167,108 @@ export function DashboardFilters() {
             : " Enrolment data not loaded"
           : " Not available enrolled"}
       </span>
+    </div>
+  );
+}
+
+export function DashboardMetricInfo({ name, label }) {
+  return (
+    <Info
+      name={name}
+      definitions={{ ...EMPLOYER_METRIC_INFO, ...PORTFOLIO_METRIC_INFO }}
+      element="button"
+      label={label}
+    />
+  );
+}
+export function DashboardBrand() {
+  const { data, me } = useDashboard();
+  return (
+    <DashboardBrandLockup
+      theme={dashboardBrand(data ? data.theme : me?.theme, me)}
+    />
+  );
+}
+function usePrintReport() {
+  const { data, me, audience, portfolioReport } = useDashboard();
+  const [date, setDate] = useState(() => new Date());
+  useEffect(() => {
+    const update = () => setDate(new Date());
+    window.addEventListener("beforeprint", update);
+    return () => window.removeEventListener("beforeprint", update);
+  }, []);
+  const formatted = date.toLocaleDateString("en-ZA", {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  });
+  const portfolio = audience === "portfolio";
+  const employer =
+    typeof data?.employer === "string"
+      ? data.employer
+      : data?.employer?.name ||
+        me?.employers?.find((e) => e.id === data?.employerId)?.name ||
+        me?.employers?.[0]?.name ||
+        "Employer";
+  return {
+    date: formatted,
+    theme: dashboardBrand(data ? data.theme : me?.theme, me),
+    title: portfolio
+      ? "Portfolio Insights" +
+        (portfolioReport ? " · " + portfolioReport.count : "")
+      : employer + " · Employer Insights",
+    period: portfolio
+      ? portfolioReport?.window || "Reporting window: Not available"
+      : data?.filterContext?.label || "Latest available period",
+    score: portfolio
+      ? "Across your whole book of employers"
+      : "Workforce Financial Wellness Score " +
+        (present(data?.wellness?.score)
+          ? data.wellness.score
+          : "Not available") +
+        " / 100",
+  };
+}
+export function DashboardPrintHeader() {
+  const report = usePrintReport();
+  return (
+    <div className="pdf-print-header" aria-hidden="true">
+      <div className="pdf-brand">
+        <img
+          src={report.theme?.logoDataUrl || "/static/the-fixer-logo.svg?v=6"}
+          className="efs-brand-logo"
+          alt={
+            report.theme?.logoDataUrl
+              ? (report.theme.name || "Partner") + " logo"
+              : "The Fixer logo"
+          }
+          data-custom-logo={report.theme?.logoDataUrl ? "1" : undefined}
+        />
+        <div>
+          <div className="pdf-kicker">
+            empower-fin · Workforce Financial Wellbeing
+          </div>
+          <div className="pdf-title" id="pdf-report-title">
+            {report.title}
+          </div>
+        </div>
+      </div>
+      <div className="pdf-meta">
+        <div id="pdf-report-period">{report.period}</div>
+        <div id="pdf-report-generated">Generated {report.date}</div>
+        <span className="pdf-score" id="pdf-report-score">
+          {report.score}
+        </span>
+      </div>
+    </div>
+  );
+}
+export function DashboardPrintFooter() {
+  const report = usePrintReport();
+  return (
+    <div className="pdf-print-footer" aria-hidden="true">
+      empower-fin · Workforce Financial Wellbeing · Confidential employer report
+      · Generated <span id="pdf-footer-date">{report.date}</span>
     </div>
   );
 }

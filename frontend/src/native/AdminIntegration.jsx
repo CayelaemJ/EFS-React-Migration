@@ -287,10 +287,17 @@ export function AdminIntegration() {
     if (
       kind === "refresh" &&
       !window.confirm(
-        "Run an authoritative full refresh now?\n\nThe connected source will be treated as truth. Previous cursors, MLOps decisions and stale-write comparisons will not gate this rebuild. All 10 feeds are read from the beginning, the source-derived model is rewritten, and a new dashboard is published only after the full rebuild succeeds.\n\nDashboard users continue seeing the last successful published dashboard while this runs.",
+        "Run a safe incremental sync of the 10 canonical feeds? Only changes since the saved source cursors will be fetched. Existing dashboard records are not purged.",
       )
     )
       return;
+    if (["save", "sync"].includes(kind)) {
+      const hours = Number(draft["integ-hours"]);
+      if (!Number.isInteger(hours) || hours < 1 || hours > 168) {
+        message("Choose a heartbeat of 1–168 whole hours.", "err");
+        return;
+      }
+    }
     pending.current = true;
     setBusy(kind);
     const body = payload(draft),
@@ -307,25 +314,50 @@ export function AdminIntegration() {
         message("✓ " + (data.note || "Source test passed."));
         return;
       }
-      message(
-        kind === "refresh"
-          ? "Saving settings and preflighting the source…"
-          : kind === "save"
-            ? "Saving…"
-            : "Saving settings…",
-      );
-      await request("integration", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body),
-      });
-      clearSecrets();
-      if (kind === "save") {
+      if (kind === "preview" || kind === "stage") {
         message(
-          `✓ ${body.sourceMode === "SQL" ? "Database" : "API"} integration settings saved.`,
+          kind === "preview"
+            ? "Validating candidate source without switching databases or rewriting facts…"
+            : "Staging candidate source. Current dashboard and connection remain active…",
         );
-        await readConfig(false);
+        const data = await request(
+          "integration/" +
+            (kind === "preview" ? "preview-switch" : "stage-source"),
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(body),
+          },
+        );
+        if (!data.ok)
+          throw new Error(data.error || "Candidate validation failed");
+        if (kind === "preview")
+          message(
+            `✓ ${data.note || "Source contract validated"} ${data.sourceChanged ? "A different source identity was detected. Existing cursors will NOT be reused." : "Current source identity is unchanged."} ${Number(data.testedFeeds || 0)} feed(s) checked.`,
+          );
+        else {
+          message(
+            `✓ Candidate generation ${data.generationId || "unknown"} validated. ${data.credentialsStaged ? "Encrypted credentials stored." : "Encrypted credential vault not configured; activation remains blocked."} No active database or dashboard data changed.`,
+          );
+          if (data.credentialsStaged) clearSecrets();
+        }
         return;
+      }
+      if (kind !== "refresh") {
+        message("Saving settings…");
+        await request("integration", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(body),
+        });
+        clearSecrets();
+        if (kind === "save") {
+          message(
+            `✓ ${body.sourceMode === "SQL" ? "Database" : "API"} integration settings saved.`,
+          );
+          await readConfig(false);
+          return;
+        }
       }
       if (kind === "sync") {
         const start = await request("integration/sync", { method: "POST" });
@@ -352,40 +384,22 @@ export function AdminIntegration() {
         setResult(<SyncResult result={value} />);
       } else {
         message(
-          "Full refresh started. The last successful dashboard remains published while source data is rebuilt…",
+          "Synchronising changed records without resetting source cursors…",
         );
         const data = await request("integration/refresh", { method: "POST" });
         if (!data.ok)
-          throw new Error(data.error || data.note || "Full refresh failed");
-        if (data.status === "ALREADY_RUNNING")
-          message(
-            "A full refresh is already running on another application instance. The last successful dashboard remains visible until it publishes.",
-          );
-        else {
-          const detail = [
-            data.purgedRows != null
-              ? `${number(data.purgedRows)} source rows purged`
-              : null,
-            data.overwrittenRows != null
-              ? `${number(data.overwrittenRows)} rows committed`
-              : null,
-            data.publishedDashboards != null
-              ? `${number(data.publishedDashboards)} dashboard snapshot${Number(data.publishedDashboards) === 1 ? "" : "s"} published`
-              : null,
-          ]
-            .filter(Boolean)
-            .join(" · ");
-          message(
-            "✓ Full refresh completed and published." +
-              (detail ? " " + detail + "." : ""),
-          );
-        }
+          throw new Error(data.error || data.note || "Incremental sync failed");
+        message(
+          "✓ Incremental sync completed. " +
+            (data.note ||
+              "Changes processed without deleting existing dashboard records."),
+        );
       }
     } catch (error) {
       if (!lifecycle.current.signal.aborted)
         message(
           kind === "refresh"
-            ? `✕ Refresh did not publish a new dashboard. The last successful dashboard remains visible. Reason: ${error.message}`
+            ? `✕ Incremental sync failed. Existing dashboard data was not purged. Reason: ${error.message}`
             : "✕ " + error.message,
           "err",
         );
@@ -444,7 +458,7 @@ export function AdminIntegration() {
       status
     ),
     statusVisible: Boolean(config || loadError),
-    refreshLabel: busy === "refresh" ? "Refreshing…" : "Refresh now",
+    refreshLabel: busy === "refresh" ? "Syncing…" : "Refresh changes",
     result,
     tokenPlaceholder: config?.hasToken
       ? config.apiTokenFromEnvironment
@@ -544,6 +558,12 @@ export function AdminIntegration() {
         test: () => run("test"),
         sync: () => run("sync"),
         refresh: () => run("refresh"),
+        preview: () => run("preview"),
+        stage: () => run("stage"),
+        hourly: () => change("integ-hours", "1"),
+        sixHours: () => change("integ-hours", "6"),
+        daily: () => change("integ-hours", "24"),
+        weekly: () => change("integ-hours", "168"),
         toggle: () => setCollapsed((value) => !value),
       }}
     />

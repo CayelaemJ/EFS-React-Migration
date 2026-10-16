@@ -8,8 +8,7 @@ import React, {
   useSyncExternalStore,
 } from "react";
 
-// Temporary boundary for administration panels that still read the report
-// contract. Rendering, selection, uploads and import history belong to React.
+// Shared report contract store for native administration panels.
 let manifestState = { manifest: null, error: "", loading: false },
   manifestCallback = null;
 const listeners = new Set(),
@@ -721,7 +720,30 @@ function historyDetail(batch) {
         : batch.status,
   };
 }
+const HistoryVisibility = createContext(null);
+export function ImportHistoryCard({ children }) {
+  const host = useRef(null);
+  return (
+    <HistoryVisibility.Provider value={host}>
+      <div className="card section-gap" id="import-history-card" ref={host}>
+        {children}
+      </div>
+    </HistoryVisibility.Provider>
+  );
+}
+export function HistoryRefreshButton() {
+  return (
+    <button
+      className="btn btn-sm"
+      type="button"
+      onClick={() => refreshImportHistory()}
+    >
+      Refresh
+    </button>
+  );
+}
 export function ImportHistoryRows() {
+  const host = useContext(HistoryVisibility);
   const { manifest } = useContext(Context);
   const [batches, setBatches] = useState([]),
     [error, setError] = useState(""),
@@ -749,14 +771,16 @@ export function ImportHistoryRows() {
     historyRefreshers.add(refresh);
     refresh();
     const timer = setInterval(() => {
-      if (document.visibilityState === "visible") refresh();
-    }, 1500);
+      if (document.visibilityState !== "visible" || !host?.current) return;
+      const box = host.current.getBoundingClientRect();
+      if (box.bottom > 0 && box.top < window.innerHeight) refresh();
+    }, 30000);
     return () => {
       clearInterval(timer);
       historyRefreshers.delete(refresh);
       historyAbort.current?.abort();
     };
-  }, [manifest, refresh]);
+  }, [manifest, refresh, host]);
   async function revert(id) {
     if (
       !confirm(

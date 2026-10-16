@@ -2,7 +2,7 @@
 
 Migration initially based on **NewChanges-main (6)(2).zip**, now tracking **NewChanges main** (pinned in `docs/UPSTREAM_SOURCE.json`) into a React frontend while retaining its Fastify/Prisma backend, assets, layouts, branding and canonical routes.
 
-**Work in progress.** All twelve pages have React build entries. The public pages and protected-page navigation are declarative React. The dashboard, administration and user-management bodies still use transitional controllers and are not yet a completed React rewrite. See [migration status](docs/REACT_MIGRATION_STATUS.md).
+**React frontend port complete; authenticated acceptance pending.** All twelve pages, both dashboards, administration and user management use declarative React. Legacy page controllers no longer run in production. The Fastify/Prisma backend incorporates NewChanges through `1ce1da97` (16 October). See [migration status](docs/REACT_MIGRATION_STATUS.md).
 
 ## Local development
 
@@ -33,12 +33,12 @@ Browser tests use local fixture servers and mocked API responses, including scre
 
 The repository configuration builds with `npm run build`, starts with `npm start`, and checks `/health`. `npm run db:deploy` is the configured predeploy database step; review it against the target environment before deployment. Existing Railway service overrides can take precedence and must be reconciled during a separately authorized rollout.
 
-This branch does not change the currently deployed service, its source branch, its variables, or its database.
+Railway `migration-test` currently auto-deploys this branch under its existing configuration, including its schema-push predeploy override. The new schema additions are recorded as an additive migration. No production/source database cutover, data replacement or Railway variable/configuration change is performed here.
 
 ## Migration code
 
-- `frontend/src/native/`: React-owned forms, navigation, account controls and common public-page behaviour.
-- `frontend/src/parity/`: original structure converted to JSX plus remaining transitional page controllers.
+- `frontend/src/native/`: React page logic, forms, dashboards, administration, user/security management, branding and shared lifecycle effects.
+- `frontend/src/parity/`: source structure converted to declarative JSX; dashboard/admin startup functions are empty.
 - `frontend/src/lib/brand-engine.js`: original colour calculations exported as an ES module.
 - `public/`: source/reference HTML, original static assets and generated build destination.
 - `scripts/migration/port-pages.mjs`: repeatable source-to-JSX conversion. `npm run migration:generate` regenerates parity files and page entries; edit native components directly.

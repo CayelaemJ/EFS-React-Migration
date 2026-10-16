@@ -6,6 +6,7 @@ import React, {
   useSyncExternalStore,
 } from "react";
 import { createPortal } from "react-dom";
+import { useDashboardReport } from "./DashboardState.jsx";
 import { PortfolioLayout } from "../parity/portfolio-layout.jsx";
 
 let snapshot = null;
@@ -59,7 +60,7 @@ function colour(metric, value, values) {
     color: t < 0.4 ? "#b5371f" : t > 0.7 ? "#137a47" : "#9a6206",
   };
 }
-export function Info({ name, definitions }) {
+export function Info({ name, definitions, element: Element = "span", label }) {
   const [anchor, setAnchor] = useState(null),
     [position, setPosition] = useState({ left: 14, top: 14 });
   const tip = useRef(null);
@@ -84,12 +85,14 @@ export function Info({ name, definitions }) {
   }, [anchor]);
   return (
     <>
-      <span
-        role="button"
+      <Element
+        type={Element === "button" ? "button" : undefined}
+        data-metric={name}
+        role={Element === "button" ? undefined : "button"}
         tabIndex={0}
         className="metric-info"
         data-tip-wired="1"
-        aria-label={`What is ${d.title}?`}
+        aria-label={label || `What is ${d.title}?`}
         onMouseEnter={(e) => setAnchor(e.currentTarget)}
         onMouseLeave={() => setAnchor(null)}
         onFocus={(e) => setAnchor(e.currentTarget)}
@@ -109,7 +112,7 @@ export function Info({ name, definitions }) {
         }}
       >
         i
-      </span>
+      </Element>
       {anchor &&
         createPortal(
           <div
@@ -170,6 +173,7 @@ function Icon({ kind }) {
   );
 }
 export function Portfolio() {
+  const report = useDashboardReport();
   const data = useSyncExternalStore(subscribe, () => snapshot),
     [selected, setSelected] = useState(null),
     [sort, setSort] = useState("oppValue"),
@@ -202,6 +206,12 @@ export function Portfolio() {
     E = employers.filter((e, i) => selected === null || selected.has(keys[i])),
     heads = E.reduce((s, e) => s + (finite(e.heads) || 0), 0),
     count = E.length;
+  const windowLabel =
+    "Reporting window: " + (data?.filterContext?.label || "Programme to date");
+  const setPortfolioReport = report?.setPortfolioReport;
+  useEffect(() => {
+    setPortfolioReport?.({ count: `${count} selected`, window: windowLabel });
+  }, [count, windowLabel, setPortfolioReport]);
   const info = (name) => <Info name={name} definitions={definitions} />;
   const sum = (key) => {
     const values = E.map((e) => finite(e[key])).filter((v) => v !== null);

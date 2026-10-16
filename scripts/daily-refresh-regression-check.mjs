@@ -12,9 +12,30 @@ const sourceAdapter = read("src/services/sourceAdapter.ts");
 const admin = read("public/admin.html");
 const users = read("public/users.html");
 const sourceStatus = read("public/admin-source-status.js");
+const syncJobs = read("src/services/syncJobs.ts");
 
 const failures = [];
+mustSyncStatusGuards();
+
+function mustSyncStatusGuards() {
+  if (!sync.includes('return { ok: status === "OK", status,')) throw new Error("partial source sync must return ok=false");
+  if (!syncJobs.includes('job.result?.status === "OK" && job.result?.ok === true')) throw new Error("sync job must not report PARTIAL or FAILED as DONE");
+}
 const must = (ok, message) => { if (!ok) failures.push(message); };
+const scheduled = daily.slice(daily.indexOf("export function startDailyRefresh()"),daily.indexOf("// Manual trigger"));
+const incrementalBootstrap = server.slice(server.indexOf('const standby = process.env.STANDBY_MODE'),server.indexOf('app.log.info(`empower-fin Dashboard Portal'));
+must(incrementalBootstrap.includes('process.env.ENABLE_AUTHORITATIVE_INCREMENTAL_SCHEDULER === "true"'), "incremental scheduler must require explicit activation in saver mode");
+must(incrementalBootstrap.includes('if (!standby)') && incrementalBootstrap.includes('startSyncScheduler(app)'), "standby instances must not launch the ingestion scheduler");
+const sqlNoChangeSkip = server.indexOf('if (changes.supported && !changes.changed && cfg.lastSuccessfulSyncAt)');
+const heartbeatDue = server.indexOf('const dueAfter = cfg.lastSyncAt');
+must(sqlNoChangeSkip > 0 && sqlNoChangeSkip < heartbeatDue && server.includes('SQL source watermarks unchanged; skipping costly heartbeat extraction'), "unchanged SQL watermarks must bypass all ten-feed scheduled heartbeat extractions");
+
+must(scheduled.includes('ENABLE_DAILY_INCREMENTAL_RECONCILIATION !== "true"'), "redundant daily polling must remain disabled by default");
+
+must(scheduled.includes('runSync("scheduled")'), "scheduled refresh must run incremental sync");
+must(!scheduled.includes('runAuthoritativeFullRefresh('), "scheduled refresh must not run a destructive full refresh");
+
+
 
 must(daily.includes('process.env.DAILY_REFRESH_CRON ?? "0 0 * * *"'), "daily refresh must default to 00:00");
 must(daily.includes('process.env.DAILY_REFRESH_TIMEZONE ?? "Africa/Johannesburg"'), "daily refresh must default to Africa/Johannesburg");
@@ -78,6 +99,17 @@ must(server.includes("getPublishedDashboardPayload") && server.includes("serving
 must(server.includes("sendPublishedDashboardUnavailable") && server.includes('reply.code(503)'), "a 503 is allowed only when no published fallback exists");
 must(dashboard.includes("Purging & rebuilding") && dashboard.includes("Purged & overwritten"), "dashboard must visibly distinguish rebuilding from a completed purge-and-overwrite refresh");
 must(dashboard.includes("still showing the last successful data") && dashboard.includes("Reason:"), "dashboard must preserve charts and surface the refresh failure reason");
+
+
+// Job lifecycle and delivery checks: terminal statuses must be truthful and
+// a running job must not expire from the poller on a wall-clock timer.
+const genericJobs = read("src/services/asyncJobs.ts");
+const sourceJobs = read("src/services/syncJobs.ts");
+must(genericJobs.includes('const success = result?.status === "OK" && result?.ok === true'), "legacy sync runner must not report a partial feed as DONE");
+must(genericJobs.includes('job.status = "FAILED";\n      job.result = {\n        batchId: opts.batchId'), "upload exceptions must fail the job rather than return DONE");
+must(genericJobs.includes('if ((job.status === "DONE" || job.status === "FAILED") && !job.timer)'), "generic jobs must start retention only at terminal status");
+must(sourceJobs.includes('if ((job.status === "DONE" || job.status === "FAILED") && !job.timer)'), "source jobs must start retention only at terminal status");
+must(reports.includes('["REBUILDING", "PARTIAL", "FAILED", "FULL_REFRESH_FAILED", "FULL_REFRESH_PRECHECK_FAILED"].includes(String(refresh?.lastSyncStatus || ""))'), "due reports must defer on all unpublishable source states");
 
 if (failures.length) {
   console.error("Daily refresh regression check failed:\n- " + failures.join("\n- "));

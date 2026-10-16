@@ -1,7 +1,6 @@
 import { readFileSync } from "node:fs";
 
 const admin = readFileSync("public/admin.html", "utf8");
-const reactAdmin = readFileSync("frontend/src/parity/admin.jsx", "utf8");
 const server = readFileSync("src/server.ts", "utf8");
 const jobs = readFileSync("src/services/asyncJobs.ts", "utf8");
 const syncJobs = readFileSync("src/services/syncJobs.ts", "utf8");
@@ -10,13 +9,13 @@ const imports = readFileSync("src/services/importService.ts", "utf8");
 const stream = readFileSync("src/services/adminEventStream.ts", "utf8");
 
 const checks = [
-  [reactAdmin.includes('onReady(() => boot())') && reactAdmin.includes('async function boot() {\n  installCompactCollapse();'), "admin boot waits until all page scripts are defined"],
+  [admin.includes('window.addEventListener("load", () => boot(), { once: true });'), "admin boot waits until all page scripts are defined"],
   [admin.includes("/api/admin/security/overview") && admin.includes("loadAdminSecuritySummary"), "security summary is loaded"],
   [admin.includes("/api/admin/compliance/overview") && admin.includes("loadComplianceSummary"), "POPIA summary is loaded"],
   [admin.includes("new XMLHttpRequest()") && admin.includes("xhr.upload.addEventListener('progress'"), "file upload reports browser upload progress"],
   [admin.includes("new EventSource(") && admin.includes("/api/admin/events?jobId="), "job progress uses SSE"],
   [admin.includes("return fallbackPoll()"), "job progress retains polling fallback"],
-  [admin.includes("loadHistory();\n}, 1500)") && admin.includes("history-row-detail") && admin.includes("COMMITTING"), "Import history refreshes itself and distinguishes validated from live commit progress"],
+  [admin.includes("}, 30000);") && admin.includes("id=\"import-history-card\"") && admin.includes("if(box.bottom<=0 || box.top>=window.innerHeight) return;") && !admin.includes("}, 1500);") && admin.includes("history-row-detail") && admin.includes("COMMITTING"), "Import history polls only when visible at low frequency, retains manual refresh and live commit progress"],
   [admin.includes("Processed live:") && admin.includes("Source view:") && admin.includes("Validated:"), "SQL live progress exposes source, validated and processed row counts"],
   [server.includes('job.status === "PENDING" || job.status === "PROCESSING"') && server.includes("detail: job.detail ?? null"), "polling endpoints keep in-progress jobs live with row detail"],
   [server.includes('/api/admin/events') && server.includes('text/event-stream'), "authenticated SSE endpoint exists"],

@@ -14,7 +14,7 @@ export interface SyncJob {
   detail?: any;
   result?: any;
   error?: string;
-  timer: NodeJS.Timeout;
+  timer: NodeJS.Timeout | null;
 }
 
 const syncJobs = new Map<string, SyncJob>();
@@ -22,6 +22,10 @@ const JOB_TTL_MS = 30 * 60 * 1000;
 
 function update(job: SyncJob, jobId: string, patch: Partial<SyncJob>) {
   Object.assign(job, patch, { updatedAt: new Date().toISOString() });
+  if ((job.status === "DONE" || job.status === "FAILED") && !job.timer) {
+    job.timer = setTimeout(() => syncJobs.delete(jobId), JOB_TTL_MS);
+    job.timer.unref();
+  }
   publishAdminEvent("job.progress", {
     status: job.status,
     phase: job.phase,
@@ -36,7 +40,8 @@ function update(job: SyncJob, jobId: string, patch: Partial<SyncJob>) {
 
 export function startSyncJob(trigger: "manual" | "scheduled" = "manual"): string {
   const jobId = randomUUID();
-  const timer = setTimeout(() => syncJobs.delete(jobId), JOB_TTL_MS);
+  // Keep in-flight jobs observable even when a sync takes longer than 30 minutes.
+  const timer = null;
   const job: SyncJob = {
     status: "PENDING",
     phase: "QUEUED",
@@ -73,11 +78,15 @@ export function startSyncJob(trigger: "manual" | "scheduled" = "manual"): string
           });
         },
       });
+      // runSync reports ordered-feed failures as a result rather than throwing.
+      // PARTIAL is not a successful sync: later dependent feeds were blocked.
+      const complete = job.result?.status === "OK" && job.result?.ok === true;
       update(job, jobId, {
-        status: "DONE",
-        phase: "COMPLETE",
+        status: complete ? "DONE" : "FAILED",
+        phase: complete ? "COMPLETE" : "FAILED",
         progress: 100,
-        message: job.result?.note || "Synchronisation complete",
+        message: job.result?.note || (complete ? "Synchronisation complete" : "Synchronisation failed"),
+        ...(!complete ? { error: job.result?.error || job.result?.note || "Source synchronisation did not complete" } : {}),
       });
     } catch (e: any) {
       update(job, jobId, {

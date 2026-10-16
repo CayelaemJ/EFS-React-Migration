@@ -47,7 +47,9 @@ function state(config) {
   return { label: raw, tone: config.configured ? "ready" : "err" };
 }
 export function SourceStatus() {
-  const [config, setConfig] = useState(null);
+  const [config, setConfig] = useState(null),
+    [database, setDatabase] = useState(null),
+    [collapsed, setCollapsed] = useState(true);
   useEffect(() => {
     const abort = new AbortController();
     let pending = false,
@@ -70,13 +72,35 @@ export function SourceStatus() {
         if (response.ok) {
           const data = await response.json();
           if (!abort.signal.aborted) setConfig(data);
+          try {
+            const health = await fetch("/api/admin/database-status", {
+              credentials: "same-origin",
+              cache: "no-store",
+              signal: abort.signal,
+            });
+            if (health.status === 401 || health.status === 403) {
+              if (!abort.signal.aborted) setDatabase(null);
+            } else {
+              if (!health.ok) throw new Error("Health endpoint unavailable");
+              const value = await health.json();
+              if (!abort.signal.aborted) setDatabase(value);
+            }
+          } catch (error) {
+            if (!abort.signal.aborted)
+              setDatabase({
+                status: "red",
+                provider: "Unknown",
+                database: "Unverified",
+                message: "Status check unavailable",
+              });
+          }
         }
       } catch {
       } finally {
         pending = false;
       }
     }
-    const timer = setInterval(refresh, 5000),
+    const timer = setInterval(refresh, 60000),
       visible = () => {
         if (!document.hidden) refresh();
       };
@@ -103,14 +127,74 @@ export function SourceStatus() {
         <span className="efs-source-dot" aria-hidden="true" />
         <strong>Connected source: {sourceLabel(config)}</strong>
         <span className="efs-source-state">{current.label}</span>
+        <button
+          className="efs-toggle"
+          type="button"
+          aria-expanded={!collapsed}
+          aria-controls="efs-status-detail"
+          onClick={() => setCollapsed((value) => !value)}
+        >
+          {collapsed ? "Details ▾" : "Collapse ▴"}
+        </button>
       </div>
-      <div className="efs-source-meta">
-        Last successful: {when(config.lastSuccessfulSyncAt)}
-        {!config.configured ? " · incomplete" : ""}
-        {config.environmentLocked ? " · Railway env locked" : ""}
-        {config.lastSyncNote ? " · " + config.lastSyncNote : ""}
+      <div id="efs-status-detail" hidden={collapsed}>
+        <div className="efs-source-meta">
+          Last successful: {when(config.lastSuccessfulSyncAt)}
+          {!config.configured ? " · incomplete" : ""}
+          {config.environmentLocked ? " · Railway env locked" : ""}
+          {config.lastSyncNote ? " · " + config.lastSyncNote : ""}
+        </div>
+        <div className="efs-help">
+          Source = external SQL/API reporting data. COMPLETE = last import
+          succeeded, not proof that the source is up to date. PostgreSQL = the
+          shared Neon application database that stores dashboards and users;
+          HEALTHY means its connection check succeeded. A healthy database does
+          not guarantee successful source sync.
+        </div>
+        <DatabaseStatus value={database} />
       </div>
     </aside>,
     document.body,
+  );
+}
+
+function DatabaseStatus({ value }) {
+  const tone = value
+    ? ["green", "yellow", "red"].includes(value.status)
+      ? value.status
+      : "red"
+    : "yellow";
+  return (
+    <div className="efs-db-panel" data-db-status={tone} id="efs-db-status">
+      <div className="efs-source-row">
+        <span className="efs-db-dot" aria-hidden="true" />
+        <strong>
+          PostgreSQL:{" "}
+          {value
+            ? (value.provider || "Unknown") +
+              " · " +
+              (value.database || "Unknown")
+            : "Checking connection…"}
+        </strong>
+        <span className="efs-source-state">
+          {!value
+            ? "CHECKING"
+            : tone === "green"
+              ? "HEALTHY"
+              : tone === "yellow"
+                ? "DEGRADED"
+                : "ERROR"}
+        </span>
+      </div>
+      {value && (
+        <div className="efs-source-meta">
+          {value.message || "Unknown"}
+          {Number.isFinite(value.latencyMs)
+            ? " · " + value.latencyMs + " ms"
+            : ""}{" "}
+          · Checked: {value.checkedAt ? when(value.checkedAt) : "Unavailable"}
+        </div>
+      )}
+    </div>
   );
 }

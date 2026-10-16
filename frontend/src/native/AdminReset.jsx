@@ -1,4 +1,4 @@
-import React, { useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { refreshImportHistory, useClearReportResult } from "./AdminReports.jsx";
 import { refreshGovernance } from "./AdminGovernance.jsx";
 
@@ -98,6 +98,7 @@ export function AdminReset() {
           successfully. User logins, access, branding and separately sourced
           chat history are kept.
         </p>
+        <DatasetReplacementPreview />
         <button
           className="btn"
           id="reset-btn"
@@ -185,6 +186,82 @@ export function AdminReset() {
             )}
           </div>
         )}
+      </div>
+    </div>
+  );
+}
+
+function DatasetReplacementPreview() {
+  const [result, setResult] = useState(""),
+    [busy, setBusy] = useState(false);
+  const request = useRef(null);
+  useEffect(() => () => request.current?.abort(), []);
+  async function preview() {
+    if (request.current) return;
+    const abort = new AbortController();
+    request.current = abort;
+    setBusy(true);
+    setResult("Reading counts. No changes will be made…");
+    try {
+      const response = await fetch(
+        "/api/admin/integration/dataset-replacement/preview",
+        { credentials: "same-origin", cache: "no-store", signal: abort.signal },
+      );
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || "Preview unavailable");
+      const counts = (value) =>
+        Object.entries(value || {})
+          .map(
+            ([name, count]) =>
+              name + ": " + Number(count).toLocaleString("en-ZA"),
+          )
+          .join(" | ");
+      if (!abort.signal.aborted)
+        setResult(
+          "READ-ONLY — replacement is not enabled.\nReporting records: " +
+            counts(data.reportingRows) +
+            "\nProtected links: " +
+            counts(data.identitiesToPreserve) +
+            "\nReview employer access before any replacement.",
+        );
+    } catch (error) {
+      if (!abort.signal.aborted) setResult("Preview failed: " + error.message);
+    } finally {
+      request.current = null;
+      if (!abort.signal.aborted) setBusy(false);
+    }
+  }
+  return (
+    <div
+      style={{
+        border: "1px solid var(--border,#d1d5db)",
+        borderRadius: 8,
+        padding: 14,
+        marginBottom: 14,
+      }}
+    >
+      <b>Replace reporting dataset — impact preview</b>
+      <p className="muted" style={{ margin: "7px 0" }}>
+        Moving from a test SQL database to a different production SQL database
+        requires a separate controlled migration. Preview the records and
+        identity mappings first. This does not delete or switch anything.
+      </p>
+      <button
+        className="btn btn-ghost"
+        type="button"
+        onClick={preview}
+        disabled={busy}
+      >
+        Preview replacement impact
+      </button>
+      <div
+        className="muted"
+        id="dataset-replacement-preview"
+        role="status"
+        aria-live="polite"
+        style={{ marginTop: 9, whiteSpace: "pre-wrap" }}
+      >
+        {result}
       </div>
     </div>
   );

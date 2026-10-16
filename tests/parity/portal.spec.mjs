@@ -1732,20 +1732,20 @@ test('React integration stops sync after a failed save and retries failed reads'
  await page.getByRole('button',{name:'Connect a database'}).click();await expect(page.locator('#integ-sql-host')).toBeVisible();
 });
 
-test('React integration refresh preserves the current backend confirmation and already-running result',async({page})=>{
+test('React integration refresh uses the saved source without implicitly saving draft settings',async({page})=>{
  await mockApi(page);let refreshes=0,saves=0;
  await page.route('**/api/admin/integration',route=>{if(route.request().method()==='POST')saves++;return route.fulfill({json:{configured:true,ok:true}});});
- await page.route('**/api/admin/integration/refresh',route=>{refreshes++;return route.fulfill({json:{ok:true,status:'ALREADY_RUNNING'}});});
+ await page.route('**/api/admin/integration/refresh',route=>{refreshes++;return route.fulfill({json:{ok:true,note:'Changed records processed.'}});});
  await page.goto(url+'/admin');await expect(page.locator('#btn-refresh-now')).toBeEnabled();
  page.once('dialog',dialog=>dialog.dismiss());await page.locator('#btn-refresh-now').click();expect(refreshes).toBe(0);expect(saves).toBe(0);
- page.once('dialog',dialog=>dialog.accept());await page.locator('#btn-refresh-now').click();await expect(page.locator('#integ-result')).toContainText('already running on another application instance');
- expect(refreshes).toBe(1);expect(saves).toBe(1);await expect(page.locator('#btn-refresh-now')).toBeEnabled();
+ await page.locator('#integ-url').fill('https://unsaved.example.invalid');page.once('dialog',dialog=>{expect(dialog.message()).toContain('incremental sync');dialog.accept();});await page.locator('#btn-refresh-now').click();await expect(page.locator('#integ-result')).toContainText('Incremental sync completed. Changed records processed.');
+ expect(refreshes).toBe(1);expect(saves).toBe(0);await expect(page.locator('#btn-refresh-now')).toBeEnabled();
 });
 
 for(const width of [1440,390])test(`React integration preserves source dark form styling at ${width}px`,async({browser})=>{
  const measured=[];
  for(const port of [4101,4100]){
-  const page=await browser.newPage({viewport:{width,height:1000}});await mockApi(page);
+  const page=await browser.newPage({viewport:{width,height:1000}});await mockApi(page,{'/api/admin/integration':{configured:true,sourceMode:'API',scheduleHours:24}});
   await page.addInitScript(()=>{localStorage.setItem('empower-fin-theme','dark');localStorage.setItem('cookieNoticeDismissed','1');});
   await page.goto(`http://127.0.0.1:${port}/admin`);await expect(page.locator('#integ-status')).toBeVisible();await page.locator('#source-tab-sql').click();
   const values=[];
@@ -1970,7 +1970,7 @@ test('React chat changes journey themes with keyboard and removes stale content 
  await expect(page.locator('#chat-themes')).not.toContainText('second');
 });
 
-for(const width of [1440,390])test(`React employer charts match source in dark mode at ${width}px`,async({browser})=>{
+for(const width of [1440,390])test(`React employer charts match source in dark mode at ${width}px`,async({browser},testInfo)=>{
  const captures=[];
  for(const port of [4101,4100]){
   const page=await browser.newPage({viewport:{width,height:1000},timezoneId:'Africa/Johannesburg'});await mockApi(page);
@@ -1980,13 +1980,19 @@ for(const width of [1440,390])test(`React employer charts match source in dark m
   await page.locator('#dp-toggle').click();await page.waitForTimeout(1500);
   await page.addStyleTag({content:'*,*::before,*::after{transition:none!important;animation:none!important;caret-color:transparent!important}.reveal{opacity:1!important;transform:none!important}'});
   const images=[];
-  for(const selector of ['#outcomes','#savings-chart','#debt-profile','#creditor-table','#ewa-kpis','#ewa-chart','#stress-strip','#region-bars','#income-donut','#ratings','#debt-states','#prescription','#risk-signals','#opportunities','[data-section="voiceOfEmployee"]'])images.push({selector,png:PNG.sync.read(await page.locator(selector).screenshot())});
+  // Equal scroll placement keeps fixed source-status UI out of unrelated chart crops.
+  for(const selector of ['#outcomes','#savings-chart','#debt-profile','#creditor-table','#ewa-kpis','#ewa-chart','#stress-strip','#region-bars','#income-donut','#ratings','#debt-states','#prescription','#risk-signals','#opportunities','[data-section="voiceOfEmployee"]']){
+   await page.locator(selector).evaluate(node=>node.scrollIntoView({block:'center',inline:'nearest',behavior:'instant'}));
+   images.push({selector,png:PNG.sync.read(await page.locator(selector).screenshot())});
+  }
   captures.push(images);await page.close();
  }
  for(let i=0;i<captures[0].length;i++){
   const {selector,png:a}=captures[0][i],b=captures[1][i].png;
   expect(b.width,selector).toBe(a.width);expect(b.height,selector).toBe(a.height);
-  expect(pixelmatch(a.data,b.data,null,a.width,a.height,{threshold:.15})/(a.width*a.height),selector).toBeLessThan(.005);
+  const ratio=pixelmatch(a.data,b.data,null,a.width,a.height,{threshold:.15})/(a.width*a.height);
+  if(ratio>=.005){for(const [name,png]of [['source',a],['react',b]]){fs.writeFileSync(testInfo.outputPath(selector.slice(1)+'-'+name+'.png'),PNG.sync.write(png));await testInfo.attach(selector+'-'+name,{body:PNG.sync.write(png),contentType:'image/png'});}}
+  expect(ratio,selector).toBeLessThan(.005);
  }
 });
 
@@ -2070,4 +2076,71 @@ test('React dashboard uses seeded figures only in explicit demo mode and keeps d
  await page.goto(url+'/dashboard?demo=1');await expect(page.locator('#demo-banner')).toBeVisible();await expect(page.locator('#data-fresh-label')).toHaveText('Demo data');await expect(page.locator('#kpis .kpi')).toHaveCount(4);const baseline=await page.locator('#kpis .kpi-num').nth(2).textContent();
  await page.locator('#month-select').selectOption('30d');await expect(page.locator('#exec-period')).toContainText('Last 30 days');await page.waitForTimeout(1100);expect(await page.locator('#kpis .kpi-num').nth(2).textContent()).not.toBe(baseline);expect(calls).toBe(1);
  await page.goto(url+'/dashboard');await expect(page.getByRole('button',{name:'Retry dashboard'})).toBeVisible();await expect(page.locator('#demo-banner')).toHaveCount(0);await expect(page.locator('#kpis')).toHaveCount(0);
+});
+
+test('React dashboard metric explanations and PDF metadata follow the active report and portfolio selection',async({page})=>{
+ await mockApi(page);
+ await page.addInitScript(()=>{window.__prints=0;window.print=()=>{window.__prints++;};});
+ await page.goto(url+'/dashboard');await expect(page.locator('#exec-summary')).not.toBeEmpty();
+ await expect(page.locator('#pdf-report-title')).toHaveText(dashboard.employer+' · Employer Insights');
+ await expect(page.locator('#pdf-report-score')).toContainText(String(dashboard.wellness.score));
+ const tip=page.locator('.wellness-card .metric-info[data-metric="wellness"]');await tip.focus();await expect(page.getByRole('tooltip')).toContainText('Financial Wellness');await page.keyboard.press('Escape');await expect(page.getByRole('tooltip')).toHaveCount(0);
+ await page.locator('[data-a="portfolio"]').click();await expect(page.locator('#pf-employer-count')).toHaveText(/selected/);
+ await expect(page.locator('#pdf-report-title')).toHaveText('Portfolio Insights · '+await page.locator('#pf-employer-count').textContent());
+ await page.locator('#pf-employer-filter-btn').click();await page.locator('#pf-clear-all').click();await expect(page.locator('#pdf-report-title')).toHaveText('Portfolio Insights · 0 selected');
+ await page.locator('#btn-pf-export').click();await expect.poll(()=>page.evaluate(()=>window.__prints)).toBe(1);
+ await expect(page.locator('#pdf-report-score')).toHaveText('Across your whole book of employers');
+});
+
+test('React source candidate controls validate heartbeat and stage without saving or activating the source',async({page})=>{
+ await mockApi(page);const writes=[];
+ await page.route('**/api/admin/integration',route=>{if(route.request().method()==='POST')writes.push('save');return route.fulfill({json:{configured:true,sourceMode:'SQL',sqlHost:'active.invalid',sqlDatabase:'active',scheduleHours:24}});});
+ await page.route('**/api/admin/integration/preview-switch',route=>{writes.push({kind:'preview',body:route.request().postDataJSON()});return route.fulfill({json:{ok:true,sourceChanged:true,testedFeeds:10,note:'<img src=x> Candidate validated'}});});
+ await page.route('**/api/admin/integration/stage-source',route=>{writes.push({kind:'stage',body:route.request().postDataJSON()});return route.fulfill({json:{ok:true,generationId:'generation <b>new</b>',credentialsStaged:true}});});
+ await page.goto(url+'/admin');const panel=page.locator('#live-integration');await expect(panel.getByRole('button',{name:'Save settings',exact:true})).toBeEnabled();
+ await page.locator('#integ-hours').fill('1.5');await panel.getByRole('button',{name:'Save settings',exact:true}).click();await expect(page.locator('#integ-result')).toContainText('1–168 whole hours');expect(writes).toHaveLength(0);
+ await panel.getByRole('button',{name:'Weekly',exact:true}).click();await expect(page.locator('#integ-hours')).toHaveValue('168');
+ await page.locator('#integ-sql-host').fill('candidate.invalid');await page.locator('#integ-sql-password').fill('test-only-candidate');
+ await panel.getByRole('button',{name:'Preview new source',exact:true}).click();await expect(page.locator('#integ-result')).toContainText('Existing cursors will NOT be reused');await expect(page.locator('#integ-result img')).toHaveCount(0);
+ await panel.getByRole('button',{name:'Stage validated source',exact:true}).click();await expect(page.locator('#integ-result')).toContainText('No active database or dashboard data changed');await expect(page.locator('#integ-sql-password')).toHaveValue('');
+ expect(writes.map(v=>v.kind)).toEqual(['preview','stage']);expect(writes[1].body.sqlHost).toBe('candidate.invalid');expect(writes[1].body.scheduleHours).toBe(168);
+});
+
+test('React replacement impact preview is read-only and recovers errors with escaped counts',async({page})=>{
+ await mockApi(page);let fail=true,reads=0;
+ await page.route('**/api/admin/integration/dataset-replacement/preview',route=>{expect(route.request().method()).toBe('GET');reads++;return route.fulfill(fail?{status:503,json:{error:'<img src=x> Preview unavailable'}}:{json:{reportingRows:{employees:250},identitiesToPreserve:{'users <b>':12}}});});
+ await page.goto(url+'/admin');const button=page.getByRole('button',{name:'Preview replacement impact',exact:true});await button.click();await expect(page.locator('#dataset-replacement-preview')).toContainText('<img src=x> Preview unavailable');await expect(page.locator('#dataset-replacement-preview img')).toHaveCount(0);
+ fail=false;await button.click();await expect(page.locator('#dataset-replacement-preview')).toContainText('READ-ONLY — replacement is not enabled.');await expect(page.locator('#dataset-replacement-preview')).toContainText('employees: 250');await expect(page.locator('#dataset-replacement-preview')).toContainText('users <b>: 12');expect(reads).toBe(2);await expect(page.locator('#reset-area')).toHaveCount(0);
+});
+
+test('React source badge separates database health and source completeness without writes',async({page})=>{
+ await page.addInitScript(()=>localStorage.setItem('cookieNoticeDismissed','1'));
+ await mockApi(page);let healthReads=0;
+ await page.route('**/api/admin/database-status',route=>{expect(route.request().method()).toBe('GET');healthReads++;return route.fulfill({json:{status:'green',provider:'Neon <script>',database:'migration',message:'Connection verified',latencyMs:12,checkedAt:'2026-10-16T12:00:00Z'}});});
+ await page.goto(url+'/admin');const badge=page.locator('#efs-admin-source-status');await expect(badge).toBeVisible();await expect(page.locator('#efs-status-detail')).not.toBeVisible();await badge.getByRole('button',{name:'Details ▾',exact:true}).click();await expect(page.locator('#efs-db-status')).toContainText('HEALTHY');await expect(page.locator('#efs-db-status')).toContainText('Neon <script>');await expect(page.locator('#efs-db-status script')).toHaveCount(0);await expect(badge).toContainText('A healthy database does not guarantee successful source sync.');await badge.getByRole('button',{name:'Collapse ▴',exact:true}).click();await expect(page.locator('#efs-status-detail')).not.toBeVisible();expect(healthReads).toBe(1);
+});
+
+for(const width of [1440,390])test(`React connected source status matches the latest source at ${width}px`,async({browser})=>{
+ const captures=[];
+ for(const port of [4101,4100]){
+  const page=await browser.newPage({viewport:{width,height:1000},colorScheme:'dark',timezoneId:'Africa/Johannesburg'});
+  await mockApi(page,{'/api/admin/integration':{configured:true,sourceMode:'SQL',sqlDialect:'POSTGRESQL',sqlDatabase:'migration',lastSyncStatus:'OK',lastSuccessfulSyncAt:'2026-10-16T12:00:00Z'},'/api/admin/database-status':{status:'green',provider:'Neon',database:'migration',message:'Live query succeeded',latencyMs:12,checkedAt:'2026-10-16T12:00:00Z'}});
+  await page.addInitScript(()=>localStorage.setItem('cookieNoticeDismissed','1'));
+  await page.goto(`http://127.0.0.1:${port}/dashboard`);await page.addStyleTag({content:'#welcome-splash,#ent-cookie{display:none!important}'});
+  const badge=page.locator('#efs-admin-source-status');await expect(badge).toContainText('COMPLETE');await expect(page.locator('#efs-db-status')).toHaveAttribute('data-db-status','green');
+  const images=[PNG.sync.read(await badge.screenshot())];await badge.getByRole('button',{name:'Details ▾',exact:true}).click();images.push(PNG.sync.read(await badge.screenshot()));captures.push(images);await page.close();
+ }
+ for(let i=0;i<2;i++){
+  const a=captures[0][i],b=captures[1][i];expect({width:b.width,height:b.height}).toEqual({width:a.width,height:a.height});expect(pixelmatch(a.data,b.data,null,a.width,a.height,{threshold:.15})/(a.width*a.height)).toBeLessThan(.005);
+ }
+});
+
+test('React import history polls only while visible and manual refresh stays immediate',async({page})=>{
+ await page.clock.install();await page.addInitScript(()=>localStorage.setItem('cookieNoticeDismissed','1'));await mockApi(page);let reads=0;
+ await page.route('**/api/admin/batches',route=>{reads++;return route.fulfill({json:[]});});
+ await page.goto(url+'/admin');await expect(page.locator('#hist-body')).toContainText('No imports yet.');const initial=reads;
+ await page.evaluate(()=>window.scrollTo({top:0,left:0,behavior:'instant'}));await page.clock.runFor(30001);expect(reads).toBe(initial);
+ await page.locator('#import-history-card').evaluate(node=>node.scrollIntoView({block:'center',behavior:'instant'}));await page.clock.runFor(30000);await expect.poll(()=>reads).toBe(initial+1);
+ await page.locator('#import-history-card').getByRole('button',{name:'Refresh',exact:true}).click();await expect.poll(()=>reads).toBe(initial+2);
+ await page.evaluate(()=>window.scrollTo({top:0,left:0,behavior:'instant'}));await page.clock.runFor(60000);expect(reads).toBe(initial+2);
 });
