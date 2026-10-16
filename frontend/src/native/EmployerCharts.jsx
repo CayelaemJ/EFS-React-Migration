@@ -430,7 +430,7 @@ export function EwaKpis() {
         {x.l}
         <Metric name={x.k} data={data} />
       </div>
-      <div className="kpi-value">{displayMoney(x.v)}</div>
+      <div className="kpi-value">{x.v}</div>
       <div className="kpi-sub">{x.s}</div>
     </div>
   ));
@@ -984,7 +984,7 @@ export function Opportunities() {
             </div>
             <div className="opp-save">
               {c.saving !== "Not available"
-                ? "+ " + displayMoney(c.saving) + "/mo potential"
+                ? "+ " + c.saving + "/mo potential"
                 : c.extra || ""}
             </div>
           </div>
@@ -997,8 +997,8 @@ export function Opportunities() {
             <Metric name="opportunityValue" data={data} />
           </div>
           <div className="opp-foot-v">
-            {displayMoney(o.estMonthly)}
-            <span>/month</span> &nbsp;·&nbsp; {displayMoney(o.estAnnual)}
+            {o.estMonthly}
+            <span>/month</span> &nbsp;·&nbsp; {o.estAnnual}
             <span>/year</span>
           </div>
           <div className="opp-foot-note">
@@ -1427,7 +1427,7 @@ function OutcomeDetail({ row: o, data, onClose }) {
         <Stat label="Fixes completed">{count(o.count)}</Stat>
         <Stat label={o.statL}>{displayMoney(o.stat)}</Stat>
         <Stat label="Average per employee">
-          {displayMoney(o.avgPerEmployee || "Not available")}
+          {o.avgPerEmployee || "Not available"}
         </Stat>
         <Stat label="Period change">
           {present(o.delta)
@@ -1468,8 +1468,8 @@ function CreditorDetail({ row: c, onClose }) {
     >
       <div className="drawer-stats">
         <Stat label="Accounts in journey">{c.accounts}</Stat>
-        <Stat label="Total balance">{displayMoney(c.balance)}</Stat>
-        <Stat label="Avg per account">{displayMoney(c.avg)}</Stat>
+        <Stat label="Total balance">{c.balance}</Stat>
+        <Stat label="Avg per account">{c.avg}</Stat>
       </div>
       <div className="drawer-section-title">Where accounts stand</div>
       <div className="hbar" style={{ marginTop: 10 }}>

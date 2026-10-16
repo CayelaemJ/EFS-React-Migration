@@ -1925,6 +1925,7 @@ test('React employer charts update comparisons and preserve unavailable and zero
  await expect(page.locator('#ewa-chart .comparison-value-card.current')).toContainText('R 0');
  await expect(page.locator('#income-donut')).toContainText('No activated employees');
  await expect(page.locator('#risk-signals .risk-n')).toHaveText('0');
+ await expect(page.locator('#opportunities .opp-foot-v')).toContainText(dashboard.opportunities.estAnnual);
  await expect(page.locator('#risk-signals')).toContainText('<script>bad</script>');
  await expect(page.locator('#debt-states .ds-bar>div').first()).toHaveAttribute('style',/width: 0%/);
  await expect(page.locator('#prescription img,#region-bars img,#risk-signals img,#debt-states img')).toHaveCount(0);
