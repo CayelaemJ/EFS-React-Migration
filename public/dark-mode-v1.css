@@ -1,0 +1,18 @@
+/* Dark mode is token-driven now (dark-theme-v2.css + brand-engine.js). The old invert(1) filter hack was removed; the sign-in page has its own dark rules. */
+/* Dark mode is token-driven (dark-theme-v2.css / brand-engine.js); the old invert(1) hack was removed. */
+
+/* the theme toggle itself stays put regardless of scroll/zoom */
+#theme-toggle-btn {
+  position: fixed; right: 18px; bottom: 18px; z-index: 500;
+  width: 44px; height: 44px; border-radius: 50%;
+  background: var(--brand-primary, #32217c); color: #fff; border: none;
+  display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 8px 24px rgba(13,42,71,.28);
+  cursor: pointer; font-size: 19px; line-height: 1;
+  transition: transform .15s ease;
+}
+#theme-toggle-btn:hover { transform: scale(1.06); }
+
+@media (max-width: 640px) {
+  #theme-toggle-btn { right: 14px; bottom: 14px; width: 40px; height: 40px; font-size: 17px; }
+}
