@@ -1,0 +1,10 @@
+import React from 'react';
+import {mountPage} from './mount.jsx';
+import {Page,start} from './dashboard.jsx';
+import {Shared} from '../native/Shared.jsx';
+import {DashboardProvider,DashboardAuthenticated,DashboardDemoBanner} from '../native/DashboardState.jsx';
+import {PortalNavigation,installPortalNavigation} from '../native/PortalNavigation.jsx';
+import {DashboardDialogs} from '../native/DashboardDialogs.jsx';
+import {SourceStatus} from '../native/SourceStatus.jsx';
+installPortalNavigation();
+mountPage(()=> <Shared><DashboardProvider><Page/><PortalNavigation/><DashboardAuthenticated><DashboardDialogs/><SourceStatus/></DashboardAuthenticated><DashboardDemoBanner/></DashboardProvider></Shared>,start);

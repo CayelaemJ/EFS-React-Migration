@@ -1,0 +1,11 @@
+import React from 'react';
+import {mountPage} from './mount.jsx';
+import {Page} from './admin.jsx';
+import {Shared} from '../native/Shared.jsx';
+import {AdminSession,AdminBootstrap} from '../native/AdminShell.jsx';
+import {AdminSettingsProvider} from '../native/AdminSettings.jsx';
+import {AdminReportsProvider} from '../native/AdminReports.jsx';
+import {PortalNavigation,installPortalNavigation} from '../native/PortalNavigation.jsx';
+import {SourceStatus} from '../native/SourceStatus.jsx';
+installPortalNavigation();
+mountPage(()=> <Shared><PortalNavigation/><AdminSession><AdminSettingsProvider><AdminReportsProvider><Page/><SourceStatus/><AdminBootstrap/></AdminReportsProvider></AdminSettingsProvider></AdminSession></Shared>,()=>{});

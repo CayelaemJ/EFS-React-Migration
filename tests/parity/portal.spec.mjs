@@ -1,0 +1,2146 @@
+import { test, expect } from "@playwright/test";
+import { PNG } from "pngjs";
+import pixelmatch from "pixelmatch";
+import fs from "node:fs";
+import {
+  mockApi,
+  me,
+  users,
+  sections,
+  dashboard,
+  portfolio,
+  fixture,
+} from "./fixtures.mjs";
+import { completedJobResponse } from "../../dist/services/jobResponses.js";
+const url = "http://127.0.0.1:4100";
+test('React enterprise operations refreshes routes, replica status and recovers failed reads',async({page})=>{
+  await mockApi(page,{'/api/admin/integration/replica-health':{configured:true,reachable:true,readOnly:true,lagWithinThreshold:true},'/api/admin/enterprise/data-quality':{score:92.5,checks:{employeeRecordsChecked:100,employeesMissingSite:2}}});
+  let fail=true;
+  await page.route('**/api/admin/integration/routes',route=>route.fulfill(fail?{status:503,json:{error:'Routes unavailable'}}:{json:[{reportKey:'employees',executionMode:'SOURCE_VIEW',sourceView:'<img src=x>',useReplica:true,enabled:true}]}));
+  await page.goto(url+'/admin');
+  await expect(page.locator('#ops-architecture')).toContainText('Routes unavailable');
+  await expect(page.locator('#ops-quality')).toHaveText('92.5%');
+  await expect(page.locator('#ops-architecture')).toHaveAttribute('data-replica','Healthy');
+  await page.locator('#enterprise-operations-card .compact-toggle').click();
+  await expect(page.locator('#enterprise-operations-card .card-bd')).not.toBeVisible();
+  await page.locator('#enterprise-operations-card .compact-toggle').click();
+  fail=false;
+  await page.locator('#enterprise-operations-card').getByRole('button',{name:'Refresh',exact:true}).click();
+  await expect(page.locator('#ops-routes')).toContainText('employees');
+  await expect(page.locator('#ops-routes')).toContainText('<img src=x>');
+  await expect(page.locator('#ops-routes img')).toHaveCount(0);
+  await expect(page.locator('#ops-architecture')).toContainText('Recommended placement:');
+  await expect(page.locator('#ops-store')).toHaveText('PostgreSQL');
+});
+test('React wellness updates status colours and preserves incomplete-data semantics',async({page})=>{
+  await mockApi(page);
+  let score=32,complete=true;
+  await page.route('**/api/employers/*/dashboard**',route=>route.fulfill({json:{...dashboard,wellness:{...dashboard.wellness,score,complete,drivers:[{name:'Engagement',score:score,note:'<img src=x>'},{name:'Cashflow relief',score:null,available:false}]}}}));
+  await page.goto(url+'/dashboard');
+  for(const [value,token] of [[32,'high'],[50,'mid'],[80,'low']]){
+    score=value;await page.reload();
+    await expect(page.locator('#wellness svg text').first()).toHaveText(String(value));
+    await expect(page.locator('#wellness svg text').first()).toHaveAttribute('fill',`var(--chart-${token})`);
+    await expect(page.locator('#wellness .wd-state').last()).toHaveText('Unavailable');
+    await expect(page.locator('#wellness img')).toHaveCount(0);
+    for(const dark of [false,true]){
+      if(dark)await page.locator('.portal-theme-quick').click();
+      const colour=await page.locator('#wellness .wellness-band').evaluate(el=>getComputedStyle(el).color);
+      await expect(page.locator('#wellness svg text').first()).toHaveCSS('fill',colour);
+    }
+  }
+  score=null;complete=false;await page.reload();
+  await expect(page.locator('#wellness')).toContainText('Data incomplete');
+  await expect(page.locator('#wellness svg')).toHaveCount(0);
+  await expect(page.locator('#wellness')).toContainText('Missing data is never treated as zero.');
+});
+test('React governance isolates failed registers and renders MLOps findings safely',async({page})=>{
+  await mockApi(page,{
+    '/api/admin/security/overview':{riskState:'Good',activeSessions:3},
+    '/api/admin/mlops/events':[{id:'q',eventType:'DATA_QUALITY_GATE',status:'QUARANTINE',modelKey:'quality',metadata:{reportKey:'employees',findings:[{code:'MISSING_FIELD',field:'income',message:'<img src=x>',action:'Correct source income.'}]}}],
+    '/api/admin/compliance/processing-activities':[{id:'a',name:'Payroll',partyRole:'Operator',lawfulBasis:'Contract',piaStatus:'Reviewed'}],
+  });
+  let failed=true;
+  await page.route('**/api/admin/compliance/overview',route=>route.fulfill(failed?{status:503,json:{error:'offline'}}:{json:{processingActivities:1,status:'ACTION_REQUIRED'}}));
+  await page.route('**/api/admin/compliance/vendors',route=>route.fulfill(failed?{status:503,json:{error:'offline'}}:{json:[{id:'v',name:'Local operator',country:'ZA',approved:true,operatorAgreement:true}]}));
+  await page.goto(url+'/admin');
+  await expect(page.locator('#admin-sec-copy')).toContainText('Security posture is clear.');
+  await expect(page.locator('#admin-sec-live')).toHaveText('3');
+  await expect(page.locator('#comp-status')).toContainText('Unable to load compliance controls.');
+  await page.getByRole('button',{name:'Open compliance controls'}).click();
+  await expect(page.locator('#comp-activities-list')).toContainText('Payroll');
+  await expect(page.locator('#comp-vendors-list')).toContainText('Could not load this register.');
+  failed=false;
+  await page.locator('#comp-vendors-list button').click();
+  await page.locator('#comp-status button').click();
+  await expect(page.locator('#comp-vendors-list')).toContainText('Local operator');
+  await expect(page.locator('#comp-status')).toContainText('Action required:');
+  await expect(page.locator('#mlops-alert-badge')).toHaveText('ACTION REQUIRED');
+  await page.locator('#admin-mlops-alert button').click();
+  await expect(page.locator('#mlops-alert-detail')).toBeVisible();
+  await expect(page.locator('#mlops-alert-detail')).toContainText('<img src=x>');
+  await expect(page.locator('#mlops-alert-detail img')).toHaveCount(0);
+  await expect(page.locator('#mlops-alert-detail')).toContainText('Correct source income.');
+  await page.getByRole('button',{name:'Open compliance controls'}).click();
+  await expect(page.locator('#compliance-panel')).not.toBeVisible();
+});
+test('React MLOps uses the latest gate per dataset and prioritises quarantine',async({page})=>{
+  await ready(page,'/admin',{'/api/admin/mlops/events':[
+    {eventType:'DATA_QUALITY_GATE',status:'PASS',metadata:{reportKey:'recovered'}},
+    {eventType:'DATA_QUALITY_GATE',status:'QUARANTINE',metadata:{reportKey:'recovered'}},
+    {eventType:'DATA_QUALITY_GATE',status:'REVIEW',metadata:{reportKey:'advisory'}},
+    {eventType:'DATA_QUALITY_GATE',status:'QUARANTINE',metadata:{reportKey:'blocked'}},
+  ]});
+  await expect(page.locator('#mlops-alert-summary')).toContainText('QUARANTINE: blocked');
+  await expect(page.locator('#mlops-alert-summary')).not.toContainText('recovered');
+});
+test("React portfolio selection, missing measures and risk ranking", async ({
+  page,
+}) => {
+  const employers = [
+    {
+      id: "a",
+      name: "Alpha",
+      heads: 10,
+      saving: 100,
+      oppValue: 90,
+      wellness: 80,
+      stress: 10,
+    },
+    {
+      id: "b",
+      name: "Beta",
+      heads: 20,
+      saving: null,
+      oppValue: 150,
+      wellness: null,
+      stress: 90,
+    },
+    {
+      id: "c",
+      name: "<img src=x onerror=alert(1)>",
+      heads: 30,
+      saving: 200,
+      oppValue: 50,
+      wellness: 60,
+      stress: null,
+    },
+  ];
+  await ready(page, "/dashboard", {
+    "/api/portfolio": { ...portfolio, employers },
+  });
+  await page.locator('[data-a="portfolio"]').click();
+  await expect(page.locator("#pf-heatmap tbody tr")).toHaveCount(3);
+  await expect(page.locator("#pf-kpis")).toContainText(
+    "2 of 3 employers have cashflow data",
+  );
+  await expect(page.locator("#pf-heatmap img")).toHaveCount(0);
+  await page.locator('#pf-metric-picker [data-k="stress"]').click();
+  await expect(page.locator("#pf-league .pf-lg-name").first()).toContainText(
+    "Beta",
+  );
+  await expect(page.locator("#pf-league-note")).toContainText(
+    "highest risk first · 1 unavailable",
+  );
+  await page.locator("#pf-employer-filter-btn").click();
+  await page.locator("#pf-clear-all").click();
+  await expect(page.locator("#pf-kpis")).toContainText(
+    "No employers selected.",
+  );
+  await expect(page.locator("#pf-heatmap")).toBeEmpty();
+  await page.locator("#pf-employer-search").fill("Beta");
+  await page.locator("#pf-employer-options input").check();
+  await expect(page.locator("#pf-employer-count")).toHaveText("1 selected");
+  await expect(page.locator("#pf-kpis")).toContainText("Not available");
+  await page.keyboard.press("Escape");
+  await expect(page.locator("#pf-employer-filter-btn")).toBeFocused();
+  await expect(page.locator("#pf-employer-filter-menu")).not.toBeVisible();
+  await page
+    .locator('#pf-metric-picker [data-k="stress"] .metric-info')
+    .focus();
+  await expect(page.getByRole("tooltip")).toContainText(
+    "Financial stress index",
+  );
+  await page.keyboard.press("Escape");
+  await expect(page.locator("#portfolio-view .pf-mh.sort")).toHaveAttribute(
+    "data-k",
+    "stress",
+  );
+});
+test("React portfolio updates an already open view when its delayed feed arrives", async ({
+  page,
+}) => {
+  let release;
+  const gate = new Promise((resolve) => (release = resolve));
+  await mockApi(page);
+  await page.route("**/api/portfolio?*", async (route) => {
+    await gate;
+    await route.fulfill({
+      json: {
+        ...portfolio,
+        employers: [
+          { id: "late", name: "Delayed employer", heads: 77, oppValue: 500 },
+        ],
+      },
+    });
+  });
+  await page.goto(url + "/dashboard");
+  await expect(page.locator("#data-fresh-label")).toContainText(
+    "Source updated",
+  );
+  await page.locator('[data-a="portfolio"]').click();
+  release();
+  await expect(page.locator("#pf-heatmap")).toContainText("Delayed employer");
+  await expect(page.locator("#pf-employer-count")).toHaveText("1 selected");
+});
+test("React admin audit prioritises critical events and engagement retries and changes windows", async ({
+  page,
+}) => {
+  await ready(page, "/admin");
+  let failed = true;
+  await page.route("**/api/admin/audit-log?*", (route) =>
+    route.fulfill({
+      json: [
+        ...Array.from({ length: 6 }, (_, i) => ({
+          id: String(i),
+          action: "user.create",
+          summary: "Routine " + i,
+          createdAt: `2026-10-0${i + 1}`,
+        })),
+        {
+          id: "critical",
+          action: "user.delete",
+          summary: "Critical <img src=x>",
+          createdAt: "2026-09-01",
+        },
+      ],
+    }),
+  );
+  await page.route("**/api/admin/analytics/summary?*", (route) =>
+    route.fulfill(
+      failed
+        ? { status: 503, json: { error: "Unavailable" } }
+        : {
+            json: {
+              ...fixture(route.request().url()),
+              totalLogins: Number(
+                new URL(route.request().url()).searchParams.get("days"),
+              ),
+            },
+          },
+    ),
+  );
+  await page.reload();
+  await expect(page.locator("#audit-rows tr")).toHaveCount(5);
+  await expect(page.locator("#audit-rows tr").first()).toContainText(
+    "Critical <img src=x>",
+  );
+  await expect(page.locator("#audit-rows img")).toHaveCount(0);
+  await expect(page.locator("#eng-stats")).toContainText(
+    "Could not load engagement data.",
+  );
+  failed = false;
+  await page.getByRole("button", { name: "Retry engagement" }).click();
+  await expect(page.locator("#eng-stats")).toContainText("30");
+  await page.locator("#eng-days").selectOption("7");
+  await expect(page.locator("#eng-window")).toHaveText("7");
+  await expect(page.locator("#eng-stats > div").nth(2)).toContainText("7");
+  await expect(page.locator("#eng-users")).toContainText("Test Administrator");
+  await expect(
+    page.locator('a[href="/api/admin/audit-log.csv"]'),
+  ).toHaveAttribute("download", "");
+});
+for (const width of [1440, 390]) for(const theme of ['light','dark'])
+  test(`portfolio source visual parity at ${width}px in ${theme}`, async ({
+    browser,
+  }, testInfo) => {
+    const captures = [];
+    for (const port of [4101, 4100]) {
+      const page = await browser.newPage({
+        viewport: { width: 1440, height: 1000 },
+        timezoneId: "Africa/Johannesburg",
+      });
+      await mockApi(page);
+      await page.addInitScript((theme) => {
+        localStorage.setItem("cookieNoticeDismissed", "1");
+        localStorage.setItem("empower-fin-theme",theme);
+      },theme);
+      await page.goto(`http://127.0.0.1:${port}/dashboard`);
+      await expect(page.locator("#data-fresh-label")).toContainText(
+        "Source updated",
+      );
+      await page.waitForTimeout(500);
+      await page.locator('[data-a="portfolio"]').click();
+      await page.setViewportSize({ width, height: 1000 });
+      await expect(page.locator("#pf-heatmap tbody tr")).toHaveCount(
+        portfolio.employers.length,
+      );
+      await page.addStyleTag({
+        content:
+          "*,*::before,*::after{transition:none!important;animation:none!important;caret-color:transparent!important}.reveal{opacity:1!important;transform:none!important}#welcome-splash{display:none!important}",
+      });
+      await page.evaluate(() => document.fonts.ready);
+      captures.push(PNG.sync.read(await page.screenshot({ fullPage: true })));
+      await page.close();
+    }
+    const [a, b] = captures;
+    expect({ width: b.width, height: b.height }).toEqual({
+      width: a.width,
+      height: a.height,
+    });
+    const diff = new PNG({ width: a.width, height: a.height }),
+      ratio =
+        pixelmatch(a.data, b.data, diff.data, a.width, a.height, {
+          threshold: 0.15,
+        }) /
+        (a.width * a.height);
+    if (ratio > 0.005) {
+      await testInfo.attach("portfolio-source", {
+        body: PNG.sync.write(a),
+        contentType: "image/png",
+      });
+      await testInfo.attach("portfolio-react", {
+        body: PNG.sync.write(b),
+        contentType: "image/png",
+      });
+      await testInfo.attach("portfolio-diff", {
+        body: PNG.sync.write(diff),
+        contentType: "image/png",
+      });
+    }
+    expect(ratio).toBeLessThanOrEqual(0.005);
+  });
+async function ready(page, path, overrides = {}) {
+  await mockApi(page, overrides);
+  await page.addInitScript(() =>
+    localStorage.setItem("cookieNoticeDismissed", "1"),
+  );
+  await page.goto(url + path);
+  await expect(page.locator("html")).toHaveAttribute("data-frontend", "react");
+  if (path.startsWith("/dashboard"))
+    await expect(page.locator("#data-fresh-label")).toContainText(
+      "Source updated",
+    );
+  if (path.startsWith("/admin"))
+    await expect(page.locator("#rep-list .rep")).toHaveCount(10);
+  if (path.startsWith("/users"))
+    await expect(page.locator("#user-rows")).toContainText("Example User");
+}
+for (const name of [
+  "dashboard",
+  "admin",
+  "users",
+  "login",
+  "home",
+  "contact",
+  "privacy",
+  "terms",
+  "cookies",
+  "set-password",
+  "thank-you",
+  "404",
+]) {
+  test(`${name}: mounts without browser errors`, async ({ page }) => {
+    const errors = [];
+    page.on("pageerror", (e) => errors.push(e.message));
+    await ready(page, name === "home" ? "/" : "/" + name);
+    await page.waitForTimeout(400);
+    expect(errors).toEqual([]);
+    const broken = await page.locator("img").evaluateAll((imgs) =>
+      imgs
+        // NewChanges keeps an unset, hidden partner-logo slot until branding
+        // supplies an image. Only an assigned image URL can fail to load.
+        .filter(
+          (i) => i.getAttribute("src") && i.complete && i.naturalWidth === 0,
+        )
+        .map((i) => i.src),
+    );
+    expect(broken).toEqual([]);
+  });
+}
+for (const width of [1440, 390])
+  for (const name of ["dashboard", "admin", "users"]) {
+    test(`${name}: source visual parity at ${width}px`, async ({
+      browser,
+    }, testInfo) => {
+      const pages = [];
+      for (const port of [4101, 4100]) {
+        const page = await browser.newPage({
+          viewport: { width, height: 1000 },
+          timezoneId: "Africa/Johannesburg",
+        });
+        pages.push(page);
+        await mockApi(page);
+        await page.addInitScript(() =>
+          localStorage.setItem("cookieNoticeDismissed", "1"),
+        );
+        await page.goto(`http://127.0.0.1:${port}/${name}`);
+        if (name === "dashboard") {
+          await expect(page.locator("#data-fresh-label")).toContainText(
+            "Source updated",
+          );
+          await expect(
+            page.locator("#region-bars .hbar-val").first(),
+          ).toHaveCSS("white-space", "nowrap");
+        }
+        await page.waitForTimeout(1800);
+        await page.addStyleTag({
+          content:
+            "*,*::before,*::after {transition:none!important;animation:none!important;caret-color:transparent!important;} .reveal{opacity:1!important;transform:none!important;} #ent-progress,#welcome-splash{display:none!important;}",
+        });
+        await page.evaluate(async () => {
+          await document.fonts.ready;
+          await new Promise((resolve) =>
+            requestAnimationFrame(() => requestAnimationFrame(resolve)),
+          );
+        });
+        const layout = await page
+          .locator(
+            "[id],.kpi-value,.stat-value,.metric-value,.stat-cell .v,.rating-big,.stress-v",
+          )
+          .evaluateAll((nodes) =>
+            nodes.map((node) => {
+              const rect = node.getBoundingClientRect();
+              const style = getComputedStyle(node);
+              return {
+                id: node.id,
+                className: node.getAttribute("class"),
+                text: node.textContent?.slice(0, 80),
+                y: rect.y,
+                height: rect.height,
+                width: rect.width,
+                font: style.fontSize,
+                lineHeight: style.lineHeight,
+              };
+            }),
+          );
+        fs.writeFileSync(
+          testInfo.outputPath(`layout-${port}.json`),
+          JSON.stringify(layout, null, 2),
+        );
+      }
+      const a = PNG.sync.read(await pages[0].screenshot({ fullPage: true }));
+      const b = PNG.sync.read(await pages[1].screenshot({ fullPage: true }));
+      for (let i = 0; i < pages.length; i++) {
+        const layout = await pages[i]
+          .locator("[id],.dash-section,.card,.stat-strip")
+          .evaluateAll((nodes) =>
+            nodes.map((node) => {
+              const rect = node.getBoundingClientRect();
+              return {
+                id: node.id,
+                className: node.getAttribute("class"),
+                text: node.textContent?.slice(0, 80),
+                y: rect.y,
+                height: rect.height,
+                width: rect.width,
+              };
+            }),
+          );
+        fs.writeFileSync(
+          testInfo.outputPath(`after-layout-${i}.json`),
+          JSON.stringify(layout, null, 2),
+        );
+      }
+      fs.writeFileSync(testInfo.outputPath("source.png"), PNG.sync.write(a));
+      await testInfo.attach("source", {
+        path: testInfo.outputPath("source.png"),
+        contentType: "image/png",
+      });
+      fs.writeFileSync(testInfo.outputPath("react.png"), PNG.sync.write(b));
+      await testInfo.attach("react", {
+        path: testInfo.outputPath("react.png"),
+        contentType: "image/png",
+      });
+      expect(b.width).toBe(a.width);
+      expect(b.height).toBe(a.height);
+      const diff = new PNG({ width: a.width, height: a.height });
+      const changed = pixelmatch(a.data, b.data, diff.data, a.width, a.height, {
+        threshold: 0.15,
+      });
+      fs.writeFileSync(
+        testInfo.outputPath("difference.png"),
+        PNG.sync.write(diff),
+      );
+      await testInfo.attach("difference", {
+        path: testInfo.outputPath("difference.png"),
+        contentType: "image/png",
+      });
+      if (changed / (a.width * a.height) >= 0.005) {
+        for (let i = 0; i < pages.length; i++)
+          console.log(
+            "Region layout",
+            i,
+            JSON.stringify(
+              await pages[i]
+                .locator("#region-bars .hbar-row")
+                .evaluateAll((rows) =>
+                  rows.map((row) => ({
+                    height: row.getBoundingClientRect().height,
+                    children: [...row.children].map((child) => ({
+                      className: child.className,
+                      style: child.getAttribute("style"),
+                      height: child.getBoundingClientRect().height,
+                      font: getComputedStyle(child).fontSize,
+                      lineHeight: getComputedStyle(child).lineHeight,
+                    })),
+                  })),
+                ),
+            ),
+          );
+      }
+      expect(changed / (a.width * a.height)).toBeLessThan(0.005);
+      for (const page of pages) await page.close();
+    });
+  }
+test("live dashboard values fit after initial load and filter refresh", async ({
+  browser,
+}) => {
+  for (const port of [4101, 4100]) {
+    const page = await browser.newPage({
+      viewport: { width: 1440, height: 1000 },
+    });
+    await mockApi(page);
+    await page.goto(`http://127.0.0.1:${port}/dashboard`);
+    const value = page.locator("#region-bars .hbar-val").first();
+    await expect(value).toHaveCSS("white-space", "nowrap");
+    const refresh = page.waitForResponse(
+      (response) =>
+        response.url().includes("/dashboard?") &&
+        response.url().includes("range=30d"),
+    );
+    await page.locator("#month-select").selectOption("30d");
+    await refresh;
+    await expect(value).toHaveCSS("white-space", "nowrap");
+    await expect(value).toHaveCSS("font-size", "12.5px");
+    await page.close();
+  }
+});
+test("navigation, dark mode and mobile account destinations", async ({
+  page,
+}) => {
+  await ready(page, "/admin");
+  await page.locator(".portal-theme-quick").click();
+  await expect(page.locator("body")).toHaveClass(/portal-dark/);
+  await page.locator('#portal-nav a[href="/users"]').click();
+  await expect(page.locator("#user-rows")).toContainText("Example User");
+  await expect(page.locator("body")).toHaveClass(/portal-dark/);
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.locator(".portal-account-trigger").click();
+  await expect(page.locator(".portal-account-menu")).toHaveClass(/is-open/);
+  await expect(
+    page.locator('.portal-mobile-link[href="/dashboard"]'),
+  ).toBeVisible();
+  await page.locator('.portal-mobile-link[href="/dashboard"]').click();
+  await expect(page.locator("#executive-insight")).toContainText("70/100");
+});
+test("dashboard gauge, filters, portfolio, quick actions and schedule dialog", async ({
+  page,
+}) => {
+  const requests = [];
+  page.on("request", (r) => requests.push(r.url()));
+  await ready(page, "/dashboard");
+  await expect(page.locator("#executive-insight")).toContainText("70/100");
+  expect(await page.evaluate(() => window.BrandEngine?.VERSION)).toBe("1.4.0");
+  await page.locator("#month-select").selectOption("30d");
+  await expect
+    .poll(() =>
+      requests.some(
+        (x) => x.includes("/dashboard?") && x.includes("range=30d"),
+      ),
+    )
+    .toBeTruthy();
+  await page.locator("#btn-command").click();
+  await expect(page.locator(".command-backdrop")).toBeVisible();
+  await page.keyboard.press("Escape");
+  await page.locator("#btn-schedule").click();
+  await expect(page.locator(".schedule-modal")).toBeVisible();
+  await expect(page.locator("#schedule-frequency")).toHaveValue("MONTHLY");
+  await page.locator("#schedule-name").fill("My report");
+  await expect(page.locator(".schedule-modal")).toBeVisible();
+  await page
+    .locator(".schedule-modal")
+    .getByRole("button", { name: /close|cancel/i })
+    .first()
+    .click();
+  await page.locator('[data-a="portfolio"]').click();
+  await expect(page.locator("#portfolio-view")).toBeVisible();
+  await expect(page.locator("#pf-heatmap")).not.toBeEmpty();
+});
+test("users dynamic editor and access controls", async ({ page }) => {
+  await ready(page, "/users");
+  await page.locator("#user-list-card .compact-toggle").click();
+  await page
+    .locator("#user-rows")
+    .getByRole("button", { name: "Edit", exact: true })
+    .click();
+  await expect(page.locator("#editor-user-1")).toBeVisible();
+  await page
+    .locator("#editor-user-1")
+    .getByRole("button", { name: "Cancel", exact: true })
+    .click();
+  await expect(page.locator("#editor-user-1")).toHaveCount(0);
+  await expect(page.locator("#n-access-superadmin")).toHaveCount(1);
+  await page.locator("#n-access-admin").check();
+  await expect(page.locator("#n-role")).toHaveValue("ADMIN");
+});
+test("regular administrators cannot grant privileged roles", async ({
+  page,
+}) => {
+  await ready(page, "/users", { "/api/auth/me": { ...me, role: "ADMIN" } });
+  await expect(page.locator("#n-access-superadmin")).toHaveCount(0);
+  await expect(page.locator("#n-access-admin")).toHaveCount(0);
+});
+test("React user creation retains inputs on failure and supplies an unsent setup link", async ({
+  page,
+}) => {
+  await ready(page, "/users");
+  let attempt = 0,
+    body;
+  await page.route("**/api/users", async (route) => {
+    if (route.request().method() === "GET") {
+      await route.fulfill({ json: users });
+      return;
+    }
+    body = route.request().postDataJSON();
+    attempt++;
+    await route.fulfill(
+      attempt === 1
+        ? { status: 400, json: { error: "Email already exists" } }
+        : {
+            json: {
+              setupPath: "/set-password?token=test",
+              emailSent: false,
+              emailError: "Mail unavailable",
+            },
+          },
+    );
+  });
+  await page.locator("#n-name").fill("New Person");
+  await page.locator("#n-email").fill("new@example.invalid");
+  await page.locator('input[name="access"][value="link"]').check();
+  await page.locator("#emp-pick input").check();
+  await page.getByRole("button", { name: "Create user", exact: true }).click();
+  await expect(page.locator("#add-msg")).toContainText("Email already exists");
+  await expect(page.locator("#n-email")).toHaveValue("new@example.invalid");
+  await page.getByRole("button", { name: "Create user", exact: true }).click();
+  await expect(page.locator("#link-box")).toContainText(
+    "/set-password?token=test",
+  );
+  expect(body).toMatchObject({
+    name: "New Person",
+    email: "new@example.invalid",
+    role: "EMPLOYER_MANAGER",
+    employerIds: ["employer-1"],
+    sendSetupLink: true,
+  });
+  await expect(page.locator("#n-name")).toHaveValue("");
+});
+test("React user editor clears employer links for admin roles and retains errors", async ({
+  page,
+}) => {
+  await ready(page, "/users");
+  let body,
+    attempt = 0;
+  await page.route("**/api/users/user-1", async (route) => {
+    body = route.request().postDataJSON();
+    attempt++;
+    await route.fulfill(
+      attempt === 1
+        ? { status: 400, json: { error: "Role update unavailable" } }
+        : { json: { ok: true } },
+    );
+  });
+  await page.locator("#user-list-card .compact-toggle").click();
+  await page
+    .locator("#user-rows")
+    .getByRole("button", { name: "Edit", exact: true })
+    .click();
+  await page.locator("#e-role-user-1").selectOption("ADMIN");
+  await page.locator("#e-name-user-1").fill("Updated User");
+  await page.getByRole("button", { name: "Save changes" }).click();
+  await expect(page.locator("#e-msg-user-1")).toContainText(
+    "Role update unavailable",
+  );
+  await expect(page.locator("#e-name-user-1")).toHaveValue("Updated User");
+  expect(body).toEqual({
+    name: "Updated User",
+    role: "ADMIN",
+    partnerId: null,
+    employerIds: [],
+  });
+  await page.getByRole("button", { name: "Save changes" }).click();
+  await expect(page.locator("#editor-user-1")).toHaveCount(0);
+});
+test("React security centre filters sessions, resolves alerts, and closes the profile on Escape", async ({
+  page,
+}) => {
+  const session = {
+    id: "session-1",
+    user: { id: "user-1", name: "Example User", email: "user@example.invalid" },
+    active: true,
+    location: "Cape Town",
+    ipAddress: "127.0.0.1",
+    deviceType: "Desktop",
+    browser: "Chrome",
+    operatingSystem: "Linux",
+    durationSeconds: 120,
+    createdAt: "2026-10-01",
+    lastSeenAt: "2026-10-01",
+  };
+  await ready(page, "/users", {
+    "/api/admin/security/sessions": [session],
+    "/api/admin/security/alerts": [
+      {
+        id: "alert-1",
+        severity: "HIGH",
+        title: "New device",
+        summary: "Device changed",
+        createdAt: "2026-10-01",
+      },
+    ],
+  });
+  await expect(page.locator("#sec-session-rows")).toContainText("Cape Town");
+  await page.locator("#sec-search").fill("missing");
+  await expect(page.locator("#sec-session-rows")).toContainText(
+    "No matching sessions",
+  );
+  await page.locator("#sec-search").fill("");
+  let resolved = false;
+  await page.route(
+    "**/api/admin/security/alerts/alert-1/resolve",
+    async (route) => {
+      resolved = true;
+      await route.fulfill({ json: { ok: true } });
+    },
+  );
+  await page
+    .locator("#sec-alert-rows")
+    .getByRole("button", { name: "Resolve" })
+    .click();
+  await expect.poll(() => resolved).toBe(true);
+  await page.locator("#user-list-card .compact-toggle").click();
+  await page
+    .locator("#user-rows")
+    .getByRole("button", { name: "Security", exact: true })
+    .click();
+  await expect(
+    page.getByRole("dialog", { name: "Example User" }),
+  ).toContainText("Cape Town");
+  await page.keyboard.press("Escape");
+  await expect(page.locator(".security-drawer")).toHaveCount(0);
+});
+for (const role of ["EMPLOYER_MANAGER", "ADMIN", "SUPERADMIN"])
+  test(`latest partner branding follows ${role} shell rules in light and dark mode`, async ({
+    page,
+  }) => {
+    const logo =
+      "data:image/svg+xml," +
+      encodeURIComponent(
+        '<svg xmlns="http://www.w3.org/2000/svg" width="150" height="40"><rect width="150" height="40" fill="#204080"/><text x="10" y="26" fill="white">Partner</text></svg>',
+      );
+    const theme = {
+      name: "Partner",
+      branded: true,
+      logoDataUrl: logo,
+      accentColor: "A84628",
+      primaryColor: "204080",
+      navyColor: "204080",
+    };
+    await ready(page, "/dashboard", {
+      "/api/auth/me": { ...me, role, theme },
+      "/api/employers/employer-1/dashboard": { ...dashboard, theme },
+    });
+    for (const dark of [false, true]) {
+      if (dark) await page.locator(".portal-theme-quick").click();
+      await expect(page.locator("#portal-brand-default")).toBeVisible({
+        visible: role !== "EMPLOYER_MANAGER",
+      });
+      await expect(page.locator("#portal-brand-partner")).toBeVisible({
+        visible: role === "EMPLOYER_MANAGER",
+      });
+      if (role === "EMPLOYER_MANAGER")
+        await expect(page.locator("#portal-partner-logo")).toHaveAttribute(
+          "src",
+          logo,
+        );
+      if(role!=="EMPLOYER_MANAGER"){
+        await expect(page.locator('#employer-view')).not.toHaveAttribute('data-partner-theme','1');
+        await page.locator('#month-select').selectOption('30d');
+        await expect(page.locator('#employer-view')).not.toHaveAttribute('data-partner-theme','1');
+      }
+      await expect(
+        page.locator(".portal-powered-by,.portal-fixer-secondary"),
+      ).toHaveCount(0);
+    }
+  });
+test("report selection and integration mode buttons", async ({ page }) => {
+  await ready(page, "/admin");
+  await page.locator("#rep-list .rep").first().click();
+  await expect(page.locator("#work")).toContainText("CSV template");
+  await expect(page.locator("#file")).toHaveAttribute(
+    "accept",
+    ".csv,.xlsx,.xls,.json",
+  );
+  await page.locator("#source-tab-sql").click();
+  await expect(page.locator("#integ-sql-host")).toBeVisible();
+});
+test("React report imports show background progress, validated state, commit and live history", async ({
+  page,
+}) => {
+  await ready(page, "/admin");
+  let uploadReads = 0,
+    commitReads = 0,
+    committed = false,
+    uploaded = false;
+  await page.route("**/api/admin/batches", (route) =>
+    route.fulfill({
+      json: [
+        {
+          id: "batch-1",
+          reportKey: "employers",
+          filename: "employers.csv",
+          rowCount: 2,
+          status: committed ? "COMMITTED" : "VALIDATED",
+          insertedCount: committed ? 2 : 0,
+          uploadedAt: "2026-10-09T08:00:00Z",
+          revertable: true,
+        },
+      ],
+    }),
+  );
+  await page.route("**/api/admin/reports/employers/upload", async (route) => {
+    uploaded =
+      route.request().method() === "POST" &&
+      route.request().postDataBuffer().toString().includes("employers.csv");
+    await route.fulfill({ status: 202, json: { jobId: "upload-1" } });
+  });
+  await page.route("**/api/admin/upload-jobs/upload-1", (route) =>
+    route.fulfill({
+      json:
+        ++uploadReads === 1
+          ? {
+              status: "RUNNING",
+              progress: 42,
+              phase: "VALIDATING",
+              message: "Validating employers",
+              detail: { validatedRows: 2 },
+            }
+          : {
+              status: "DONE",
+              result: {
+                status: "VALIDATED",
+                batchId: "batch-1",
+                rowCount: 2,
+                preview: [{ employer_ref: "example", name: "Example Ltd" }],
+              },
+            },
+    }),
+  );
+  await page.route("**/api/admin/batches/batch-1/commit", (route) =>
+    route.fulfill({ status: 202, json: { jobId: "commit-1" } }),
+  );
+  await page.route("**/api/admin/commit-jobs/commit-1", (route) => {
+    const running = ++commitReads === 1;
+    if (!running) committed = true;
+    return route.fulfill({
+      json: running
+        ? {
+            status: "RUNNING",
+            progress: 60,
+            phase: "COMMITTING",
+            message: "Writing live rows",
+            detail: { committedRows: 2 },
+          }
+        : {
+            status: "DONE",
+            result: { period: "2026-10", touchedEmployers: ["employer-1"] },
+          },
+    });
+  });
+  await page.locator("#rep-list .rep").first().click();
+  await page.locator("#file").setInputFiles({
+    name: "employers.csv",
+    mimeType: "text/csv",
+    buffer: Buffer.from("employer_ref,name\nexample,Example Ltd"),
+  });
+  await expect(page.locator("#result")).toContainText("42%");
+  await expect(page.locator("#result")).toContainText("Validated 2 rows");
+  expect(uploaded).toBe(true);
+  await expect(page.locator("#hist-body")).toContainText(
+    "VALIDATED · NOT LIVE",
+  );
+  await page.getByRole("button", { name: "Commit & recompute scores" }).click();
+  await expect(page.locator("#result")).toContainText("Processed live: 2");
+  await expect(page.locator("#result")).toContainText(
+    "Recomputed 1 employer dashboard(s)",
+  );
+  await expect(page.locator("#hist-body .st")).toHaveText("COMMITTED");
+  await expect(page.locator("#hist-body")).toContainText("+2 new");
+});
+test("React report upload retries the same file and renders validation errors as text", async ({
+  page,
+}) => {
+  await ready(page, "/admin");
+  let attempts = 0;
+  const dangerous = '<img src=x onerror="window.bad=1">';
+  await page.route("**/api/admin/reports/employers/upload", (route) =>
+    route.fulfill(
+      ++attempts === 1
+        ? { status: 400, json: { error: "The file could not be read" } }
+        : {
+            json: {
+              status: "INVALID",
+              errorCount: 1,
+              rowCount: 3,
+              missingColumns: ["employer_ref"],
+              errors: [
+                {
+                  row: 2,
+                  column: "name",
+                  value: dangerous,
+                  reason: "Invalid name",
+                },
+              ],
+            },
+          },
+    ),
+  );
+  await page.locator("#rep-list .rep").first().click();
+  const file = {
+    name: "employers.csv",
+    mimeType: "text/csv",
+    buffer: Buffer.from("name\nExample Ltd"),
+  };
+  await page.locator("#file").setInputFiles(file);
+  await expect(page.locator("#result")).toContainText(
+    "The file could not be read",
+  );
+  await page.locator("#file").setInputFiles(file);
+  await expect(page.locator("#result")).toContainText("Nothing was loaded");
+  await expect(page.locator("#result")).toContainText(
+    "Missing required columns: employer_ref",
+  );
+  await expect(page.locator("#result")).toContainText(dangerous);
+  await expect(page.locator("#result img")).toHaveCount(0);
+  expect(attempts).toBe(2);
+});
+test("React report manifest recovers from API failure without reloading the page", async ({
+  page,
+}) => {
+  await mockApi(page);
+  let attempts = 0;
+  await page.route("**/api/admin/reports", (route) =>
+    route.fulfill(
+      ++attempts === 1
+        ? { status: 503, json: { error: "Report contract unavailable" } }
+        : { json: fixture("http://localhost/api/admin/reports") },
+    ),
+  );
+  await page.goto(url + "/admin");
+  await expect(page.locator("#rep-list")).toContainText(
+    "Report contract unavailable",
+  );
+  await page
+    .locator("#rep-list")
+    .getByRole("button", { name: "Retry" })
+    .click();
+  await expect(page.locator("#rep-list .rep")).toHaveCount(10);
+  await page.locator("#rep-list .rep").first().press("Enter");
+  await expect(page.locator("#file")).toHaveAttribute(
+    "accept",
+    ".csv,.xlsx,.xls,.json",
+  );
+});
+test("React report jobs finish on the real backend envelope for automatic commits and errors", async ({
+  page,
+}) => {
+  await ready(page, "/admin");
+  let uploads = 0;
+  await page.route("**/api/admin/reports/employers/upload", (route) => {
+    uploads++;
+    return route.fulfill({ status: 202, json: { jobId: "job-" + uploads } });
+  });
+  await page.route("**/api/admin/upload-jobs/job-*", (route) =>
+    route.fulfill({
+      json: completedJobResponse(
+        uploads === 1
+          ? {
+              status: "COMMITTED",
+              batchId: "batch-1",
+              rowCount: 2,
+              period: "2026-10",
+              inserted: 2,
+              preview: [],
+            }
+          : {
+              status: "ERROR",
+              errorSummary: "Upload failed: database write unavailable",
+              rowCount: 0,
+              errors: [],
+              missingColumns: [],
+            },
+      ),
+    }),
+  );
+  await page.locator("#rep-list .rep").first().click();
+  const file = {
+    name: "employers.csv",
+    mimeType: "text/csv",
+    buffer: Buffer.from("employer_ref,name\nexample,Example Ltd"),
+  };
+  await page.locator("#file").setInputFiles(file);
+  await expect(page.locator("#result")).toContainText(
+    "Imported 2 rows successfully",
+  );
+  await expect(page.locator("#result")).toContainText("Inserted 2");
+  await expect(
+    page.getByRole("button", { name: "Commit & recompute scores" }),
+  ).toHaveCount(0);
+  await page.locator("#file").setInputFiles(file);
+  await expect(page.locator("#result")).toContainText(
+    "Upload failed: database write unavailable",
+  );
+  await expect(page.locator("#file")).toBeEnabled();
+  await expect(page.locator("#rep-list .rep")).toHaveCount(10);
+});
+test("Sync now completes with a partial outcome instead of polling indefinitely", async ({
+  page,
+}) => {
+  await ready(page, "/admin");
+  await page.locator("#integ-url").fill("https://source.example.invalid");
+  await page.route("**/api/admin/integration/sync", (route) =>
+    route.fulfill({ status: 202, json: { jobId: "sync-1" } }),
+  );
+  await page.route("**/api/admin/sync-jobs/sync-1", (route) =>
+    route.fulfill({
+      json: completedJobResponse({
+        status: "PARTIAL",
+        note: "One feed needs review",
+        summary: {
+          employees: { error: "Required employer reference missing" },
+        },
+      }),
+    }),
+  );
+  await page.getByRole("button", { name: "Sync now", exact: true }).click();
+  await expect(page.locator("#integ-result")).toContainText(
+    "PARTIAL: One feed needs review",
+  );
+  await expect(page.locator("#integ-result")).toContainText(
+    "Required employer reference missing",
+  );
+});
+test("sign-in validation and forgotten password request", async ({ page }) => {
+  await ready(page, "/login");
+  await page.locator("#btn").click();
+  await expect(page.locator("#err")).toHaveText("Enter your email address.");
+  await page.locator("#email").fill("person@example.invalid");
+  await page.locator("#forgot-link").click();
+  await expect(page.locator("#forgot-email")).toHaveValue(
+    "person@example.invalid",
+  );
+  await page.locator("#forgot-btn").click();
+  await expect(page.locator("#forgot-msg")).toContainText(
+    "If an account exists",
+  );
+});
+
+test("account menu dismisses and deactivation keeps input on API failure", async ({
+  page,
+}) => {
+  await ready(page, "/users");
+  const trigger = page.locator(".portal-account-trigger");
+  await trigger.click();
+  await expect(trigger).toHaveAttribute("aria-expanded", "true");
+  await page.keyboard.press("Escape");
+  await expect(trigger).toHaveAttribute("aria-expanded", "false");
+  await trigger.click();
+  await page.locator("[data-portal-deactivate]").click();
+  const reason = page.locator("#portal-deactivate-reason");
+  await expect(reason).toBeFocused();
+  await reason.fill("Account no longer needed");
+  const requests = [];
+  await page.route("**/api/users/me/deactivate", async (route) => {
+    requests.push(route.request().postDataJSON());
+    await route.fulfill({
+      status: 503,
+      contentType: "application/json",
+      body: JSON.stringify({ error: "Please retry shortly" }),
+    });
+  });
+  await page.locator(".portal-modal-confirm").click();
+  await expect(page.locator(".portal-modal-error")).toHaveText(
+    "Please retry shortly",
+  );
+  await expect(reason).toHaveValue("Account no longer needed");
+  await expect(page.locator(".portal-modal-confirm")).toBeEnabled();
+  expect(requests).toEqual([{ reason: "Account no longer needed" }]);
+  await page.keyboard.press("Escape");
+  await expect(page.locator(".portal-modal-overlay")).toHaveCount(0);
+});
+
+test("sign out posts to the session endpoint and returns to login", async ({
+  page,
+}) => {
+  await ready(page, "/admin");
+  const logout = page.waitForRequest(
+    (request) =>
+      request.url().endsWith("/api/auth/logout") && request.method() === "POST",
+  );
+  await page.locator(".portal-account-trigger").click();
+  await page.locator("[data-portal-signout]").click();
+  await logout;
+  await expect(page).toHaveURL(/\/login$/);
+});
+
+test("React quick actions searches sections and restores focus on Escape", async ({
+  page,
+}) => {
+  await ready(page, "/dashboard");
+  await page.locator("#btn-command").click();
+  await expect(page.locator(".command-search")).toBeFocused();
+  await page.locator(".command-search").fill("wellness");
+  await expect(page.locator(".command-item")).toHaveCount(1);
+  await expect(page.locator(".command-item")).toContainText("Wellness score");
+  await page.locator(".command-search").fill("no matching section");
+  await expect(page.locator(".command-empty")).toHaveText(
+    "No matching section",
+  );
+  await page.keyboard.press("Escape");
+  await expect(page.locator("#quick-actions")).toHaveCount(0);
+  await expect(page.locator("#btn-command")).toBeFocused();
+  await page.keyboard.press("Control+k");
+  await expect(page.locator("#quick-actions")).toBeVisible();
+  await page.locator('.command-item[data-target="#wellness"]').click();
+  await expect(page.locator("#quick-actions")).toHaveCount(0);
+});
+
+test("React schedule form preserves fields on failure and sends selected timing and filters", async ({
+  page,
+}) => {
+  await ready(page, "/dashboard", {
+    "/api/report-schedules/config": {
+      configured: true,
+      defaultTimezone: "Africa/Johannesburg",
+    },
+  });
+  let fail = true;
+  const payloads = [];
+  await page.route("**/api/report-schedules", async (route) => {
+    if (route.request().method() === "GET") return route.fulfill({ json: [] });
+    payloads.push(route.request().postDataJSON());
+    await route.fulfill({
+      status: fail ? 503 : 200,
+      json: fail
+        ? { error: "Mail configuration temporarily unavailable" }
+        : { nextRunAt: "2026-10-12T06:00:00Z" },
+    });
+  });
+  await page.locator("#btn-schedule").click();
+  await page.locator("#schedule-name").fill("Weekly wellbeing");
+  await page.locator("#schedule-window").selectOption("quarter");
+  await page.locator("#schedule-frequency").selectOption("WEEKLY");
+  await expect(page.locator("#schedule-weekly-wrap")).toBeVisible();
+  await expect(page.locator("#schedule-monthly-wrap")).toBeHidden();
+  await page.locator("#schedule-weekday").selectOption("3");
+  await page.locator("#schedule-time").fill("09:15");
+  await page
+    .locator("#schedule-recipients")
+    .fill("one@example.invalid, two@example.invalid");
+  await page
+    .getByRole("button", { name: "Save schedule", exact: true })
+    .click();
+  await expect(page.locator("#schedule-result")).toContainText(
+    "Mail configuration temporarily unavailable",
+  );
+  await expect(page.locator("#schedule-name")).toHaveValue("Weekly wellbeing");
+  fail = false;
+  await page
+    .getByRole("button", { name: "Save schedule", exact: true })
+    .click();
+  await expect(page.locator("#schedule-result")).toContainText(
+    "Report scheduled.",
+  );
+  expect(payloads).toHaveLength(2);
+  expect(payloads[1]).toMatchObject({
+    name: "Weekly wellbeing",
+    employerId: "employer-1",
+    filters: { range: "quarter" },
+    frequency: "WEEKLY",
+    dayOfWeek: 3,
+    dayOfMonth: null,
+    onceDate: null,
+    sendTime: "09:15",
+    timezone: "Africa/Johannesburg",
+    recipients: ["one@example.invalid", "two@example.invalid"],
+  });
+  await page.locator("#schedule-frequency").selectOption("ONCE");
+  await expect(page.locator("#schedule-once-wrap")).toBeVisible();
+  await expect(page.locator("#schedule-weekly-wrap")).toBeHidden();
+  await page.keyboard.press("Escape");
+  await expect(page.locator("#schedule-backdrop")).toHaveCount(0);
+  await expect(page.locator("#btn-schedule")).toBeFocused();
+});
+
+test("React schedule actions update the list and display server errors", async ({
+  page,
+}) => {
+  const schedule = {
+    id: "schedule-1",
+    name: "Existing report",
+    employer: { name: "Example" },
+    active: true,
+    frequency: "MONTHLY",
+    dayOfMonth: 1,
+    sendTime: "08:00",
+    nextRunAt: "2026-11-01T06:00:00Z",
+  };
+  await ready(page, "/dashboard", {
+    "/api/report-schedules/config": { configured: true },
+  });
+  let rows = [schedule];
+  const calls = [];
+  await page.route("**/api/report-schedules", (route) =>
+    route.fulfill({ json: rows }),
+  );
+  await page.route("**/api/report-schedules/schedule-1**", async (route) => {
+    const req = route.request();
+    calls.push({ method: req.method(), path: new URL(req.url()).pathname });
+    if (req.url().endsWith("send-now"))
+      return route.fulfill({
+        status: 503,
+        json: { error: "Delivery service unavailable" },
+      });
+    if (req.method() === "PATCH")
+      rows = [{ ...schedule, active: req.postDataJSON().active }];
+    if (req.method() === "DELETE") rows = [];
+    await route.fulfill({ json: { ok: true } });
+  });
+  await page.locator("#btn-schedule").click();
+  await page.getByRole("button", { name: "Pause", exact: true }).click();
+  await expect(
+    page.getByRole("button", { name: "Resume", exact: true }),
+  ).toBeVisible();
+  await page.getByRole("button", { name: "Send now", exact: true }).click();
+  await expect(page.locator("#schedule-result")).toContainText(
+    "Delivery service unavailable",
+  );
+  await expect(
+    page.getByRole("button", { name: "Send now", exact: true }),
+  ).toBeEnabled();
+  page.once("dialog", (dialog) => dialog.accept());
+  await page.getByRole("button", { name: "Delete", exact: true }).click();
+  await expect(page.locator("#schedule-list-body")).toContainText(
+    "No scheduled reports yet.",
+  );
+  expect(calls.map((call) => call.method)).toEqual(["PATCH", "POST", "DELETE"]);
+});
+
+test("employer schedule recipients stay read-only and unavailable mail disables saving", async ({
+  page,
+}) => {
+  await ready(page, "/dashboard", {
+    "/api/auth/me": { ...me, role: "EMPLOYER_MANAGER" },
+    "/api/report-schedules/config": { configured: false },
+  });
+  await page.locator("#btn-schedule").click();
+  await expect(page.locator("#schedule-recipients")).toHaveAttribute(
+    "readonly",
+    "",
+  );
+  await expect(
+    page.getByRole("button", { name: "Save schedule", exact: true }),
+  ).toBeDisabled();
+  await expect(page.locator(".schedule-note.err")).toContainText(
+    "System email is not configured",
+  );
+});
+
+test("React section permissions save visibility, roles and individual grants with recovery", async ({
+  page,
+}) => {
+  let current = structuredClone(sections),
+    rejectNext = true;
+  const writes = [];
+  await mockApi(page);
+  await page.addInitScript(() =>
+    localStorage.setItem("cookieNoticeDismissed", "1"),
+  );
+  await page.route("**/api/admin/sections**", async (route) => {
+    const request = route.request();
+    if (request.method() === "GET") return route.fulfill({ json: current });
+    const body = request.postDataJSON(),
+      path = new URL(request.url()).pathname;
+    writes.push({ body, path, method: request.method() });
+    if (rejectNext) {
+      rejectNext = false;
+      return route.fulfill({
+        status: 503,
+        json: { error: "Permissions unavailable" },
+      });
+    }
+    if (path.endsWith("/revoke")) current[0].overrides = [];
+    else if (path.endsWith("/grant"))
+      current[0].overrides = [
+        { userId: body.userId, name: users[0].name, email: users[0].email },
+      ];
+    else Object.assign(current[0], body);
+    return route.fulfill({ json: { ok: true } });
+  });
+  await page.goto(url + "/admin");
+  const card = page.locator('[data-section-key="voiceOfEmployee"]');
+  const visible = card.getByRole("checkbox", {
+    name: "Voice of the employee",
+    exact: true,
+  });
+  await expect(visible).toBeChecked();
+  await visible.click();
+  await expect(page.locator('#sec-list [role="alert"]')).toContainText(
+    "Permissions unavailable",
+  );
+  await expect(visible).toBeChecked();
+  await visible.click();
+  await expect(visible).not.toBeChecked();
+  await expect(card).toContainText("Hidden from everyone");
+  await card.getByRole("checkbox", { name: "Viewer", exact: true }).click();
+  await expect(
+    card.getByRole("checkbox", { name: "Viewer", exact: true }),
+  ).not.toBeChecked();
+  expect(current[0].allowedRoles).toContain("SUPERADMIN");
+  await card
+    .getByRole("link", { name: "Revoke access for Example User" })
+    .click();
+  await expect(
+    card.getByRole("link", { name: "Revoke access for Example User" }),
+  ).toHaveCount(0);
+  await card.getByRole("combobox").selectOption("user-1");
+  await card.getByRole("button", { name: "Grant", exact: true }).click();
+  await expect(
+    card.getByRole("link", { name: "Revoke access for Example User" }),
+  ).toBeVisible();
+  await expect(card.getByRole("combobox")).toHaveValue("");
+  expect(writes.map((row) => row.method)).toEqual([
+    "PATCH",
+    "PATCH",
+    "PATCH",
+    "POST",
+    "POST",
+  ]);
+  expect(writes.at(-1).body).toEqual({ userId: "user-1" });
+});
+
+test("React section permission list retries load failures and stays hidden for operational admins", async ({
+  page,
+}) => {
+  let attempts = 0;
+  await mockApi(page);
+  await page.addInitScript(() =>
+    localStorage.setItem("cookieNoticeDismissed", "1"),
+  );
+  await page.route("**/api/admin/sections", (route) =>
+    ++attempts === 1
+      ? route.fulfill({
+          status: 503,
+          json: { error: "Section service unavailable" },
+        })
+      : route.fulfill({ json: sections }),
+  );
+  await page.goto(url + "/admin");
+  await expect(page.locator('#sec-list [role="alert"]')).toContainText(
+    "Section service unavailable",
+  );
+  await page
+    .locator("#sec-list")
+    .getByRole("button", { name: "Retry", exact: true })
+    .click();
+  await expect(
+    page.locator('[data-section-key="voiceOfEmployee"]'),
+  ).toBeVisible();
+  await page.route("**/api/auth/me", (route) =>
+    route.fulfill({ json: { ...me, role: "ADMIN" } }),
+  );
+  const previous = attempts;
+  await page.reload();
+  await expect(page.locator("#rep-list .rep")).toHaveCount(10);
+  await expect(
+    page.locator(".card").filter({
+      has: page.getByRole("heading", {
+        name: "Dashboard Sections",
+        exact: true,
+      }),
+    }),
+  ).toBeHidden();
+  await expect(
+    page.locator('[data-section-key="voiceOfEmployee"]'),
+  ).toHaveCount(0);
+  expect(attempts).toBe(previous);
+});
+
+test("React email settings retain failed drafts, clear saved secrets and send current test values", async ({
+  page,
+}) => {
+  const config = {
+    emailProvider: "smtp",
+    smtpHost: "smtp.example.invalid",
+    smtpPort: 587,
+    configured: true,
+    hasPassword: true,
+    fromEmail: "reports@example.invalid",
+  };
+  const posts = [];
+  let rejectSave = true;
+  await mockApi(page, { "/api/admin/email-settings": config });
+  await page.addInitScript(() =>
+    localStorage.setItem("cookieNoticeDismissed", "1"),
+  );
+  await page.route("**/api/admin/email-settings", async (route) => {
+    if (route.request().method() === "GET")
+      return route.fulfill({ json: config });
+    const body = route.request().postDataJSON();
+    posts.push(body);
+    if (rejectSave) {
+      rejectSave = false;
+      return route.fulfill({
+        status: 503,
+        json: { error: "Email provider unavailable" },
+      });
+    }
+    Object.assign(config, body);
+    return route.fulfill({ json: { ok: true } });
+  });
+  await page.route("**/api/admin/email-settings/test", (route) => {
+    posts.push(route.request().postDataJSON());
+    return route.fulfill({ json: { recipient: "tester@example.invalid" } });
+  });
+  await page.goto(url + "/admin");
+  await expect(page.locator("#mail-host")).toHaveValue(config.smtpHost);
+  await page.locator("#mail-host").fill("smtp.new.example.invalid");
+  await page.locator("#mail-password").fill("isolated-test-password");
+  await page.locator("#mail-resend-key").fill("isolated-test-key");
+  await page
+    .getByRole("button", { name: "Save email settings", exact: true })
+    .click();
+  await expect(page.locator("#mail-result")).toContainText(
+    "Email provider unavailable",
+  );
+  await expect(page.locator("#mail-host")).toHaveValue(
+    "smtp.new.example.invalid",
+  );
+  await expect(page.locator("#mail-password")).toHaveValue(
+    "isolated-test-password",
+  );
+  await page
+    .getByRole("button", { name: "Save email settings", exact: true })
+    .click();
+  await expect(page.locator("#mail-result")).toContainText(
+    "Email settings saved",
+  );
+  await expect(page.locator("#mail-password")).toHaveValue("");
+  await expect(page.locator("#mail-resend-key")).toHaveValue("");
+  await page.locator("#mail-provider").selectOption("resend");
+  await page.locator("#mail-test-recipient").fill("tester@example.invalid");
+  await page
+    .getByRole("button", { name: "Send test email", exact: true })
+    .click();
+  await expect(page.locator("#mail-result")).toContainText(
+    "Test email sent to tester@example.invalid",
+  );
+  await expect(page.locator("#mail-provider")).toHaveValue("resend");
+  expect(posts[1].smtpPassword).toBe("isolated-test-password");
+  expect(posts[1].resendApiKey).toBe("isolated-test-key");
+  expect(posts[2]).toMatchObject({
+    emailProvider: "resend",
+    recipient: "tester@example.invalid",
+  });
+  expect(posts[2]).not.toHaveProperty("smtpPassword");
+  expect(posts[2]).not.toHaveProperty("resendApiKey");
+});
+
+test("React automation saves and run-now actions preserve unrelated drafts", async ({
+  page,
+}) => {
+  const config = {
+    emailProvider: "smtp",
+    smtpHost: "smtp.example.invalid",
+    configured: true,
+  };
+  const posts = [];
+  await mockApi(page, { "/api/admin/email-settings": config });
+  await page.addInitScript(() =>
+    localStorage.setItem("cookieNoticeDismissed", "1"),
+  );
+  await page.route("**/api/admin/email-settings", (route) => {
+    if (route.request().method() === "GET")
+      return route.fulfill({ json: config });
+    const body = route.request().postDataJSON();
+    posts.push(body);
+    Object.assign(config, body);
+    return route.fulfill({ json: { ok: true } });
+  });
+  await page.route("**/api/admin/automations/run", (route) => {
+    posts.push(route.request().postDataJSON());
+    return route.fulfill({
+      json: { message: "Completed isolated automation" },
+    });
+  });
+  await page.goto(url + "/admin");
+  await expect(page.locator("#mail-host")).toHaveValue(config.smtpHost);
+  await page.locator("#mail-host").fill("unsaved.example.invalid");
+  await page.locator("#auto-alert-emails").fill("admin@example.invalid");
+  await page.locator("#auto-stale-days").fill("180");
+  await page.locator("#auto-digest-enabled").check();
+  await page.locator("#synthetic-data-mode").check();
+  await page
+    .getByRole("button", { name: "Save automation settings", exact: true })
+    .click();
+  await expect(page.locator("#auto-result")).toContainText(
+    "Automation settings saved",
+  );
+  await expect(page.locator("#mail-host")).toHaveValue(
+    "unsaved.example.invalid",
+  );
+  expect(posts[0]).toMatchObject({
+    alertEmails: "admin@example.invalid",
+    staleDeactivateDays: 180,
+    digestEnabled: true,
+    syntheticDataMode: true,
+  });
+  expect(posts[0]).not.toHaveProperty("smtpHost");
+  await page
+    .locator("#auto-alert-emails")
+    .fill("unsaved-admin@example.invalid");
+  for (const name of [
+    "Run stale-account check now",
+    "Send digest now",
+    "Send test alert",
+  ]) {
+    await page.getByRole("button", { name, exact: true }).click();
+    await expect(page.locator("#auto-result")).toContainText(
+      "Completed isolated automation",
+    );
+    await expect(page.getByRole("button", { name, exact: true })).toBeEnabled();
+  }
+  await expect(page.locator("#auto-alert-emails")).toHaveValue(
+    "unsaved-admin@example.invalid",
+  );
+  expect(posts.slice(1)).toEqual([
+    { kind: "stale" },
+    { kind: "digest" },
+    { kind: "test" },
+  ]);
+});
+
+test("React settings retry failed loads and render schedule and delivery values as text", async ({
+  page,
+}) => {
+  let attempts = 0;
+  await mockApi(page, {
+    "/api/admin/report-schedules": [
+      {
+        id: "mail-schedule",
+        name: "Payroll report",
+        frequency: "WEEKLY",
+        dayOfWeek: 1,
+        sendTime: "08:00",
+        active: false,
+        user: { name: "Example User", email: "user@example.invalid" },
+      },
+    ],
+    "/api/admin/report-deliveries": [
+      {
+        id: "mail-delivery",
+        subject: "<img src=x onerror=alert(1)>",
+        status: "FAILED",
+        recipients: ["user@example.invalid"],
+        error: "Delivery rejected",
+      },
+    ],
+  });
+  await page.addInitScript(() =>
+    localStorage.setItem("cookieNoticeDismissed", "1"),
+  );
+  await page.route("**/api/admin/email-settings", (route) =>
+    ++attempts === 1
+      ? route.fulfill({ status: 503, json: { error: "Settings unavailable" } })
+      : route.fulfill({ json: { configured: true, emailProvider: "resend" } }),
+  );
+  await page.goto(url + "/admin");
+  await expect(page.locator("#mail-result")).toContainText(
+    "Settings unavailable",
+  );
+  await page
+    .locator("#mail-result")
+    .getByRole("button", { name: "Retry", exact: true })
+    .click();
+  await expect(page.locator("#mail-status")).toContainText(
+    "Resend API is configured",
+  );
+  await expect(page.locator("#mail-schedules")).toContainText(
+    "Weekly · Mon 08:00",
+  );
+  await expect(page.locator("#mail-schedules")).toContainText("Paused");
+  await expect(page.locator("#mail-deliveries")).toContainText(
+    "<img src=x onerror=alert(1)>",
+  );
+  await expect(page.locator("#mail-deliveries img")).toHaveCount(0);
+  await expect(page.locator("#mail-deliveries")).toContainText(
+    "Delivery rejected",
+  );
+  await expect(
+    page.getByRole("button", { name: "Save email settings", exact: true }),
+  ).toBeEnabled();
+});
+
+for (const width of [1440, 390])
+  test(`React settings preserve source dark-mode layout and colours at ${width}px`, async ({
+    browser,
+  }) => {
+    const measurements = [];
+    for (const port of [4101, 4100]) {
+      const page = await browser.newPage({
+        viewport: { width, height: 1000 },
+        timezoneId: "Africa/Johannesburg",
+      });
+      await mockApi(page, {
+        "/api/admin/email-settings": {
+          emailProvider: "smtp",
+          configured: true,
+        },
+        "/api/admin/report-deliveries": [
+          {
+            id: "delivery",
+            subject: "Test report",
+            status: "FAILED",
+            error: "Delivery rejected",
+            recipients: ["test@example.invalid"],
+          },
+        ],
+      });
+      await page.addInitScript(() => {
+        localStorage.setItem("cookieNoticeDismissed", "1");
+        localStorage.setItem("empower-fin-theme", "dark");
+      });
+      await page.goto(`http://127.0.0.1:${port}/admin`);
+      await expect(page.locator("html")).toHaveClass(/portal-dark/);
+      await expect(page.locator("#mail-status")).toContainText(
+        "SMTP is configured",
+      );
+      await expect(page.locator("#mail-deliveries")).toContainText(
+        "Delivery rejected",
+      );
+      const selectors = [
+        "#mail-provider",
+        "#mail-host",
+        "#mail-portal-url",
+        "#auto-alert-emails",
+        "label:has(#mail-from-email)",
+        "label:has(#mail-secure)",
+        "label:has(#synthetic-data-mode)",
+        "#mail-deliveries td:nth-child(3)",
+        "#mail-deliveries td:nth-child(4) div",
+      ];
+      const values = [];
+      for (const selector of selectors)
+        values.push(
+          await page.locator(selector).evaluate((node) => {
+            const style = getComputedStyle(node),
+              rect = node.getBoundingClientRect();
+            return {
+              color: style.color,
+              background: style.backgroundColor,
+              border: style.borderColor,
+              width: Math.round(rect.width),
+              height: Math.round(rect.height),
+            };
+          }),
+        );
+      measurements.push(values);
+      await page.close();
+    }
+    expect(measurements[1]).toEqual(measurements[0]);
+  });
+
+test('React reset requires both confirmations, blocks duplicate requests and recovers failures', async ({page})=>{
+  await mockApi(page);
+  let requests=0, pendingRoute;
+  await page.route('**/api/admin/reset-all',route=>{requests++;pendingRoute=route;});
+  await page.goto(url+'/admin');
+  await page.locator('#reset-btn').click();
+  await expect(page.locator('#reset-confirm')).toBeFocused();
+  const rebuild=page.locator('#reset-area').getByRole('button',{name:'Reset & rebuild',exact:true});
+  await rebuild.click();
+  await expect(page.locator('#reset-msg')).toContainText('Please type RESET exactly');
+  expect(requests).toBe(0);
+  await page.locator('#reset-confirm').fill('RESET');
+  page.once('dialog',dialog=>dialog.dismiss());
+  await rebuild.click();
+  expect(requests).toBe(0);
+  page.once('dialog',dialog=>dialog.accept());
+  await rebuild.click();
+  await expect.poll(()=>requests).toBe(1);
+  expect(pendingRoute.request().method()).toBe('POST');
+  expect(pendingRoute.request().postDataJSON()).toEqual({confirm:'RESET'});
+  await expect(rebuild).toBeDisabled();
+  await expect(page.locator('#reset-btn')).toBeDisabled();
+  await expect(page.locator('#reset-area').getByRole('button',{name:'Cancel'})).toBeDisabled();
+  await pendingRoute.fulfill({status:503,json:{error:'<img src=x> Source unavailable'}});
+  await expect(page.locator('#reset-msg')).toContainText('last successful dashboard remains visible');
+  await expect(page.locator('#reset-msg')).toContainText('<img src=x> Source unavailable');
+  await expect(page.locator('#reset-msg img')).toHaveCount(0);
+  await expect(page.locator('#reset-confirm')).toHaveValue('RESET');
+  page.once('dialog',dialog=>dialog.accept());
+  await rebuild.click();
+  await expect.poll(()=>requests).toBe(2);
+  await pendingRoute.fulfill({json:{ok:true,cleared:{employees:5,payroll:7},overwrittenRows:15}});
+  await expect(page.locator('#reset-msg')).toContainText('Cleared 12 source-derived rows and accepted 15 rows');
+  await expect(page.locator('#reset-confirm')).toHaveValue('');
+  await expect(rebuild).toBeEnabled();
+  await page.locator('#reset-area').getByRole('button',{name:'Cancel'}).click();
+  await expect(page.locator('#reset-area')).toHaveCount(0);
+});
+
+test('React integration retains failed drafts, clears saved secrets and preserves zero replica lag',async({page})=>{
+ await mockApi(page);let fail=true,bodies=[];
+ await page.route('**/api/admin/integration',route=>{
+  if(route.request().method()==='GET')return route.fulfill({json:{sourceMode:'API',configured:true,hasToken:true,hasSqlPassword:true,sqlDialect:'POSTGRESQL'}});
+  bodies.push(route.request().postDataJSON());return route.fulfill(fail?{status:503,json:{error:'<img src=x> Save unavailable'}}:{json:{ok:true}});
+ });
+ await page.goto(url+'/admin');await expect(page.locator('#integ-url')).toBeEnabled();
+ await page.locator('#integ-url').fill('https://draft.example.invalid');await page.locator('#integ-token').fill('unsaved-api-secret');
+ await page.locator('#source-tab-sql').click();await page.locator('#integ-sql-password').fill('unsaved-sql-secret');await page.locator('#integ-replica-lag').fill('0');
+ const save=page.locator('#live-integration').getByRole('button',{name:'Save settings',exact:true});
+ await save.click();await expect(page.locator('#integ-result')).toContainText('<img src=x> Save unavailable');await expect(page.locator('#integ-result img')).toHaveCount(0);
+ await expect(page.locator('#integ-token')).toHaveValue('unsaved-api-secret');await expect(page.locator('#integ-sql-password')).toHaveValue('unsaved-sql-secret');
+ expect(bodies[0].sourceAnalyticsReplicaMaxLagSeconds).toBe(0);
+ fail=false;await save.click();await expect(page.locator('#integ-result')).toContainText('Database integration settings saved');
+ await expect(page.locator('#integ-token')).toHaveValue('');await expect(page.locator('#integ-sql-password')).toHaveValue('');
+ await expect(page.locator('#integ-mode')).toHaveValue('SQL');
+ await save.click();await expect.poll(()=>bodies.length).toBe(3);expect(bodies[2]).not.toHaveProperty('authToken');expect(bodies[2]).not.toHaveProperty('sqlPassword');
+});
+
+test('React integration stops sync after a failed save and retries failed reads',async({page})=>{
+ await mockApi(page);let loadFails=true,syncs=0;
+ await page.route('**/api/admin/integration',route=>route.fulfill(route.request().method()==='POST'?{status:500,json:{error:'Save blocked'}}:loadFails?{status:503,json:{error:'Configuration unavailable'}}:{json:{configured:true}}));
+ await page.route('**/api/admin/integration/sync',route=>{syncs++;return route.fulfill({json:{jobId:'unexpected'}});});
+ await page.goto(url+'/admin');await expect(page.locator('#integ-status')).toContainText('Configuration unavailable');
+ await expect(page.locator('#live-integration').getByRole('button',{name:'Sync now',exact:true})).toBeDisabled();
+ loadFails=false;await page.locator('#integ-status').getByRole('button',{name:'Retry'}).click();
+ await page.locator('#live-integration').getByRole('button',{name:'Sync now',exact:true}).click();
+ await expect(page.locator('#integ-result')).toContainText('Save blocked');expect(syncs).toBe(0);
+ await page.locator('#live-integration .compact-toggle').click();await expect(page.locator('#live-integration .card-bd')).not.toBeVisible();
+ await page.getByRole('button',{name:'Connect a database'}).click();await expect(page.locator('#integ-sql-host')).toBeVisible();
+});
+
+test('React integration refresh uses the saved source without implicitly saving draft settings',async({page})=>{
+ await mockApi(page);let refreshes=0,saves=0;
+ await page.route('**/api/admin/integration',route=>{if(route.request().method()==='POST')saves++;return route.fulfill({json:{configured:true,ok:true}});});
+ await page.route('**/api/admin/integration/refresh',route=>{refreshes++;return route.fulfill({json:{ok:true,note:'Changed records processed.'}});});
+ await page.goto(url+'/admin');await expect(page.locator('#btn-refresh-now')).toBeEnabled();
+ page.once('dialog',dialog=>dialog.dismiss());await page.locator('#btn-refresh-now').click();expect(refreshes).toBe(0);expect(saves).toBe(0);
+ await page.locator('#integ-url').fill('https://unsaved.example.invalid');page.once('dialog',dialog=>{expect(dialog.message()).toContain('incremental sync');dialog.accept();});await page.locator('#btn-refresh-now').click();await expect(page.locator('#integ-result')).toContainText('Incremental sync completed. Changed records processed.');
+ expect(refreshes).toBe(1);expect(saves).toBe(0);await expect(page.locator('#btn-refresh-now')).toBeEnabled();
+});
+
+for(const width of [1440,390])test(`React integration preserves source dark form styling at ${width}px`,async({browser})=>{
+ const measured=[];
+ for(const port of [4101,4100]){
+  const page=await browser.newPage({viewport:{width,height:1000}});await mockApi(page,{'/api/admin/integration':{configured:true,sourceMode:'API',scheduleHours:24}});
+  await page.addInitScript(()=>{localStorage.setItem('empower-fin-theme','dark');localStorage.setItem('cookieNoticeDismissed','1');});
+  await page.goto(`http://127.0.0.1:${port}/admin`);await expect(page.locator('#integ-status')).toBeVisible();await page.locator('#source-tab-sql').click();
+  const values=[];
+  for(const selector of ['#integ-sql-host','#integ-sql-dialect','#integ-sql-password','#integ-replica-host','label:has(#integ-sql-host)','label:has(#integ-sql-ssl)'])values.push(await page.locator(selector).evaluate(node=>{const style=getComputedStyle(node),rect=node.getBoundingClientRect();return {color:style.color,background:style.backgroundColor,border:style.borderColor,width:Math.round(rect.width),height:Math.round(rect.height)};}));
+  measured.push(values);await page.close();
+ }
+ expect(measured[1]).toEqual(measured[0]);
+});
+
+test('React integration renders sync progress details and returns a terminal job failure',async({page})=>{
+ await mockApi(page);let done=false;
+ await page.route('**/api/admin/integration/sync',route=>route.fulfill({status:202,json:{jobId:'native-sync'}}));
+ await page.route('**/api/admin/sync-jobs/native-sync',route=>route.fulfill({json:done?{status:'FAILED',error:'<img src=x> Source disconnected'}:{status:'RUNNING',progress:40,phase:'IMPORTING',message:'Loading employees',detail:{reportKey:'employees',feedIndex:2,feedCount:10,sourceTotalRows:100,pulledRows:40,validatedRows:35,committedRows:30,inserted:20,updated:10,deleted:0,historyRows:3}}}));
+ await page.goto(url+'/admin');await page.locator('#live-integration').getByRole('button',{name:'Sync now',exact:true}).click();
+ await expect(page.locator('#integ-result')).toContainText('40%');await expect(page.locator('#integ-result')).toContainText('Feed employees · 2/10');await expect(page.locator('#integ-result')).toContainText('3 dated history observation(s)');
+ await expect(page.locator('#live-integration').getByRole('button',{name:'Sync now',exact:true})).toBeDisabled();done=true;
+ await expect(page.locator('#integ-result')).toContainText('<img src=x> Source disconnected');await expect(page.locator('#integ-result img')).toHaveCount(0);await expect(page.locator('#integ-url')).toBeEnabled();
+});
+
+const samplePartner={id:'partner-1',name:'Acme Finance',slug:'acme',displayName:'Acme',tagline:'People first',primaryColor:'003C64',accentColor:'00A651',navyColor:'003C64',_count:{users:1,employers:1}};
+test('React partners preserve failed branding edits and verify assignment and deletion responses',async({page})=>{
+ await mockApi(page);let rows=[{...samplePartner}],failEdit=true,failAssign=true,failDelete=true,assignments=[];
+ await page.route('**/api/admin/partners',route=>route.fulfill({json:rows}));
+ await page.route('**/api/admin/partners/partner-1',route=>{
+  if(route.request().method()==='DELETE'){if(failDelete)return route.fulfill({status:503,json:{error:'Delete unavailable'}});rows=[];return route.fulfill({json:{ok:true}});}
+  if(failEdit)return route.fulfill({status:503,json:{error:'<img src=x> Write unavailable'}});
+  rows[0]={...rows[0],...route.request().postDataJSON()};return route.fulfill({json:rows[0]});
+ });
+ await page.route('**/api/admin/partners/partner-1/assign',route=>{assignments.push(route.request().postDataJSON());return route.fulfill(failAssign?{status:503,json:{error:'Assignment unavailable'}}:{json:{ok:true}});});
+ await page.goto(url+'/admin');const card=page.locator('[data-partner="partner-1"]'),display=card.getByLabel('Display name');
+ await display.fill('<img src=x> Acme');await display.press('Tab');await expect(page.locator('#channel-partners-card')).toContainText('Write unavailable');await expect(display).toHaveValue('<img src=x> Acme');
+ failEdit=false;await display.focus();await display.press('Tab');await expect(card.locator('.partner-preview-copy strong')).toHaveText('<img src=x> Acme');await expect(card.locator('.partner-preview-copy img')).toHaveCount(0);
+ await page.locator('#pt-u-partner-1').selectOption('user-1');await page.locator('#pt-e-partner-1').selectOption('employer-1');await card.getByRole('button',{name:'Assign',exact:true}).click();
+ await expect(page.locator('#channel-partners-card')).toContainText('Assignment unavailable');await expect(page.locator('#pt-u-partner-1')).toHaveValue('user-1');expect(assignments).toHaveLength(1);
+ failAssign=false;await card.getByRole('button',{name:'Assign',exact:true}).click();await expect(page.locator('#pt-e-partner-1')).toHaveValue('');expect(assignments.slice(1)).toEqual([{userId:'user-1'},{employerId:'employer-1'}]);
+ page.once('dialog',d=>d.accept());await card.getByRole('button',{name:'Delete partner'}).click();await expect(page.locator('#channel-partners-card')).toContainText('Delete unavailable');await expect(card).toBeVisible();
+ failDelete=false;page.once('dialog',d=>d.accept());await card.getByRole('button',{name:'Delete partner'}).click();await expect(card).toHaveCount(0);
+});
+
+test('React partner creation resumes a failed logo save without creating another partner',async({page})=>{
+ await mockApi(page);let posts=0,puts=0,failLogo=true,rows=[];
+ await page.route('**/api/admin/partners',route=>{if(route.request().method()==='POST'){posts++;rows=[{...samplePartner,name:route.request().postDataJSON().name}];return route.fulfill({json:rows[0]});}return route.fulfill({json:rows});});
+ await page.route('**/api/admin/partners/partner-1',route=>{puts++;return route.fulfill(failLogo?{status:503,json:{error:'Logo save unavailable'}}:{json:{ok:true}});});
+ await page.goto(url+'/admin');await page.locator('#pt-new-name').fill('New Partner');
+ const logo=new PNG({width:16,height:16});for(let i=0;i<logo.data.length;i+=4){logo.data[i]=35;logo.data[i+1]=160;logo.data[i+2]=90;logo.data[i+3]=255;}
+ await page.locator('#pt-new-logo').setInputFiles({name:'brand.png',mimeType:'image/png',buffer:PNG.sync.write(logo)});
+ await expect(page.locator('#pt-new-logo-label')).toContainText('brand.png');await page.locator('#channel-partners-card').getByRole('button',{name:'Add partner',exact:true}).click();
+ await expect(page.locator('#channel-partners-card')).toContainText('Logo save unavailable');expect(posts).toBe(1);await expect(page.locator('#pt-new-name')).toHaveValue('New Partner');
+ failLogo=false;await page.locator('#channel-partners-card').getByRole('button',{name:'Add partner',exact:true}).click();await expect(page.locator('#pt-new-name')).toHaveValue('');expect(posts).toBe(1);expect(puts).toBe(2);
+});
+
+test('React partner preview traps focus, dismisses on Escape and restores scrolling',async({page})=>{
+ await ready(page,'/admin',{'/api/admin/partners':[samplePartner]});const open=page.getByRole('button',{name:'View client dashboard'});await open.click();
+ await expect(page.getByRole('dialog')).toBeVisible();await expect(page.getByRole('button',{name:'Close preview'})).toBeFocused();await expect(page.locator('#client-preview-app')).toContainText('Synthetic preview data.');
+ await page.keyboard.press('Shift+Tab');await expect(page.locator('#client-preview-app').getByRole('button',{name:'Quick actions'})).toBeFocused();await page.keyboard.press('Tab');await expect(page.getByRole('button',{name:'Close preview'})).toBeFocused();
+ await page.keyboard.press('Escape');await expect(page.getByRole('dialog')).toHaveCount(0);await expect(open).toBeFocused();expect(await page.evaluate(()=>document.body.style.overflow)).not.toBe('hidden');
+});
+
+for(const width of [1440,390])for(const theme of ['light','dark'])test(`partner panel and preview match source at ${width}px in ${theme}`,async({browser},testInfo)=>{
+ const captures=[[],[]];
+ for(const port of [4101,4100]){
+  const page=await browser.newPage({viewport:{width,height:1000},timezoneId:'Africa/Johannesburg'});await mockApi(page,{'/api/admin/partners':[samplePartner]});
+  await page.addInitScript(theme=>{localStorage.setItem('cookieNoticeDismissed','1');localStorage.setItem('empower-fin-theme',theme);},theme);await page.goto(`http://127.0.0.1:${port}/admin`);
+  await expect(page.locator('#pt-list .partner-card')).toHaveCount(1);await page.addStyleTag({content:'*,*::before,*::after{transition:none!important;animation:none!important;caret-color:transparent!important}.reveal{opacity:1!important;transform:none!important}#welcome-splash{display:none!important}'});await page.evaluate(()=>document.fonts.ready);
+  captures[0].push(PNG.sync.read(await page.locator('#channel-partners-card').screenshot()));
+  await page.getByRole('button',{name:'View client dashboard'}).click();await expect(page.locator('#client-preview-overlay')).toHaveClass(/is-open/);await page.getByRole('button',{name:'Close preview'}).evaluate(node=>node.blur());
+  captures[1].push(PNG.sync.read(await page.locator('.client-preview-dialog').screenshot()));await page.close();
+ }
+ for(let i=0;i<captures.length;i++){const [a,b]=captures[i];expect({width:b.width,height:b.height}).toEqual({width:a.width,height:a.height});const diff=new PNG({width:a.width,height:a.height}),ratio=pixelmatch(a.data,b.data,diff.data,a.width,a.height,{threshold:.15})/(a.width*a.height);if(ratio>.005){for(const [name,value]of [['source',a],['react',b],['diff',diff]])await testInfo.attach(`${i}-${name}`,{body:PNG.sync.write(value),contentType:'image/png'});}expect(ratio).toBeLessThanOrEqual(.005);}
+});
+
+test('React partner refresh errors retain existing drafts and assignment choices retry independently',async({page})=>{
+ await mockApi(page,{'/api/admin/partners':[samplePartner]});let failChoices=true,failRead=false;
+ await page.route('**/api/users',route=>route.fulfill(failChoices?{status:503,json:{error:'User choices unavailable'}}:{json:users}));
+ await page.route('**/api/admin/partners',route=>route.fulfill(failRead?{status:503,json:{error:'Partner refresh unavailable'}}:{json:[samplePartner]}));
+ await page.route('**/api/admin/partners/partner-1',route=>route.fulfill({status:503,json:{error:'Write unavailable'}}));
+ await page.route('**/api/admin/partners/partner-1/assign',route=>{failRead=true;return route.fulfill({json:{ok:true}});});
+ await page.goto(url+'/admin');const card=page.locator('[data-partner="partner-1"]');await expect(page.locator('#channel-partners-card')).toContainText('User choices unavailable');await expect(card.getByRole('button',{name:'Assign',exact:true})).toBeDisabled();
+ failChoices=false;await page.getByRole('button',{name:'Retry choices'}).click();await expect(card.getByRole('button',{name:'Assign',exact:true})).toBeEnabled();
+ await card.getByLabel('Tagline (optional)').fill('Retain this draft');await card.getByLabel('Tagline (optional)').press('Tab');await expect(page.locator('#channel-partners-card')).toContainText('Write unavailable');
+ await page.locator('#pt-u-partner-1').selectOption('user-1');await card.getByRole('button',{name:'Assign',exact:true}).click();await expect(page.locator('#channel-partners-card')).toContainText('Partner refresh unavailable');await expect(card.getByLabel('Tagline (optional)')).toHaveValue('Retain this draft');
+ failRead=false;await page.getByRole('button',{name:'Retry partners'}).click();await expect(card.getByLabel('Tagline (optional)')).toHaveValue('Retain this draft');
+});
+
+test('React partner presets resume failed branding and reject oversized logos',async({page})=>{
+ await mockApi(page);let posts=0,puts=0,fail=true,rows=[];
+ await page.route('**/api/admin/partners',route=>{if(route.request().method()==='POST'){posts++;rows=[{...samplePartner,name:route.request().postDataJSON().name}];return route.fulfill({json:rows[0]});}return route.fulfill({json:rows});});
+ await page.route('**/api/admin/partners/partner-1',route=>{puts++;return route.fulfill(fail?{status:503,json:{error:'Preset colours unavailable'}}:{json:{ok:true}});});
+ await page.goto(url+'/admin');const preset=page.locator('#pt-presets').getByRole('button',{name:'+ FNB (test)',exact:true});await preset.click();await expect(page.locator('#channel-partners-card')).toContainText('Preset colours unavailable');
+ fail=false;await preset.click();await expect(page.locator('#pt-list')).toContainText('FNB (test)');expect(posts).toBe(1);expect(puts).toBe(2);
+ await page.locator('#pt-new-logo').setInputFiles({name:'oversized.png',mimeType:'image/png',buffer:Buffer.alloc(500001)});await expect(page.locator('#channel-partners-card')).toContainText('Please use a logo under 500KB.');await expect(page.locator('#pt-new-logo-label')).toHaveText('+ Logo (optional)');expect(posts).toBe(1);
+});
+
+test('React partner logo upload retries the same file after a failed save',async({page})=>{
+ await mockApi(page,{'/api/admin/partners':[samplePartner]});let fail=true,patches=[];
+ await page.route('**/api/admin/partners/partner-1',route=>{patches.push(route.request().postDataJSON());return route.fulfill(fail?{status:503,json:{error:'Logo storage unavailable'}}:{json:{ok:true}});});
+ await page.goto(url+'/admin');const card=page.locator('[data-partner="partner-1"]'),logo=new PNG({width:16,height:16});
+ for(let i=0;i<logo.data.length;i+=4){logo.data[i]=35;logo.data[i+1]=160;logo.data[i+2]=90;logo.data[i+3]=255;}
+ await card.locator('input[type=file]').setInputFiles({name:'brand.png',mimeType:'image/png',buffer:PNG.sync.write(logo)});await expect(page.locator('#channel-partners-card')).toContainText('Logo storage unavailable');await expect(card.getByRole('button',{name:'Retry logo upload',exact:true})).toBeVisible();
+ fail=false;await card.getByRole('button',{name:'Retry logo upload',exact:true}).click();await expect(card.locator('.partner-preview-logo')).toHaveAttribute('src',/^data:image\/png;base64,/);await expect(card.getByRole('button',{name:'Retry logo upload',exact:true})).toHaveCount(0);expect(patches).toHaveLength(2);expect(patches[1].logoDataUrl).toBe(patches[0].logoDataUrl);
+});
+
+test('React admin startup gates panels until the session is verified and excludes privileged reads for admins',async({page})=>{
+ await mockApi(page);let held,verified=false,protectedReads=[];
+ await page.route('**/api/**',route=>{const path=new URL(route.request().url()).pathname;
+  if(path==='/api/auth/me'){if(!verified){held=route;return;}return route.fulfill({json:{...me,role:'ADMIN'}});}
+  if(path.startsWith('/api/admin/'))protectedReads.push(path);
+  return route.fulfill({json:fixture(route.request().url(),route.request().method())});
+ });
+ await page.goto(url+'/admin');await expect.poll(()=>Boolean(held)).toBe(true);expect(protectedReads).toEqual([]);await expect(page.locator('#rep-list')).toHaveCount(0);await expect(page.locator('#welcome-splash-greeting')).toHaveText('Welcome');
+ verified=true;await held.fulfill({json:{...me,role:'ADMIN'}});await expect(page.locator('#rep-list .rep')).toHaveCount(10);
+ await expect(page.locator('#admin-security-strip,#admin-mlops-alert,#reset-btn,#sec-list')).toHaveCount(0);
+ expect(protectedReads).not.toContain('/api/admin/security/overview');expect(protectedReads.some(path=>path.startsWith('/api/admin/mlops/'))).toBe(false);expect(protectedReads).not.toContain('/api/admin/sections');
+ await expect(page.getByRole('link',{name:'Dashboard',exact:true}).first()).toBeVisible();
+});
+
+test('React admin startup rejects malformed session permissions before loading admin data',async({page})=>{
+ await mockApi(page);let adminReads=0;
+ await page.route('**/api/**',route=>{const path=new URL(route.request().url()).pathname;if(path==='/api/auth/me')return route.fulfill({json:{id:'broken',role:'SUPERADMIN'}});if(path.startsWith('/api/admin/'))adminReads++;return route.fulfill({json:fixture(route.request().url(),route.request().method())});});
+ await page.goto(url+'/admin');await expect(page).toHaveURL(url+'/login');expect(adminReads).toBe(0);
+});
+
+test('React admin welcome and cookie notice retain session behaviour without duplicate analytics',async({page})=>{
+ await mockApi(page);let views=0;
+ await page.route('**/api/analytics/event',route=>{if(route.request().postDataJSON()?.type==='PAGEVIEW')views++;return route.fulfill({json:{ok:true}});});
+ await page.addInitScript(()=>localStorage.setItem('empower-fin-theme','dark'));
+ await page.goto(url+'/admin');await expect(page.locator('#welcome-splash-greeting')).toContainText('Test');await expect(page.locator('#welcome-splash-logo')).toHaveAttribute('src',/logo-reversed/);await expect(page.locator('#ent-cookie')).toHaveCount(1);expect(views).toBe(1);
+ await page.getByRole('button',{name:'Got it',exact:true}).click();await expect(page.locator('#ent-cookie')).toHaveCount(0);await expect(page.locator('#welcome-splash')).toHaveClass('hide');
+ await page.reload();await expect(page.locator('#rep-list .rep')).toHaveCount(10);await expect(page.locator('#welcome-splash')).toHaveClass('hide');await expect(page.locator('#ent-cookie')).toHaveCount(0);expect(views).toBe(2);
+});
+
+test('React employer overview preserves missing/zero values, escaped content and refreshed periods',async({page})=>{
+ await mockApi(page);let updated=false;
+ await page.route('**/api/employers/*/dashboard**',route=>route.fulfill({json:{...dashboard,
+  filterContext:{...dashboard.filterContext,label:updated?'Updated window':'Initial window',comparison:{label:'Last year'}},
+  wellness:{...dashboard.wellness,score:updated?null:80,complete:!updated},
+  exec:{items:[{v:'<img src=x>',l:'employees enrolled'}]},
+  kpis:{takeUp:{...dashboard.kpis.takeUp,enrolled:updated?null:0,pct:updated?null:0,available:!updated,delta:0,trend:[5,5]},activated:{...dashboard.kpis.activated,pct:52,delta:'New',trend:[1,2]},monthlySaving:{...dashboard.kpis.monthlySaving,rand:-500,delta:-125,trend:[3,2]},avgRating:{...dashboard.kpis.avgRating,val:null,available:false}},
+  funnel:[{label:'Eligible workforce',n:0,pct:0,sub:'None yet'},{label:'Enrolled',n:null,pct:null,available:false}],
+  valueStrip:[{l:'Monthly cash freed up',v:'<img src=x>',d:'Source text'}]
+ }}));
+ await page.goto(url+'/dashboard');await expect(page.locator('#data-fresh-label')).toContainText('Source updated');
+ await expect(page.locator('#exec-summary .exec-verdict')).toHaveText('Strong');await expect(page.locator('#exec-period')).toHaveText('Initial window · at a glance');
+ await expect(page.locator('#kpis .kpi-num').nth(0)).toHaveText('0');await expect(page.locator('#kpis .kpi-num').nth(1)).toHaveText('52');await expect(page.locator('#kpis .kpi-num').nth(2)).toHaveText('-500');await expect(page.locator('#kpis .kpi-num').nth(3)).toHaveText('Not available');
+ await expect(page.locator('#kpis .delta').nth(1)).toContainText('New vs. Last year');await expect(page.locator('#kpis .delta').nth(2)).toContainText('-R 125 vs. Last year');
+ await expect(page.locator('#funnel .funnel-val').first()).toHaveText('0');await expect(page.locator('#funnel .funnel-val').last()).toHaveText('Not available');
+ await expect(page.locator('#exec-summary,#value-strip')).toContainText(['<img src=x>','<img src=x>']);await expect(page.locator('#exec-summary img,#value-strip img')).toHaveCount(0);
+ await page.locator('#kpis .metric-info').first().click();await expect(page.getByRole('tooltip')).toContainText('Enrolled employees');await page.keyboard.press('Escape');
+ updated=true;await page.locator('#month-select').selectOption('30d');await expect(page.locator('#exec-summary .exec-verdict')).toHaveText('Data incomplete');await expect(page.locator('#exec-period')).toHaveText('Updated window · at a glance');await expect(page.locator('#data-fresh-label')).toContainText('Source updated');await expect(page.locator('#emp-tag')).toContainText('Enrolment data not loaded');await expect(page.locator('#kpis .kpi-num').first()).toHaveText('Not available');
+ await page.waitForTimeout(1100);await expect(page.locator('#kpis .kpi-num').first()).toHaveText('Not available');
+});
+
+for(const width of [1440,390])test(`React employer overview matches source in dark mode at ${width}px`,async({browser},testInfo)=>{
+ const captures=[[],[],[],[]];
+ for(const port of [4101,4100]){
+  const page=await browser.newPage({viewport:{width,height:1000},timezoneId:'Africa/Johannesburg'});await mockApi(page,{'/api/employers/employer-1/dashboard':{...dashboard,kpis:{...dashboard.kpis,avgRating:{...dashboard.kpis.avgRating,val:null,available:false}}}});await page.addInitScript(()=>{localStorage.setItem('empower-fin-theme','dark');localStorage.setItem('cookieNoticeDismissed','1');});await page.goto(`http://127.0.0.1:${port}/dashboard`);await expect(page.locator('#data-fresh-label')).toContainText('Source updated');await page.waitForTimeout(1400);
+  await page.addStyleTag({content:'*,*::before,*::after{transition:none!important;animation:none!important;caret-color:transparent!important}.reveal{opacity:1!important;transform:none!important}#welcome-splash{display:none!important}'});await page.evaluate(()=>document.fonts.ready);
+  let i=0;for(const selector of ['#exec-summary','#kpis','#funnel','#value-strip'])captures[i++].push(PNG.sync.read(await page.locator(selector).screenshot()));await page.close();
+ }
+ for(let i=0;i<captures.length;i++){const [a,b]=captures[i];expect({width:b.width,height:b.height}).toEqual({width:a.width,height:a.height});const diff=new PNG({width:a.width,height:a.height}),ratio=pixelmatch(a.data,b.data,diff.data,a.width,a.height,{threshold:.15})/(a.width*a.height);if(ratio>.005){for(const [name,value]of [['source',a],['react',b],['diff',diff]])await testInfo.attach(`overview-${i}-${name}`,{body:PNG.sync.write(value),contentType:'image/png'});}expect(ratio).toBeLessThanOrEqual(.005);}
+});
+
+test('React employer charts update comparisons and preserve unavailable and zero values',async({page})=>{
+ await mockApi(page);let changed=false;
+ await page.route('**/api/employers/*/dashboard**',route=>route.fulfill({json:{...dashboard,
+  filterContext:{...dashboard.filterContext,period:'2026-09',label:changed?'New window':'Old window'},
+  periodComparison:{current:{label:changed?'New window':'Old window',monthlyCashFreedUp:changed?null:0,totalAdvanced:0},previous:{label:'Prior window',monthlyCashFreedUp:500,totalAdvanced:50}},
+  savings:changed?[]:dashboard.savings,comparison:{...dashboard.comparison,previous:{...dashboard.comparison?.previous,savings:changed?[]:dashboard.savings}},
+  income:changed?[]:[{name:'<img src=x>',count:0}],
+  regions:[{name:'<img src=x>',stress:changed?10:90}],
+  prescription:{...dashboard.prescription,statusBars:[{l:'<img src=x>',pct:changed?0:100,n:0,c:'var(--chart-cashflow)'}]},
+  debtStates:{active:{rand:0,employees:0,label:'<img src=x>'},challenged:{rand:0,employees:0},guided:{rand:0,employees:0}},
+  riskSignals:[{sev:'high',sig:'<img src=x>',note:'<script>bad</script>',n:0}],
+ } }));
+ await page.goto(url+'/dashboard');
+ await expect(page.locator('#savings-chart .comparison-value-card.current')).toContainText('R 0');
+ await expect(page.locator('#ewa-chart .comparison-value-card.current')).toContainText('R 0');
+ await expect(page.locator('#income-donut')).toContainText('No activated employees');
+ await expect(page.locator('#risk-signals .risk-n')).toHaveText('0');
+ await expect(page.locator('#opportunities .opp-foot-v')).toContainText(dashboard.opportunities.estAnnual);
+ await expect(page.locator('#risk-signals')).toContainText('<script>bad</script>');
+ await expect(page.locator('#debt-states .ds-bar>div').first()).toHaveAttribute('style',/width: 0%/);
+ await expect(page.locator('#prescription img,#region-bars img,#risk-signals img,#debt-states img')).toHaveCount(0);
+ changed=true;await page.locator('#month-select').selectOption('30d');
+ await expect(page.locator('#savings-chart')).toContainText('No data is available for this period.');
+ await expect(page.locator('#ewa-chart svg')).toHaveAttribute('aria-label','New window compared with Prior window');
+ await expect(page.locator('#income-donut')).toContainText('Income-band data is not available');
+ await page.waitForTimeout(1100);
+ await expect(page.locator('#region-bars .hbar-fill')).toHaveAttribute('style',/width: 10%/);
+ await expect(page.locator('#prescription .hbar-fill')).toHaveAttribute('style',/width: 0%/);
+});
+
+test('React employer drilldowns support keyboard, focus return and safe data quality content',async({page})=>{
+ await mockApi(page,{'/api/employers/employer-1/dashboard':{...dashboard,outcomes:dashboard.outcomes.map((o,i)=>i?o:{...o,trend:[0,3,5],trendLabels:['Jul 2026','Aug 2026','Sep 2026']}),dataQuality:{warnings:['<img src=x>'],loadedFeedCount:0}}});
+ await page.goto(url+'/dashboard');
+ const first=page.locator('#outcomes .outcome').first();await expect(first).toBeVisible();await first.focus();await page.keyboard.press('Enter');
+ await expect(page.getByRole('dialog')).toContainText('Fixes completed');
+ await expect(page.locator('.outcome-trend-chart')).toHaveAttribute('aria-label','Completion trend comparison');
+ await expect(page.getByRole('button',{name:'Close',exact:true})).toBeFocused();
+ await page.keyboard.press('Tab');await expect(page.getByRole('button',{name:'Close',exact:true})).toBeFocused();
+ await page.keyboard.press('Escape');await expect(page.getByRole('dialog')).toHaveCount(0);await expect(first).toBeFocused();
+ await page.locator('#dp-toggle').click();await expect(page.locator('#dp-toggle')).toHaveAttribute('aria-expanded','true');
+ const creditor=page.locator('#creditor-table .ct-row').first();await creditor.focus();await page.keyboard.press('Space');
+ await expect(page.getByRole('dialog')).toContainText('Accounts in journey');await page.locator('.drawer-backdrop').click({position:{x:10,y:10}});
+ await expect(creditor).toBeFocused();await expect(page.getByRole('dialog')).toHaveCount(0);
+ await page.locator('#data-trust button').click();await expect(page.getByRole('dialog')).toContainText('<img src=x>');await expect(page.locator('.drawer img')).toHaveCount(0);
+ await page.keyboard.press('Escape');await expect(page.locator('#data-trust button')).toBeFocused();
+});
+
+test('React chat changes journey themes with keyboard and removes stale content when unavailable',async({page})=>{
+ await mockApi(page);let unavailable=false;
+ await page.route('**/api/employers/*/dashboard**',route=>route.fulfill({json:{...dashboard,chat:{...dashboard.chat,available:!unavailable,byJourney:[{key:'credit',name:'Credit',convos:0,sentiment:75,themes:[{t:'First theme',n:0}]},{key:'funeral',name:'<img src=x>',convos:5,sentiment:60,themes:[{t:'<script>second</script>',n:5}]}],trending:[{q:'<img src=x>',journey:'Credit',n:0,trend:'flat'}]}}}));
+ await page.goto(url+'/dashboard');
+ await expect(page.locator('#chat-themes')).toContainText('First theme');
+ await page.locator('.chat-jrow').last().focus();await page.keyboard.press('Enter');
+ await expect(page.locator('.chat-jrow').last()).toHaveAttribute('aria-pressed','true');
+ await expect(page.locator('#chat-theme-title')).toContainText('<img src=x>');await expect(page.locator('#chat-themes')).toContainText('<script>second</script>');
+ await expect(page.locator('#chat-trending')).toContainText('"<img src=x>"');await expect(page.locator('[data-section="voiceOfEmployee"] img')).toHaveCount(0);
+ unavailable=true;await page.locator('#month-select').selectOption('30d');
+ await expect(page.locator('#chat-count-tag')).toHaveText('Data unavailable');
+ await expect(page.locator('#chat-themes')).toContainText('separate chat integration');await expect(page.locator('.chat-jrow')).toHaveCount(0);
+ await expect(page.locator('#chat-themes')).not.toContainText('second');
+});
+
+for(const width of [1440,390])test(`React employer charts match source in dark mode at ${width}px`,async({browser},testInfo)=>{
+ const captures=[];
+ for(const port of [4101,4100]){
+  const page=await browser.newPage({viewport:{width,height:1000},timezoneId:'Africa/Johannesburg'});await mockApi(page);
+  await page.addInitScript(()=>{localStorage.setItem('cookieNoticeDismissed','1');localStorage.setItem('portalTheme','dark');});
+  await page.goto(`http://127.0.0.1:${port}/dashboard`);await expect(page.locator('#data-fresh-label')).toContainText('Source updated');
+  if(!await page.locator('html').evaluate(node=>node.classList.contains('portal-dark')))await page.locator('.portal-theme-quick').click();
+  await page.locator('#dp-toggle').click();await page.waitForTimeout(1500);
+  await page.addStyleTag({content:'*,*::before,*::after{transition:none!important;animation:none!important;caret-color:transparent!important}.reveal{opacity:1!important;transform:none!important}'});
+  const images=[];
+  // Equal scroll placement keeps fixed source-status UI out of unrelated chart crops.
+  for(const selector of ['#outcomes','#savings-chart','#debt-profile','#creditor-table','#ewa-kpis','#ewa-chart','#stress-strip','#region-bars','#income-donut','#ratings','#debt-states','#prescription','#risk-signals','#opportunities','[data-section="voiceOfEmployee"]']){
+   await page.locator(selector).evaluate(node=>node.scrollIntoView({block:'center',inline:'nearest',behavior:'instant'}));
+   images.push({selector,png:PNG.sync.read(await page.locator(selector).screenshot())});
+  }
+  captures.push(images);await page.close();
+ }
+ for(let i=0;i<captures[0].length;i++){
+  const {selector,png:a}=captures[0][i],b=captures[1][i].png;
+  expect(b.width,selector).toBe(a.width);expect(b.height,selector).toBe(a.height);
+  const ratio=pixelmatch(a.data,b.data,null,a.width,a.height,{threshold:.15})/(a.width*a.height);
+  if(ratio>=.005){for(const [name,png]of [['source',a],['react',b]]){fs.writeFileSync(testInfo.outputPath(selector.slice(1)+'-'+name+'.png'),PNG.sync.write(png));await testInfo.attach(selector+'-'+name,{body:PNG.sync.write(png),contentType:'image/png'});}}
+  expect(ratio,selector).toBeLessThan(.005);
+ }
+});
+
+for(const malformed of [false,true])test(`React dashboard session validates permissions before protected reads (${malformed?'malformed':'delayed'})`,async({page})=>{
+ await mockApi(page);let release,protectedReads=0;
+ await page.route('**/api/auth/me',async route=>{await new Promise(resolve=>{release=resolve;});await route.fulfill({json:malformed?{...me,modules:{dashboard:'yes'}}:me});});
+ page.on('request',request=>{if(/\/api\/(?:employers|portfolio|dashboard\/version)/.test(request.url()))protectedReads++;});
+ await page.goto(url+'/dashboard');await expect(page.locator('#welcome-splash')).toBeVisible();await expect.poll(()=>typeof release).toBe('function');expect(protectedReads).toBe(0);release();
+ if(malformed){await expect(page).toHaveURL(/\/login$/);expect(protectedReads).toBe(0);}else{await expect(page.locator('#data-fresh-label')).toContainText('Source updated');expect(protectedReads).toBeGreaterThan(0);}
+});
+
+test('React dashboard cancels older filter requests and does not wait for periods',async({page})=>{
+ await mockApi(page);let slow,periodRoute;
+ await page.route('**/api/employers/*/periods**',route=>{periodRoute=route;});
+ await page.route('**/api/employers/*/dashboard**',route=>{const params=new URL(route.request().url()).searchParams;if(params.get('range')==='30d'){slow=route;return;}return route.fulfill({json:{...dashboard,filterContext:{label:params.get('range')==='quarter'?'Newest quarter':'Initial view'}}});});
+ await page.goto(url+'/dashboard');await expect(page.locator('#exec-period')).toContainText('Initial view');await expect.poll(()=>!!periodRoute).toBe(true);
+ await page.locator('#month-select').selectOption('30d');await expect.poll(()=>!!slow).toBe(true);await expect(page.locator('#employer-view')).toHaveAttribute('aria-busy','true');
+ await page.locator('#month-select').selectOption('qtd');await expect(page.locator('#exec-period')).toContainText('Newest quarter');await expect(page.locator('#employer-view')).not.toHaveAttribute('aria-busy','true');
+ await slow.fulfill({json:{...dashboard,filterContext:{label:'Obsolete response'}}}).catch(()=>{});await page.waitForTimeout(100);await expect(page.locator('#exec-period')).toContainText('Newest quarter');
+ await periodRoute.fulfill({json:[{period:'2026-09',optimiseScore:80},{period:'2026-08',optimiseScore:null}]}).catch(()=>{});
+ await expect(page.locator('#month-select option[value="2026-09"]')).toHaveText('Sep 2026: Score 80');await expect(page.locator('#month-select option[value="2026-08"]')).toContainText('Score unavailable');
+});
+
+test('React dashboard filters keep URL scope, refresh choices and escape API labels',async({page})=>{
+ await mockApi(page,{'/api/auth/me':{...me,employers:[...me.employers,{id:'employer-2',name:'<img src=x>'}]}});const requests=[];
+ await page.route('**/api/employers/*/periods**',route=>route.fulfill({json:[{period:'2026-09',optimiseScore:75},{period:'2026-08',optimiseScore:null}]}));
+ await page.route('**/api/employers/*/dashboard**',route=>{const u=new URL(route.request().url());requests.push(u);const second=u.pathname.includes('employer-2');return route.fulfill({json:{...dashboard,filterOptions:{sites:[{value:second?'new-site':'<site>',label:second?'New site':'<img src=x>'}],incomes:[{value:'low',label:'Low income'}]},filterContext:{label:second?'Second employer':'First employer',site:u.searchParams.get('site'),incomeLabel:u.searchParams.has('income')?'Low income':null}}});});
+ await page.goto(url+'/dashboard');await expect(page.locator('#month-select option[value="q:2026-Q3"]')).toHaveText('Q3 2026: Score 75');
+ await page.locator('#region-filter').click();await page.locator('#region-filter .dropdown-item').last().click();await expect(page).toHaveURL(/site=%3Csite%3E/);await expect(page.locator('#ctx-sub')).toContainText('<site>');
+ await page.locator('#income-filter').click();await page.locator('#income-filter .dropdown-item').last().click();await expect(page).toHaveURL(/income=low/);
+ await page.locator('#month-select').selectOption('q:2026-Q3');await expect.poll(()=>requests.at(-1)?.searchParams.get('quarter')).toBe('2026-Q3');expect(requests.at(-1).searchParams.get('site')).toBe('<site>');expect(requests.at(-1).searchParams.get('income')).toBe('low');
+ await page.locator('#employer-select').selectOption('employer-2');await expect(page.locator('#exec-period')).toContainText('Second employer');expect(new URL(page.url()).searchParams.has('site')).toBe(false);expect(new URL(page.url()).searchParams.has('income')).toBe(false);
+ await page.locator('#region-filter').click();await expect(page.locator('#region-filter .dropdown-item')).toContainText(['All regions','New site']);await expect(page.locator('.filters img')).toHaveCount(0);
+ await page.keyboard.press('Escape');await expect(page.locator('#region-filter')).toBeFocused();await expect(page.locator('#region-filter .dropdown-menu')).not.toHaveClass(/open/);
+});
+
+test('React dashboard recovers API errors without replacing React containers or duplicating export actions',async({page})=>{
+ await mockApi(page);let fail=true;await page.route('**/api/employers/*/dashboard**',route=>route.fulfill(fail?{status:503,json:{error:'<img src=x> offline',syncStatus:{lastSyncStatus:'FULL_REFRESH_FAILED'}}}:{json:dashboard}));
+ await page.goto(url+'/dashboard');await expect(page.locator('#employer-view')).toContainText('Full refresh failed');await expect(page.locator('#employer-view')).toContainText('<img src=x> offline');await expect(page.locator('#employer-view img')).toHaveCount(0);await expect(page.locator('#demo-banner')).toHaveCount(0);
+ await page.locator('[data-a="portfolio"]').click();await expect(page.locator('#pf-heatmap')).not.toBeEmpty();await page.locator('[data-a="employer"]').click();
+ fail=false;await page.getByRole('button',{name:'Retry dashboard'}).click();await expect(page.locator('#data-fresh-label')).toContainText('Source updated');await expect(page.locator('#kpis .kpi')).toHaveCount(4);
+ await page.evaluate(()=>{window.__printCount=0;window.print=()=>window.__printCount++;});await page.locator('#btn-export').click();await expect(page.locator('#btn-export')).toBeDisabled();await expect.poll(()=>page.evaluate(()=>window.__printCount)).toBe(1);
+ await page.locator('#btn-schedule').click();await expect(page.locator('.schedule-modal')).toBeVisible();await page.keyboard.press('Escape');
+ fail=true;await page.locator('#month-select').selectOption('30d');await expect(page.getByRole('button',{name:'Retry dashboard'})).toBeVisible();fail=false;await page.getByRole('button',{name:'Retry dashboard'}).click();await expect(page.locator('#btn-export')).toBeVisible();await page.locator('#btn-export').click();await expect.poll(()=>page.evaluate(()=>window.__printCount)).toBe(2);
+});
+
+test('React dashboard polling preserves published charts during rebuilds and refreshes changed versions',async({page})=>{
+ await mockApi(page);let revision='one',syncStatus={},loads=0,versionReads=0;
+ await page.route('**/api/dashboard/version',route=>{versionReads++;return route.fulfill({json:{version:revision,syncStatus}});});
+ await page.route('**/api/employers/*/dashboard**',route=>{loads++;return route.fulfill({json:{...dashboard,filterContext:{label:'Version '+revision}}});});
+ await page.goto(url+'/dashboard');await expect(page.locator('#exec-period')).toContainText('Version one');
+ const visible=()=>page.evaluate(()=>document.dispatchEvent(new Event('visibilitychange')));
+ await visible();await expect.poll(()=>versionReads).toBe(1);await page.waitForTimeout(30);
+ syncStatus={lastSyncStatus:'REBUILDING',lastSyncNote:'<img src=x> rebuilding'};revision='two';await visible();await expect(page.locator('#refresh-status-note')).toContainText('<img src=x> rebuilding');await expect(page.locator('#exec-period')).toContainText('Version one');expect(loads).toBe(1);await expect(page.locator('#refresh-status-note img')).toHaveCount(0);
+ syncStatus={lastSyncStatus:'OK'};await visible();await expect(page.locator('#exec-period')).toContainText('Version two');expect(loads).toBe(2);await expect(page.locator('#refresh-status-note')).toHaveCount(0);
+});
+
+test('React dashboard saved views handle storage errors and shared analytics sends one pageview',async({page})=>{
+ await mockApi(page);const pageviews=[];page.on('request',request=>{if(request.url().includes('/api/analytics/event')&&request.postDataJSON()?.type==='PAGEVIEW')pageviews.push(request.postDataJSON());});
+ await page.goto(url+'/dashboard?range=30d');await expect(page.locator('#data-fresh-label')).toContainText('Source updated');
+ await page.evaluate(()=>localStorage.setItem('empower-fin.savedViews','invalid'));page.on('dialog',dialog=>dialog.accept(' My view '));await page.locator('#btn-save-view').click();await expect(page.getByRole('status')).toContainText('Could not save');
+ await page.evaluate(()=>localStorage.setItem('empower-fin.savedViews','[]'));await page.locator('#btn-save-view').click();await expect(page.getByRole('status')).toContainText('saved on this browser');const views=await page.evaluate(()=>JSON.parse(localStorage.getItem('empower-fin.savedViews')));expect(views[0].name).toBe('My view');expect(views[0].url).toBe('/dashboard?range=30d');expect(pageviews).toHaveLength(1);
+ await expect(page.locator('#ent-cookie')).toHaveCount(1);await page.locator('#ent-cookie button').click();await expect(page.locator('#ent-cookie')).toHaveCount(0);
+});
+
+for(const width of [1440,390])test(`React dashboard header metadata matches source in dark mode at ${width}px`,async({browser})=>{
+ const captures=[];
+ for(const port of [4101,4100]){
+  const page=await browser.newPage({viewport:{width,height:1000},timezoneId:'Africa/Johannesburg'});await mockApi(page,{'/api/auth/me':{...me,syntheticDataMode:true}});
+  await page.route('**/api/employers/*/dashboard**',route=>route.fulfill({json:{...dashboard,monthActivity:{label:'September 2026',enrolled:0,completed:2,savingUnlocked:'R 500',advancesCount:0,advancesTotal:'Not available'},dataQuality:{warnings:['Two feeds missing.']},syncStatus:{lastSyncStatus:'PARTIAL',lastSuccessfulSyncAt:'2026-10-01T00:00:00Z',lastSyncNote:'Source is temporarily unavailable.'}}}));
+  await page.addInitScript(()=>{localStorage.setItem('cookieNoticeDismissed','1');localStorage.setItem('portalTheme','dark');});await page.goto(`http://127.0.0.1:${port}/dashboard`);await expect(page.locator('#month-activity')).toBeVisible();
+  if(!await page.locator('html').evaluate(node=>node.classList.contains('portal-dark')))await page.locator('.portal-theme-quick').click();
+  await page.waitForTimeout(1500);await page.addStyleTag({content:'*,*::before,*::after{animation:none!important;transition:none!important;caret-color:transparent!important}.reveal{opacity:1!important;transform:none!important}'});
+  const images=[];for(const selector of ['#employer-view>.head','#refresh-status-note','#synthetic-data-notice'])images.push({selector,png:PNG.sync.read(await page.locator(selector).screenshot())});captures.push(images);await page.close();
+ }
+ for(let i=0;i<captures[0].length;i++){const {selector,png:a}=captures[0][i],b=captures[1][i].png;expect(b.width,selector).toBe(a.width);expect(b.height,selector).toBe(a.height);expect(pixelmatch(a.data,b.data,null,a.width,a.height,{threshold:.15})/(a.width*a.height),selector).toBeLessThan(.005);}
+});
+
+test('React dashboard uses seeded figures only in explicit demo mode and keeps demo filters local',async({page})=>{
+ await mockApi(page);let calls=0;await page.route('**/api/employers/*/dashboard**',route=>{calls++;return route.fulfill({status:503,json:{error:'No published data'}});});
+ await page.goto(url+'/dashboard?demo=1');await expect(page.locator('#demo-banner')).toBeVisible();await expect(page.locator('#data-fresh-label')).toHaveText('Demo data');await expect(page.locator('#kpis .kpi')).toHaveCount(4);const baseline=await page.locator('#kpis .kpi-num').nth(2).textContent();
+ await page.locator('#month-select').selectOption('30d');await expect(page.locator('#exec-period')).toContainText('Last 30 days');await page.waitForTimeout(1100);expect(await page.locator('#kpis .kpi-num').nth(2).textContent()).not.toBe(baseline);expect(calls).toBe(1);
+ await page.goto(url+'/dashboard');await expect(page.getByRole('button',{name:'Retry dashboard'})).toBeVisible();await expect(page.locator('#demo-banner')).toHaveCount(0);await expect(page.locator('#kpis')).toHaveCount(0);
+});
+
+test('React dashboard metric explanations and PDF metadata follow the active report and portfolio selection',async({page})=>{
+ await mockApi(page);
+ await page.addInitScript(()=>{window.__prints=0;window.print=()=>{window.__prints++;};});
+ await page.goto(url+'/dashboard');await expect(page.locator('#exec-summary')).not.toBeEmpty();
+ await expect(page.locator('#pdf-report-title')).toHaveText(dashboard.employer+' · Employer Insights');
+ await expect(page.locator('#pdf-report-score')).toContainText(String(dashboard.wellness.score));
+ const tip=page.locator('.wellness-card .metric-info[data-metric="wellness"]');await tip.focus();await expect(page.getByRole('tooltip')).toContainText('Financial Wellness');await page.keyboard.press('Escape');await expect(page.getByRole('tooltip')).toHaveCount(0);
+ await page.locator('[data-a="portfolio"]').click();await expect(page.locator('#pf-employer-count')).toHaveText(/selected/);
+ await expect(page.locator('#pdf-report-title')).toHaveText('Portfolio Insights · '+await page.locator('#pf-employer-count').textContent());
+ await page.locator('#pf-employer-filter-btn').click();await page.locator('#pf-clear-all').click();await expect(page.locator('#pdf-report-title')).toHaveText('Portfolio Insights · 0 selected');
+ await page.locator('#btn-pf-export').click();await expect.poll(()=>page.evaluate(()=>window.__prints)).toBe(1);
+ await expect(page.locator('#pdf-report-score')).toHaveText('Across your whole book of employers');
+});
+
+test('React source candidate controls validate heartbeat and stage without saving or activating the source',async({page})=>{
+ await mockApi(page);const writes=[];
+ await page.route('**/api/admin/integration',route=>{if(route.request().method()==='POST')writes.push('save');return route.fulfill({json:{configured:true,sourceMode:'SQL',sqlHost:'active.invalid',sqlDatabase:'active',scheduleHours:24}});});
+ await page.route('**/api/admin/integration/preview-switch',route=>{writes.push({kind:'preview',body:route.request().postDataJSON()});return route.fulfill({json:{ok:true,sourceChanged:true,testedFeeds:10,note:'<img src=x> Candidate validated'}});});
+ await page.route('**/api/admin/integration/stage-source',route=>{writes.push({kind:'stage',body:route.request().postDataJSON()});return route.fulfill({json:{ok:true,generationId:'generation <b>new</b>',credentialsStaged:true}});});
+ await page.goto(url+'/admin');const panel=page.locator('#live-integration');await expect(panel.getByRole('button',{name:'Save settings',exact:true})).toBeEnabled();
+ await page.locator('#integ-hours').fill('1.5');await panel.getByRole('button',{name:'Save settings',exact:true}).click();await expect(page.locator('#integ-result')).toContainText('1–168 whole hours');expect(writes).toHaveLength(0);
+ await panel.getByRole('button',{name:'Weekly',exact:true}).click();await expect(page.locator('#integ-hours')).toHaveValue('168');
+ await page.locator('#integ-sql-host').fill('candidate.invalid');await page.locator('#integ-sql-password').fill('test-only-candidate');
+ await panel.getByRole('button',{name:'Preview new source',exact:true}).click();await expect(page.locator('#integ-result')).toContainText('Existing cursors will NOT be reused');await expect(page.locator('#integ-result img')).toHaveCount(0);
+ await panel.getByRole('button',{name:'Stage validated source',exact:true}).click();await expect(page.locator('#integ-result')).toContainText('No active database or dashboard data changed');await expect(page.locator('#integ-sql-password')).toHaveValue('');
+ expect(writes.map(v=>v.kind)).toEqual(['preview','stage']);expect(writes[1].body.sqlHost).toBe('candidate.invalid');expect(writes[1].body.scheduleHours).toBe(168);
+});
+
+test('React replacement impact preview is read-only and recovers errors with escaped counts',async({page})=>{
+ await mockApi(page);let fail=true,reads=0;
+ await page.route('**/api/admin/integration/dataset-replacement/preview',route=>{expect(route.request().method()).toBe('GET');reads++;return route.fulfill(fail?{status:503,json:{error:'<img src=x> Preview unavailable'}}:{json:{reportingRows:{employees:250},identitiesToPreserve:{'users <b>':12}}});});
+ await page.goto(url+'/admin');const button=page.getByRole('button',{name:'Preview replacement impact',exact:true});await button.click();await expect(page.locator('#dataset-replacement-preview')).toContainText('<img src=x> Preview unavailable');await expect(page.locator('#dataset-replacement-preview img')).toHaveCount(0);
+ fail=false;await button.click();await expect(page.locator('#dataset-replacement-preview')).toContainText('READ-ONLY — replacement is not enabled.');await expect(page.locator('#dataset-replacement-preview')).toContainText('employees: 250');await expect(page.locator('#dataset-replacement-preview')).toContainText('users <b>: 12');expect(reads).toBe(2);await expect(page.locator('#reset-area')).toHaveCount(0);
+});
+
+test('React source badge separates database health and source completeness without writes',async({page})=>{
+ await page.addInitScript(()=>localStorage.setItem('cookieNoticeDismissed','1'));
+ await mockApi(page);let healthReads=0;
+ await page.route('**/api/admin/database-status',route=>{expect(route.request().method()).toBe('GET');healthReads++;return route.fulfill({json:{status:'green',provider:'Neon <script>',database:'migration',message:'Connection verified',latencyMs:12,checkedAt:'2026-10-16T12:00:00Z'}});});
+ await page.goto(url+'/admin');const badge=page.locator('#efs-admin-source-status');await expect(badge).toBeVisible();await expect(page.locator('#efs-status-detail')).not.toBeVisible();await badge.getByRole('button',{name:'Details ▾',exact:true}).click();await expect(page.locator('#efs-db-status')).toContainText('HEALTHY');await expect(page.locator('#efs-db-status')).toContainText('Neon <script>');await expect(page.locator('#efs-db-status script')).toHaveCount(0);await expect(badge).toContainText('A healthy database does not guarantee successful source sync.');await badge.getByRole('button',{name:'Collapse ▴',exact:true}).click();await expect(page.locator('#efs-status-detail')).not.toBeVisible();expect(healthReads).toBe(1);
+});
+
+for(const width of [1440,390])test(`React connected source status matches the latest source at ${width}px`,async({browser})=>{
+ const captures=[];
+ for(const port of [4101,4100]){
+  const page=await browser.newPage({viewport:{width,height:1000},colorScheme:'dark',timezoneId:'Africa/Johannesburg'});
+  await mockApi(page,{'/api/admin/integration':{configured:true,sourceMode:'SQL',sqlDialect:'POSTGRESQL',sqlDatabase:'migration',lastSyncStatus:'OK',lastSuccessfulSyncAt:'2026-10-16T12:00:00Z'},'/api/admin/database-status':{status:'green',provider:'Neon',database:'migration',message:'Live query succeeded',latencyMs:12,checkedAt:'2026-10-16T12:00:00Z'}});
+  await page.addInitScript(()=>localStorage.setItem('cookieNoticeDismissed','1'));
+  await page.goto(`http://127.0.0.1:${port}/dashboard`);await page.addStyleTag({content:'#welcome-splash,#ent-cookie{display:none!important}'});
+  const badge=page.locator('#efs-admin-source-status');await expect(badge).toContainText('COMPLETE');await expect(page.locator('#efs-db-status')).toHaveAttribute('data-db-status','green');
+  const images=[PNG.sync.read(await badge.screenshot())];await badge.getByRole('button',{name:'Details ▾',exact:true}).click();images.push(PNG.sync.read(await badge.screenshot()));captures.push(images);await page.close();
+ }
+ for(let i=0;i<2;i++){
+  const a=captures[0][i],b=captures[1][i];expect({width:b.width,height:b.height}).toEqual({width:a.width,height:a.height});expect(pixelmatch(a.data,b.data,null,a.width,a.height,{threshold:.15})/(a.width*a.height)).toBeLessThan(.005);
+ }
+});
+
+test('React import history polls only while visible and manual refresh stays immediate',async({page})=>{
+ await page.clock.install();await page.addInitScript(()=>localStorage.setItem('cookieNoticeDismissed','1'));await mockApi(page);let reads=0;
+ await page.route('**/api/admin/batches',route=>{reads++;return route.fulfill({json:[]});});
+ await page.goto(url+'/admin');await expect(page.locator('#hist-body')).toContainText('No imports yet.');const initial=reads;
+ await page.evaluate(()=>window.scrollTo({top:0,left:0,behavior:'instant'}));await page.clock.runFor(30001);expect(reads).toBe(initial);
+ await page.locator('#import-history-card').evaluate(node=>node.scrollIntoView({block:'center',behavior:'instant'}));await page.clock.runFor(30000);await expect.poll(()=>reads).toBe(initial+1);
+ await page.locator('#import-history-card').getByRole('button',{name:'Refresh',exact:true}).click();await expect.poll(()=>reads).toBe(initial+2);
+ await page.evaluate(()=>window.scrollTo({top:0,left:0,behavior:'instant'}));await page.clock.runFor(60000);expect(reads).toBe(initial+2);
+});

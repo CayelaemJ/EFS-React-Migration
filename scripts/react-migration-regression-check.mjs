@@ -1,0 +1,46 @@
+import fs from 'node:fs';
+import assert from 'node:assert/strict';
+import {parse} from '@babel/parser';
+import traverseModule from '@babel/traverse';
+const traverse=traverseModule.default;
+const read=file=>fs.readFileSync(file,'utf8');
+const manifest=JSON.parse(read('frontend/parity-manifest.json'));
+assert.equal(manifest.length,12,'Every source page must have a React entry');
+for(const {page}of manifest){
+ const jsx=read(`frontend/src/parity/${page}.jsx`),built=read(`public/react/pages/${page}.html`);
+ assert.match(jsx,/export function Page\(/,`${page}: missing component`);
+ assert.match(built,/<script[^>]+type="module"/,`${page}: missing built module`);
+ assert.doesNotMatch(built,/<script[^>]*src="\/static\//,`${page}: legacy script entry`);
+ assert.doesNotMatch(jsx,/dangerouslySetInnerHTML|\beval\s*\(|new Function\s*\(/,`${page}: executable HTML wrapper`);
+ const ast=parse(jsx,{sourceType:'module',plugins:['jsx']});
+ traverse(ast,{AssignmentExpression(p){assert.notEqual(p.node.left?.property?.name,'innerHTML',`${page}: raw HTML write`);}});
+ for(const [,asset]of built.matchAll(/(?:src|href)="(\/react\/assets\/[^"?]+)"/g))assert.ok(fs.existsSync('public'+asset),`${page}: missing ${asset}`);
+ for(const [,asset]of built.matchAll(/(?:src|href)="(\/static\/[^"?]+)(?:\?[^\"]*)?"/g))assert.ok(fs.existsSync('public/'+asset.slice(8)),`${page}: missing ${asset}`);
+}
+const server=read('src/server.ts');
+assert.doesNotMatch(read('frontend/src/parity/dashboard.jsx'), /function (loadLiveData|fetchPortfolioInBackground|populateMonthSelect|switchPeriod|switchEmployer|switchFilter|wireFilters|wireAudience|wireHeaderBtns|renderMonthActivity|renderDataQuality|setLiveFootnote|renderRefreshStatus|showLiveError|applySyntheticDataNotice|showDemoBanner|checkSourceVersion|handleWelcomeSplash|addAuthBar|applySectionVisibility|updateContextLine|syncPeriodControl|saveCurrentView)\(/, 'Dashboard loading, session, filters, notices, audience and button state must remain React-owned');
+assert.doesNotMatch(read('frontend/src/parity/dashboard.jsx'), /setInterval\(checkSourceVersion|data-quality-note.*innerHTML|engagement_sid/, 'Dashboard shared lifecycle must not restart legacy scripts');
+assert.doesNotMatch(read('frontend/src/parity/dashboard.jsx'), /function (renderOutcomes|renderPeriodLineChart|renderSavings|renderEwa|renderDebtProfile|renderCreditors|renderRegions|renderStressMap|renderIncome|renderRatings|renderDebtStates|renderPrescription|renderRiskSignals|renderOpportunities|renderChat|renderChatThemes|openDrawer|closeDrawer|outcomeDrill|creditorDrill|renderExecutiveInsight|renderDataTrust)\(/, 'Employer visuals, chat interactions and drilldowns must remain React-owned');
+
+assert.doesNotMatch(read('frontend/src/parity/admin.jsx'), /renderMarkup|registerAction|function boot\(|querySelectorAll|setInterval/, 'Admin bootstrap and shared shell must remain React-owned');
+assert.doesNotMatch(read('frontend/src/parity/dashboard.jsx'), /function (renderKPIs|renderFunnel|renderValueStrip)\(/, 'Employer overview rendering must remain React-owned');
+assert.doesNotMatch(read('frontend/src/parity/admin.jsx'), /function (loadPartners|renderPartners|editPartner|createPartner|uploadPartnerLogo|assignToPartner|deletePartner|openClientPreview|closeClientPreview|toggleChannelPartners)\(/, 'Partner controllers and preview must remain React-owned');
+assert.doesNotMatch(read('frontend/src/parity/admin.jsx'), /function (loadInteg|integrationDraft|saveInteg|testInteg|syncNow|refreshNow|loadIntegLogs|pollJob)\(/, 'Integration forms and jobs must remain React-owned');
+assert.doesNotMatch(read('frontend/src/parity/admin.jsx'), /function (openReset|doReset)\(/, 'Reset must remain React-owned');
+assert.doesNotMatch(read('frontend/src/parity/admin.jsx'), /function (loadAuditLog|loadEngagement)\(/, 'Admin insights controllers must not return to production');
+assert.doesNotMatch(read('frontend/src/parity/admin.jsx'), /function (openCompliancePanel|loadComplianceSummary|loadComplianceDetail|loadMLOpsAlert|loadAdminSecuritySummary|loadEnterpriseOperations)\(/, 'Governance panels must remain React-owned');
+assert.doesNotMatch(read('frontend/src/parity/dashboard.jsx'), /function (renderPfKpis|renderPfHeatmap|renderPfLeague|renderPfPicker|renderPfEmployerOptions|renderPortfolioBody)\(/, 'Portfolio rendering must remain React-owned');
+for(const file of ['DashboardState','EmployerCharts','DashboardDrawer','Portfolio','Wellness','AdminInsights','AdminGovernance','EnterpriseOperations','AdminReset','AdminIntegration','AdminPartners','PartnerPreview','AdminShell','EmployerOverview'])assert.doesNotMatch(read(`frontend/src/native/${file}.jsx`), /innerHTML|renderMarkup|document\.getElementById/, `${file}: render from React state`);
+assert.doesNotMatch(read('frontend/src/parity/admin.jsx'), /function (emailDraft|loadEmailSettings|saveEmailSettings|testEmailSettings|saveAutomations|runAutomationNow|loadScheduledReportsAdmin|loadEmailDeliveries)\(/, 'Email/automation controllers must not return to production');
+assert.doesNotMatch(read('frontend/src/native/AdminSettings.jsx'), /innerHTML|querySelector|document\.getElementById/, 'Native settings must render from React state');
+assert.ok(server.includes('join(PUBLIC_DIR, "react", "pages", file)'),'Canonical routes must serve built React pages');
+assert.ok(server.includes('canAccessModule(user, "dashboard")'));
+assert.ok(server.includes('canAccessModule(user, "admin")'));
+assert.ok(server.includes('user.role !== "ADMIN" && user.role !== "SUPERADMIN"'));
+assert.equal((server.match(/allowedPath: \(pathname\) => !pathname.endsWith\(".html"\)/g)||[]).length,2,'Static HTML must not bypass canonical page routing');
+assert.equal(JSON.parse(read('railway.json')).deploy.healthcheckPath,'/health');
+console.log('PASS: 12 React page entries, built assets, canonical routes and protected routing');
+assert.doesNotMatch(read('frontend/src/parity/dashboard.jsx'), /renderMarkup|registerAction|function applyState|addEventListener|querySelector/, 'Dashboard page is a declarative React layout');
+assert.doesNotMatch(read('frontend/src/native/dashboard-model.js'), /innerHTML|renderMarkup|document\.|addEventListener|querySelector|<button/, 'Dashboard model supplies data without DOM controllers');
+assert.ok(manifest.every(page=>page.implementation==='declarative-react'),'Every source page is declarative React');
+console.log('PASS: all 12 pages use declarative React; dashboard model has no DOM controllers.');
